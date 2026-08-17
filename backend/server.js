@@ -17,6 +17,7 @@ const authRoutes = require('./src/routes/auth');
 const usersRoutes = require('./src/routes/users');
 const incidentsRoutes = require('./src/routes/incidents');
 const notificationsRoutes = require('./src/routes/notifications');
+const adminRoutes = require('./src/routes/admin');
 
 // App & HTTP server
 const app = express();
@@ -62,6 +63,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/incidents', incidentsRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
