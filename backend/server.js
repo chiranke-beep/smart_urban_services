@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,11 +8,13 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 
 const pool = require('./src/config/database');
-const User = require('./src/models/User');
+const User     = require('./src/models/User');
+const Incident = require('./src/models/Incident');
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-const authRoutes  = require('./src/routes/auth');
-const usersRoutes = require('./src/routes/users');
+const authRoutes      = require('./src/routes/auth');
+const usersRoutes     = require('./src/routes/users');
+const incidentsRoutes = require('./src/routes/incidents');
 
 // ── App & HTTP server ────────────────────────────────────────────────────────
 const app = express();
@@ -40,13 +43,15 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth',  authRoutes);
-app.use('/api/users', usersRoutes);
+app.use('/api/auth',      authRoutes);
+app.use('/api/users',     usersRoutes);
+app.use('/api/incidents', incidentsRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -80,6 +85,8 @@ const startServer = async () => {
     // Run table migrations
     await User.createTable();
     console.log('✅ Users table ready');
+    await Incident.createTable();
+    console.log('✅ Incidents table ready');
 
     httpServer.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
