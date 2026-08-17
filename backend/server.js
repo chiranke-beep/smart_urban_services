@@ -10,7 +10,8 @@ const pool = require('./src/config/database');
 const User = require('./src/models/User');
 
 // ── Routes ───────────────────────────────────────────────────────────────────
-const authRoutes = require('./src/routes/auth');
+const authRoutes  = require('./src/routes/auth');
+const usersRoutes = require('./src/routes/users');
 
 // ── App & HTTP server ────────────────────────────────────────────────────────
 const app = express();
@@ -44,7 +45,8 @@ if (process.env.NODE_ENV !== 'test') {
 }
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/auth', authRoutes);
+app.use('/api/auth',  authRoutes);
+app.use('/api/users', usersRoutes);
 
 // ── Health check ─────────────────────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
