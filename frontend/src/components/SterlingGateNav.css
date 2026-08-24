@@ -81,7 +81,7 @@
   display: inline-flex;
   align-items: center;
   padding: 0.45rem 1rem;
-  border-radius: 9999px;
+  border-radius: 0px;
   background: rgba(128, 128, 128, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -106,7 +106,7 @@
   align-items: center;
   gap: 0.6rem;
   padding: 0.45rem 1.1rem;
-  border-radius: 9999px;
+  border-radius: 0px;
   cursor: pointer;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -139,7 +139,7 @@
   height: 14px;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justifyContent: center;
 }
 
 .menu-button-icon {
@@ -164,10 +164,14 @@
 .nav-overlay-wrapper .overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   cursor: pointer;
+}
+
+:root:not(.dark) .nav-overlay-wrapper .overlay {
+  background: rgba(15, 23, 42, 0.3);
 }
 
 .menu-content {
@@ -183,6 +187,7 @@
   padding: 4rem 3.5rem;
   overflow: hidden;
   z-index: 2;
+  border-left: 1px solid var(--border);
 }
 
 @media (max-width: 640px) {
@@ -223,6 +228,31 @@
 .backdrop-layer:last-child {
   background: #090b0e;
   z-index: 4;
+}
+
+/* Light Theme Drawer Backgrounds */
+:root:not(.dark) .backdrop-layer {
+  background: #f8fafc;
+}
+
+:root:not(.dark) .backdrop-layer.first {
+  background: #e2e8f0;
+}
+
+:root:not(.dark) .backdrop-layer.second {
+  background: #f1f5f9;
+}
+
+:root:not(.dark) .backdrop-layer:last-child {
+  background: #f8fafc;
+}
+
+/* ── Light mode shape color fixes ──────────────────────────────
+   Shapes use neon rgba colors designed for a dark canvas.
+   In light mode we darken + saturate them so they pop on white.
+   The brightness(0.42) turns white strokes into visible dark-gray.   */
+:root:not(.dark) .ambient-background-shapes {
+  filter: saturate(1.9) brightness(0.42) contrast(1.2);
 }
 
 /* Ambient Background Shapes */
@@ -272,9 +302,11 @@
 }
 
 .nav-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
   text-decoration: none;
-  color: #ffffff;
+  color: var(--text-primary);
   font-size: clamp(2.2rem, 5.5vw, 3.8rem);
   font-weight: 800;
   letter-spacing: -0.035em;
@@ -285,6 +317,23 @@
   transform-origin: left bottom;
 }
 
+.nav-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 0.9em;
+  height: 0.9em;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-link-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
 .nav-link-text {
   margin: 0;
   position: relative;
@@ -292,9 +341,15 @@
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
 }
 
+.menu-list-item:hover .nav-link-icon {
+  transform: translateX(12px);
+  color: var(--accent);
+  opacity: 1;
+}
+
 .menu-list-item:hover .nav-link-text {
   transform: translateX(18px);
-  color: #42d6ff;
+  color: var(--accent);
 }
 
 .nav-link-hover-bg {
@@ -303,8 +358,8 @@
   left: 0;
   width: 0%;
   height: 3px;
-  background: linear-gradient(90deg, #42d6ff, #5e9bf2);
-  border-radius: 2px;
+  background: var(--accent);
+  border-radius: 0px;
   transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
 

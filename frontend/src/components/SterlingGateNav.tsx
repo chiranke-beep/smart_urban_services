@@ -31,27 +31,234 @@ export function SterlingGateNav() {
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Per-shape idle tweens so we can kill them on leave
+    const idleTweens: Record<string, gsap.core.Tween[]> = {};
+
     const ctx = gsap.context(() => {
       // ── Shape hover effects for nav links ─────────────
       const menuItems = containerRef.current!.querySelectorAll(".menu-list-item[data-shape]");
       const shapesContainer = containerRef.current!.querySelector(".ambient-background-shapes");
 
       menuItems.forEach((item) => {
-        const shapeIndex = item.getAttribute("data-shape");
+        const shapeIndex = item.getAttribute("data-shape")!;
         const shape = shapesContainer?.querySelector(`.bg-shape-${shapeIndex}`);
         if (!shape) return;
-        const shapeEls = shape.querySelectorAll(".shape-element");
+        const els = shape.querySelectorAll(".shape-element");
+
+        const killIdle = () => {
+          (idleTweens[shapeIndex] || []).forEach((t) => t.kill());
+          idleTweens[shapeIndex] = [];
+        };
+
+        const startIdle = () => {
+          killIdle();
+          // Generic gentle float on the whole shape container
+          const floatTween = gsap.to(shape, {
+            y: "-=10",
+            duration: 2.8,
+            ease: "sine.inOut",
+            yoyo: true,
+            repeat: -1,
+          });
+          idleTweens[shapeIndex] = [floatTween];
+
+          if (shapeIndex === "1") {
+            // Grid tiles: subtle scale breathe on each tile staggered
+            const breathe = gsap.to(els, {
+              scale: 1.04,
+              duration: 1.6,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+              stagger: { each: 0.25, from: "random" },
+              transformOrigin: "center center",
+            });
+            idleTweens[shapeIndex].push(breathe);
+          }
+          if (shapeIndex === "2") {
+            // Magnifier: gentle slow rotation
+            const mag = shape.querySelectorAll(".shape-element:nth-child(n+3)");
+            const spin = gsap.to(mag, {
+              rotation: 4,
+              transformOrigin: "center center",
+              duration: 2.2,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+            });
+            idleTweens[shapeIndex].push(spin);
+          }
+          if (shapeIndex === "3") {
+            // Plus badge: pulse scale
+            const badge = shape.querySelectorAll(".shape-element:nth-child(n+3)");
+            const pulse = gsap.to(badge, {
+              scale: 1.1,
+              transformOrigin: "center center",
+              duration: 1.4,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+            });
+            idleTweens[shapeIndex].push(pulse);
+          }
+          if (shapeIndex === "4") {
+            // Shield inner ring: slow pulse
+            const ring = Array.from(els).slice(1);
+            const glow = gsap.to(ring, {
+              scale: 1.06,
+              transformOrigin: "center center",
+              duration: 2,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+            });
+            idleTweens[shapeIndex].push(glow);
+          }
+          if (shapeIndex === "5") {
+            // Steps: each step circle pulses in sequence
+            const circles = [
+              shape.querySelector(".shape-element:nth-child(1)"),
+              shape.querySelector(".shape-element:nth-child(5)"),
+              shape.querySelector(".shape-element:nth-child(9)"),
+            ].filter(Boolean);
+            const cascade = gsap.to(circles, {
+              scale: 1.12,
+              transformOrigin: "center center",
+              duration: 1.0,
+              ease: "sine.inOut",
+              yoyo: true,
+              repeat: -1,
+              stagger: 0.35,
+            });
+            idleTweens[shapeIndex].push(cascade);
+          }
+        };
 
         const onEnter = () => {
-          shapesContainer?.querySelectorAll(".bg-shape").forEach((s) => s.classList.remove("active"));
+          shapesContainer?.querySelectorAll(".bg-shape").forEach((s) => {
+            if (s !== shape) {
+              s.classList.remove("active");
+              const otherIdx = (s.className.match(/bg-shape-(\d)/) || [])[1];
+              if (otherIdx) killIdle();
+            }
+          });
           shape.classList.add("active");
-          gsap.fromTo(shapeEls,
-            { scale: 0.45, opacity: 0, rotation: -18 },
-            { scale: 1, opacity: 1, rotation: 0, duration: 0.6, stagger: 0.05, ease: "back.out(2.2)", overwrite: "auto" }
-          );
+
+          // Kill any leftover tweens on these elements
+          gsap.killTweensOf(els);
+          gsap.killTweensOf(shape);
+
+          if (shapeIndex === "1") {
+            // Grid tiles: each tile slides up from below with a card pop
+            gsap.fromTo(Array.from(els).slice(0, 4).filter((_, i) => i % 4 === 0),
+              { y: 40, opacity: 0, scale: 0.85 },
+              { y: 0, opacity: 1, scale: 1, duration: 0.6, stagger: 0.12, ease: "back.out(2)", overwrite: "auto" }
+            );
+            // Text lines fade in after
+            gsap.fromTo(Array.from(els).filter((_, i) => i % 4 !== 0),
+              { x: -12, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.45, stagger: 0.04, ease: "power3.out", delay: 0.2, overwrite: "auto" }
+            );
+          } else if (shapeIndex === "2") {
+            // Person: head drops in, body grows up
+            const [head, body, magCircle, magHandle, crossH, crossV] = Array.from(els);
+            gsap.fromTo(head,
+              { y: -30, scale: 0.6, opacity: 0 },
+              { y: 0, scale: 1, opacity: 1, duration: 0.55, ease: "back.out(2.5)", overwrite: "auto" }
+            );
+            gsap.fromTo(body,
+              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
+              { scaleY: 1, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.18, overwrite: "auto" }
+            );
+            // Magnifier swings in from right
+            gsap.fromTo([magCircle, magHandle, crossH, crossV],
+              { x: 30, opacity: 0, scale: 0.7, rotation: -25, transformOrigin: "center center" },
+              { x: 0, opacity: 1, scale: 1, rotation: 0, duration: 0.65, stagger: 0.06, ease: "back.out(2.2)", delay: 0.25, overwrite: "auto" }
+            );
+          } else if (shapeIndex === "3") {
+            // Person: slides in from left; plus badge bounces in from right
+            const [head, body, badgeCircle, crossH, crossV] = Array.from(els);
+            gsap.fromTo([head, body],
+              { x: -30, opacity: 0 },
+              { x: 0, opacity: 1, duration: 0.55, stagger: 0.1, ease: "power4.out", overwrite: "auto" }
+            );
+            gsap.fromTo(badgeCircle,
+              { scale: 0, opacity: 0, transformOrigin: "center center" },
+              { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(3)", delay: 0.3, overwrite: "auto" }
+            );
+            gsap.fromTo([crossH, crossV],
+              { scale: 0, opacity: 0, transformOrigin: "290px 148px" },
+              { scale: 1, opacity: 1, duration: 0.45, stagger: 0.08, ease: "back.out(4)", delay: 0.48, overwrite: "auto" }
+            );
+          } else if (shapeIndex === "4") {
+            // Shield draws in, then checkmark strokes on
+            const [shieldOuter, shieldInner, checkmark] = Array.from(els);
+            gsap.fromTo(shieldOuter,
+              { scale: 0.5, opacity: 0, transformOrigin: "200px 208px" },
+              { scale: 1, opacity: 1, duration: 0.65, ease: "back.out(2)", overwrite: "auto" }
+            );
+            gsap.fromTo(shieldInner,
+              { scale: 0.6, opacity: 0, transformOrigin: "200px 210px" },
+              { scale: 1, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.2, overwrite: "auto" }
+            );
+            // Checkmark strokes in via dashoffset
+            gsap.set(checkmark, { strokeDasharray: 160, strokeDashoffset: 160, opacity: 1 });
+            gsap.to(checkmark, {
+              strokeDashoffset: 0,
+              duration: 0.7,
+              ease: "power3.inOut",
+              delay: 0.4,
+              overwrite: "auto",
+            });
+          } else if (shapeIndex === "5") {
+            // Steps cascade in one-by-one: circle then text bars
+            const allEls = Array.from(els);
+            // Groups: [circle, label, bar1, bar2, connector] × 3
+            const step1 = allEls.slice(0, 4);
+            const conn1  = allEls[4];
+            const step2 = allEls.slice(5, 9);
+            const conn2  = allEls[9];
+            const step3 = allEls.slice(10);
+
+            gsap.fromTo(step1,
+              { y: 20, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", overwrite: "auto" }
+            );
+            gsap.fromTo(conn1,
+              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
+              { scaleY: 1, opacity: 1, duration: 0.3, ease: "power2.out", delay: 0.32, overwrite: "auto" }
+            );
+            gsap.fromTo(step2,
+              { y: 20, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", delay: 0.45, overwrite: "auto" }
+            );
+            gsap.fromTo(conn2,
+              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
+              { scaleY: 1, opacity: 1, duration: 0.3, ease: "power2.out", delay: 0.72, overwrite: "auto" }
+            );
+            gsap.fromTo(step3,
+              { y: 20, opacity: 0 },
+              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", delay: 0.85, overwrite: "auto" }
+            );
+          }
+
+          // Start idle loops after entrance
+          setTimeout(startIdle, shapeIndex === "4" ? 900 : shapeIndex === "5" ? 1200 : 650);
         };
+
         const onLeave = () => {
-          gsap.to(shapeEls, { scale: 0.6, opacity: 0, duration: 0.25, ease: "power2.in", onComplete: () => shape.classList.remove("active"), overwrite: "auto" });
+          killIdle();
+          gsap.to(shape, { y: 0, duration: 0.2, overwrite: "auto" });
+          gsap.to(els, {
+            scale: 0.75,
+            opacity: 0,
+            y: -8,
+            duration: 0.3,
+            ease: "power3.in",
+            stagger: { each: 0.025, from: "end" },
+            onComplete: () => shape.classList.remove("active"),
+            overwrite: "auto",
+          });
         };
 
         item.addEventListener("mouseenter", onEnter);
@@ -59,6 +266,7 @@ export function SterlingGateNav() {
         (item as any)._cleanup = () => {
           item.removeEventListener("mouseenter", onEnter);
           item.removeEventListener("mouseleave", onLeave);
+          killIdle();
         };
       });
 
@@ -244,57 +452,103 @@ export function SterlingGateNav() {
               <div className="backdrop-layer"></div>
 
               <div className="ambient-background-shapes">
-                {/* Shape 1 — Citizen / Hazard */}
+
+                {/* Shape 1 — Local Service Directory: grid of service tiles */}
                 <svg className="bg-shape bg-shape-1" viewBox="0 0 400 400" fill="none">
-                  <path className="shape-element" d="M200 60 L340 300 L60 300 Z" stroke="rgba(239,68,68,0.45)" strokeWidth="12" strokeLinejoin="round" fill="rgba(239,68,68,0.1)"/>
-                  <line className="shape-element" x1="200" y1="140" x2="200" y2="220" stroke="rgba(239,68,68,0.7)" strokeWidth="12" strokeLinecap="round"/>
-                  <circle className="shape-element" cx="200" cy="260" r="8" fill="rgba(239,68,68,0.7)"/>
-                  <circle className="shape-element" cx="200" cy="200" r="140" stroke="rgba(66,214,255,0.3)" strokeWidth="4" strokeDasharray="16 8"/>
+                  {/* Grid tile 1 */}
+                  <rect className="shape-element" x="80" y="80" width="90" height="90" rx="10" fill="rgba(66,214,255,0.15)" stroke="rgba(66,214,255,0.7)" strokeWidth="5"/>
+                  <rect className="shape-element" x="98" y="108" width="54" height="8" rx="3" fill="rgba(66,214,255,0.7)"/>
+                  <rect className="shape-element" x="98" y="124" width="38" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  <rect className="shape-element" x="98" y="138" width="46" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  {/* Grid tile 2 */}
+                  <rect className="shape-element" x="230" y="80" width="90" height="90" rx="10" fill="rgba(66,214,255,0.15)" stroke="rgba(66,214,255,0.7)" strokeWidth="5"/>
+                  <rect className="shape-element" x="248" y="108" width="54" height="8" rx="3" fill="rgba(66,214,255,0.7)"/>
+                  <rect className="shape-element" x="248" y="124" width="38" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  <rect className="shape-element" x="248" y="138" width="46" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  {/* Grid tile 3 */}
+                  <rect className="shape-element" x="80" y="230" width="90" height="90" rx="10" fill="rgba(66,214,255,0.15)" stroke="rgba(66,214,255,0.7)" strokeWidth="5"/>
+                  <rect className="shape-element" x="98" y="258" width="54" height="8" rx="3" fill="rgba(66,214,255,0.7)"/>
+                  <rect className="shape-element" x="98" y="274" width="38" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  <rect className="shape-element" x="98" y="288" width="46" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  {/* Grid tile 4 */}
+                  <rect className="shape-element" x="230" y="230" width="90" height="90" rx="10" fill="rgba(66,214,255,0.15)" stroke="rgba(66,214,255,0.7)" strokeWidth="5"/>
+                  <rect className="shape-element" x="248" y="258" width="54" height="8" rx="3" fill="rgba(66,214,255,0.7)"/>
+                  <rect className="shape-element" x="248" y="274" width="38" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
+                  <rect className="shape-element" x="248" y="288" width="46" height="6" rx="3" fill="rgba(66,214,255,0.4)"/>
                 </svg>
-                {/* Shape 2 — Radar / Map */}
+
+                {/* Shape 2 — Find Workers & Techs: person silhouette + magnifier */}
                 <svg className="bg-shape bg-shape-2" viewBox="0 0 400 400" fill="none">
-                  <circle className="shape-element" cx="200" cy="200" r="60"  stroke="rgba(66,214,255,0.6)" strokeWidth="3"/>
-                  <circle className="shape-element" cx="200" cy="200" r="110" stroke="rgba(66,214,255,0.4)" strokeWidth="3" strokeDasharray="12 6"/>
-                  <circle className="shape-element" cx="200" cy="200" r="160" stroke="rgba(66,214,255,0.25)" strokeWidth="2"/>
-                  <line   className="shape-element" x1="200" y1="200" x2="340" y2="90" stroke="rgba(66,214,255,0.7)" strokeWidth="4" strokeLinecap="round"/>
-                  <path   className="shape-element" d="M200 110 C175 110,155 130,155 155 C155 190,200 240,200 240 C200 240,245 190,245 155 C245 130,225 110,200 110 Z" fill="rgba(66,214,255,0.45)" stroke="rgba(255,255,255,0.9)" strokeWidth="4"/>
-                  <circle className="shape-element" cx="200" cy="155" r="15" fill="#ffffff"/>
+                  {/* Person head */}
+                  <circle className="shape-element" cx="170" cy="140" r="45" fill="rgba(66,214,255,0.2)" stroke="rgba(66,214,255,0.7)" strokeWidth="6"/>
+                  {/* Person body */}
+                  <path className="shape-element" d="M90 290 C90 240 130 210 170 210 C210 210 250 240 250 290" fill="rgba(66,214,255,0.15)" stroke="rgba(66,214,255,0.7)" strokeWidth="6" strokeLinecap="round"/>
+                  {/* Magnifier circle */}
+                  <circle className="shape-element" cx="290" cy="260" r="55" stroke="rgba(255,255,255,0.75)" strokeWidth="10" fill="none"/>
+                  {/* Magnifier handle */}
+                  <line className="shape-element" x1="332" y1="302" x2="370" y2="340" stroke="rgba(255,255,255,0.75)" strokeWidth="14" strokeLinecap="round"/>
+                  {/* Search plus detail */}
+                  <line className="shape-element" x1="270" y1="260" x2="310" y2="260" stroke="rgba(66,214,255,0.8)" strokeWidth="7" strokeLinecap="round"/>
+                  <line className="shape-element" x1="290" y1="240" x2="290" y2="280" stroke="rgba(66,214,255,0.8)" strokeWidth="7" strokeLinecap="round"/>
                 </svg>
-                {/* Shape 3 — Service Provider / Wrench */}
+
+                {/* Shape 3 — Join as a Worker / Volunteer: person + plus badge */}
                 <svg className="bg-shape bg-shape-3" viewBox="0 0 400 400" fill="none">
-                  <circle className="shape-element" cx="200" cy="190" r="90" stroke="rgba(244,191,79,0.5)" strokeWidth="10" strokeDasharray="30 15"/>
-                  <path   className="shape-element" d="M160 150 L240 230 M240 150 L160 230" stroke="rgba(244,191,79,0.8)" strokeWidth="12" strokeLinecap="round"/>
-                  <path   className="shape-element" d="M150 310 L185 345 L255 275" stroke="rgba(52,200,123,0.9)" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round"/>
+                  {/* Main person head */}
+                  <circle className="shape-element" cx="160" cy="130" r="48" fill="rgba(52,200,123,0.2)" stroke="rgba(52,200,123,0.8)" strokeWidth="6"/>
+                  {/* Main person body */}
+                  <path className="shape-element" d="M75 310 C75 255 115 220 160 220 C205 220 245 255 245 310" fill="rgba(52,200,123,0.15)" stroke="rgba(52,200,123,0.8)" strokeWidth="6" strokeLinecap="round"/>
+                  {/* Plus badge circle */}
+                  <circle className="shape-element" cx="298" cy="148" r="52" fill="rgba(66,214,255,0.2)" stroke="rgba(66,214,255,0.8)" strokeWidth="6"/>
+                  {/* Plus sign */}
+                  <line className="shape-element" x1="274" y1="148" x2="322" y2="148" stroke="rgba(66,214,255,0.95)" strokeWidth="10" strokeLinecap="round"/>
+                  <line className="shape-element" x1="298" y1="124" x2="298" y2="172" stroke="rgba(66,214,255,0.95)" strokeWidth="10" strokeLinecap="round"/>
                 </svg>
-                {/* Shape 4 — Admin Dashboard */}
+
+                {/* Shape 4 — Admin & Verification: large shield with checkmark */}
                 <svg className="bg-shape bg-shape-4" viewBox="0 0 400 400" fill="none">
-                  <rect className="shape-element" x="90"  y="100" width="220" height="180" rx="16" fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.6)" strokeWidth="6"/>
-                  <rect className="shape-element" x="120" y="210" width="24" height="50"  rx="4" fill="rgba(168,85,247,0.8)"/>
-                  <rect className="shape-element" x="160" y="170" width="24" height="90"  rx="4" fill="rgba(66,214,255,0.8)"/>
-                  <rect className="shape-element" x="200" y="140" width="24" height="120" rx="4" fill="rgba(52,200,123,0.8)"/>
-                  <rect className="shape-element" x="240" y="190" width="24" height="70"  rx="4" fill="rgba(244,191,79,0.8)"/>
+                  {/* Shield outer */}
+                  <path className="shape-element" d="M200 60 L330 110 L330 220 C330 295 200 355 200 355 C200 355 70 295 70 220 L70 110 Z" fill="rgba(168,85,247,0.15)" stroke="rgba(168,85,247,0.7)" strokeWidth="8" strokeLinejoin="round"/>
+                  {/* Shield inner glow ring */}
+                  <path className="shape-element" d="M200 90 L310 132 L310 215 C310 278 200 330 200 330 C200 330 90 278 90 215 L90 132 Z" fill="none" stroke="rgba(168,85,247,0.3)" strokeWidth="4" strokeLinejoin="round"/>
+                  {/* Checkmark */}
+                  <path className="shape-element" d="M145 205 L185 248 L262 168" stroke="rgba(52,200,123,0.95)" strokeWidth="18" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
                 </svg>
-                {/* Shape 5 — Platform Crest */}
+
+                {/* Shape 5 — How It Works: three numbered steps with arrows */}
                 <svg className="bg-shape bg-shape-5" viewBox="0 0 400 400" fill="none">
-                  <path className="shape-element" d="M80 150 L200 90 L320 150 Z" fill="rgba(66,214,255,0.3)" stroke="rgba(66,214,255,0.7)" strokeWidth="6"/>
-                  <rect className="shape-element" x="80"  y="150" width="240" height="20" fill="rgba(66,214,255,0.45)"/>
-                  <rect className="shape-element" x="100" y="170" width="22"  height="110" fill="rgba(66,214,255,0.35)"/>
-                  <rect className="shape-element" x="155" y="170" width="22"  height="110" fill="rgba(66,214,255,0.35)"/>
-                  <rect className="shape-element" x="223" y="170" width="22"  height="110" fill="rgba(66,214,255,0.35)"/>
-                  <rect className="shape-element" x="278" y="170" width="22"  height="110" fill="rgba(66,214,255,0.35)"/>
-                  <rect className="shape-element" x="50"  y="296" width="300" height="20" fill="rgba(66,214,255,0.65)"/>
+                  {/* Step 1 */}
+                  <circle className="shape-element" cx="90" cy="120" r="36" fill="rgba(66,214,255,0.2)" stroke="rgba(66,214,255,0.75)" strokeWidth="6"/>
+                  <text className="shape-element" x="90" y="128" textAnchor="middle" fill="rgba(66,214,255,0.95)" fontSize="26" fontWeight="800">1</text>
+                  <rect className="shape-element" x="140" y="108" width="110" height="10" rx="4" fill="rgba(66,214,255,0.55)"/>
+                  <rect className="shape-element" x="140" y="126" width="80" height="8" rx="4" fill="rgba(66,214,255,0.3)"/>
+                  {/* Arrow 1→2 */}
+                  <path className="shape-element" d="M90 162 L90 185" stroke="rgba(66,214,255,0.45)" strokeWidth="4" strokeLinecap="round" strokeDasharray="6 4"/>
+                  {/* Step 2 */}
+                  <circle className="shape-element" cx="90" cy="215" r="36" fill="rgba(244,191,79,0.2)" stroke="rgba(244,191,79,0.75)" strokeWidth="6"/>
+                  <text className="shape-element" x="90" y="223" textAnchor="middle" fill="rgba(244,191,79,0.95)" fontSize="26" fontWeight="800">2</text>
+                  <rect className="shape-element" x="140" y="203" width="130" height="10" rx="4" fill="rgba(244,191,79,0.55)"/>
+                  <rect className="shape-element" x="140" y="221" width="90" height="8" rx="4" fill="rgba(244,191,79,0.3)"/>
+                  {/* Arrow 2→3 */}
+                  <path className="shape-element" d="M90 257 L90 280" stroke="rgba(52,200,123,0.45)" strokeWidth="4" strokeLinecap="round" strokeDasharray="6 4"/>
+                  {/* Step 3 */}
+                  <circle className="shape-element" cx="90" cy="310" r="36" fill="rgba(52,200,123,0.2)" stroke="rgba(52,200,123,0.75)" strokeWidth="6"/>
+                  <text className="shape-element" x="90" y="318" textAnchor="middle" fill="rgba(52,200,123,0.95)" fontSize="26" fontWeight="800">3</text>
+                  <rect className="shape-element" x="140" y="298" width="120" height="10" rx="4" fill="rgba(52,200,123,0.55)"/>
+                  <rect className="shape-element" x="140" y="316" width="85" height="8" rx="4" fill="rgba(52,200,123,0.3)"/>
                 </svg>
+
               </div>
             </div>
 
             <div className="menu-content-wrapper">
               <ul className="menu-list">
                 {[
-                  { shape: "1", href: "#report",           label: "Citizen Reporting"  },
-                  { shape: "2", href: "#map",              label: "Incident Radar Map" },
-                  { shape: "3", href: "/provider/portal",  label: "Service Providers"  },
-                  { shape: "4", href: "/admin/dashboard",  label: "Admin Dashboard"    },
-                  { shape: "5", href: "#about",            label: "System Overview"    },
+                  { shape: "1", href: "#services",          label: "Local Service Directory"     },
+                  { shape: "2", href: "#workers",           label: "Find Workers & Techs"        },
+                  { shape: "3", href: "/register-provider", label: "Join as a Worker / Volunteer" },
+                  { shape: "4", href: "/admin/dashboard",   label: "Admin & Verification"        },
+                  { shape: "5", href: "#how-it-works",      label: "How It Works"                },
                 ].map(({ shape, href, label }) => (
                   <li key={shape} className="menu-list-item" data-shape={shape} onClick={closeMenu}>
                     <Link href={href} className="nav-link w-inline-block">

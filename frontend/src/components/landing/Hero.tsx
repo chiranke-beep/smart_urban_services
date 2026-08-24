@@ -246,20 +246,20 @@ export function Hero() {
               display: "inline-flex",
               alignItems: "center",
               gap: "8px",
-              padding: "6px 16px",
-              borderRadius: "9999px",
+              padding: "7px 16px",
+              borderRadius: "0px",
               border: "1px solid var(--border)",
               backgroundColor: "var(--card-bg)",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
               color: "var(--text-secondary)",
-              fontSize: "12px",
-              fontWeight: 600,
+              fontSize: "13.5px",
+              fontWeight: 700,
               width: "fit-content",
             }}
           >
-            <AlertTriangle size={13} style={{ color: "var(--accent)", flexShrink: 0 }} />
-            <span>Sri Lanka Urban Infrastructure Intelligence Platform · Est. 2026</span>
+            <AlertTriangle size={14} style={{ color: "var(--accent)", flexShrink: 0 }} />
+            <span>Sri Lanka Local Service & Volunteer Network · Est. 2026</span>
           </div>
 
           {/* ② Headline */}
@@ -275,7 +275,7 @@ export function Hero() {
                 margin: 0,
               }}
             >
-              Building
+              Connecting
             </h1>
             <h1
               className="hero-line-2"
@@ -288,7 +288,7 @@ export function Hero() {
                 margin: 0,
               }}
             >
-              Safer, Smarter
+              Homes & Skilled
             </h1>
             <h1
               className="hero-line-3"
@@ -301,7 +301,7 @@ export function Hero() {
                 margin: 0,
               }}
             >
-              Cities Together.
+              Local Workers.
             </h1>
           </div>
 
@@ -311,7 +311,7 @@ export function Hero() {
             style={{
               width: "80px",
               height: "5px",
-              borderRadius: "9999px",
+              borderRadius: "0px",
               backgroundColor: "var(--accent)",
               transformOrigin: "left center",
             }}
@@ -321,31 +321,31 @@ export function Hero() {
           <p
             className="hero-desc"
             style={{
-              fontSize: "17px",
-              lineHeight: 1.7,
+              fontSize: "18px",
+              lineHeight: 1.75,
               color: "var(--text-secondary)",
-              maxWidth: "560px",
+              maxWidth: "580px",
               margin: 0,
             }}
           >
-            AI-driven urban infrastructure incident reporting platform for Sri Lanka. Citizens report road damage, water leaks, drainage blockages, waste overflow, and power disruptions — with instant AI triage and automated service provider dispatch.
+            Find trusted village and town painters, tree cutters, plumbers, house cleaners, and PC technicians. Chat directly on the platform, view verified reviews, share job details, and connect seamlessly (with call and WhatsApp options).
           </p>
 
           {/* ⑤ CTA Buttons */}
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", paddingTop: "8px" }}>
             <Link
-              href="#report"
+              href="#services"
               className="hero-cta"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "10px",
-                padding: "14px 32px",
-                borderRadius: "9999px",
+                padding: "15px 32px",
+                borderRadius: "0px",
                 backgroundColor: "var(--accent)",
-                color: "#000000",
-                fontSize: "14px",
-                fontWeight: 700,
+                color: "var(--accent-text)",
+                fontSize: "15px",
+                fontWeight: 800,
                 textDecoration: "none",
                 boxShadow: "0 8px 24px var(--accent-glow)",
                 transition: "transform 0.2s ease, box-shadow 0.2s ease",
@@ -353,33 +353,33 @@ export function Hero() {
               onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
               onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
-              <span>+ Report an Incident</span>
+              <span>Explore Services</span>
               <ArrowRight size={16} />
             </Link>
 
             <Link
-              href="#map"
+              href="/register-provider"
               className="hero-cta"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: "8px",
-                padding: "13px 30px",
-                borderRadius: "9999px",
+                padding: "14px 28px",
+                borderRadius: "0px",
                 border: "1.5px solid var(--border)",
                 backgroundColor: "var(--card-bg)",
                 backdropFilter: "blur(12px)",
                 WebkitBackdropFilter: "blur(12px)",
                 color: "var(--text-primary)",
-                fontSize: "14px",
-                fontWeight: 600,
+                fontSize: "15px",
+                fontWeight: 700,
                 textDecoration: "none",
                 transition: "transform 0.2s ease",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
               onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
-              View Incident Map
+              Join as a Worker / Volunteer
             </Link>
           </div>
 
@@ -392,18 +392,18 @@ export function Hero() {
               display: "grid",
               gridTemplateColumns: "repeat(3, 1fr)",
               gap: "24px",
-              maxWidth: "480px",
+              maxWidth: "520px",
             }}
           >
             {[
-              { value: "1,420+",   label: "Hazards Resolved" },
-              { value: "< 20 hrs", label: "Avg. Turnaround" },
-              { value: "24",       label: "Authorities Active" },
+              { value: "500+",    label: "Local Workers & Volunteers" },
+              { value: "Live Chat", label: "Direct On-Platform Messaging" },
+              { value: "4.9 ★",   label: "Verified Quality Reviews" },
             ].map((stat) => (
               <div key={stat.label} className="hero-stat">
                 <div
                   style={{
-                    fontSize: "26px",
+                    fontSize: "28px",
                     fontWeight: 900,
                     color: "var(--text-primary)",
                     lineHeight: 1.1,
@@ -413,10 +413,10 @@ export function Hero() {
                 </div>
                 <div
                   style={{
-                    fontSize: "12px",
-                    fontWeight: 500,
+                    fontSize: "13.5px",
+                    fontWeight: 600,
                     color: "var(--text-secondary)",
-                    marginTop: "4px",
+                    marginTop: "5px",
                   }}
                 >
                   {stat.label}
