@@ -178,14 +178,27 @@ export function HazardCategories() {
     return () => ctx.revert();
   }, []);
 
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleCardHover = (index: number) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      setActiveIndex(index);
+    }, 60);
+  };
+
+  const handleCardLeave = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+  };
+
   // Silky GSAP animation on active card change
   useEffect(() => {
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(
         ".card-reveal-anim",
-        { opacity: 0, y: 16 },
-        { opacity: 1, y: 0, duration: 0.65, ease: "power3.out", stagger: 0.04 }
+        { opacity: 0, y: 20, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: "power3.out", stagger: 0.05 }
       );
     }, containerRef);
 
@@ -219,7 +232,7 @@ export function HazardCategories() {
           filter: "blur(80px)",
           pointerEvents: "none",
           zIndex: 0,
-          transition: "background 0.8s cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "background 0.9s cubic-bezier(0.16, 1, 0.3, 1)",
         }}
       />
 
@@ -296,7 +309,8 @@ export function HazardCategories() {
                 key={item.id}
                 className="service-deck-card"
                 onClick={() => setActiveIndex(index)}
-                onMouseEnter={() => setActiveIndex(index)}
+                onMouseEnter={() => handleCardHover(index)}
+                onMouseLeave={handleCardLeave}
                 style={{
                   position: "relative",
                   flex: isExpanded ? 3.6 : 1,
@@ -316,11 +330,11 @@ export function HazardCategories() {
                     ? `1.5px solid ${item.color}`
                     : "1px solid var(--border)",
                   boxShadow: isExpanded
-                    ? `0 20px 40px -15px ${item.accentGlow}, 0 0 0 1px ${item.color}22`
+                    ? `0 24px 48px -15px ${item.accentGlow}, 0 0 0 1px ${item.color}22`
                     : "none",
                   cursor: "pointer",
                   overflow: "hidden",
-                  transition: "flex 0.75s cubic-bezier(0.22, 1, 0.36, 1), background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.6s cubic-bezier(0.22, 1, 0.36, 1)",
+                  transition: "flex 0.9s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.75s cubic-bezier(0.16, 1, 0.3, 1)",
                   backdropFilter: "blur(16px)",
                   WebkitBackdropFilter: "blur(16px)",
                   WebkitBackfaceVisibility: "hidden",
