@@ -204,7 +204,7 @@ export function HowItWorks() {
                     : "1px solid var(--border)",
                   cursor: "pointer",
                   textAlign: "left",
-                  transition: "all 0.25s ease",
+                  transition: "all 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
                   fontFamily: "inherit",
                 }}
               >
@@ -348,7 +348,7 @@ export function HowItWorks() {
                   padding: "13px 26px",
                   borderRadius: "0px",
                   backgroundColor: "var(--accent)",
-                  color: "#ffffff",
+                  color: "var(--accent-text)",
                   fontSize: "14px",
                   fontWeight: 800,
                   textDecoration: "none",
@@ -506,7 +506,7 @@ export function HowItWorks() {
                         padding: "6px 14px",
                         borderRadius: "0px",
                         backgroundColor: "var(--accent)",
-                        color: "#ffffff",
+                        color: "var(--accent-text)",
                         fontSize: "12px",
                         fontWeight: 700,
                         border: "none",

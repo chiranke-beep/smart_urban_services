@@ -39,7 +39,7 @@
   --accent-text: #ffffff;
 }
 
-.dark {
+html.dark, :root.dark, .dark {
   /* Dark theme */
   --bg: #090b0e;
   --bg-secondary: #11141c;

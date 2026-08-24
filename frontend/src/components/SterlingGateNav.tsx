@@ -31,9 +31,6 @@ export function SterlingGateNav() {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // Per-shape idle tweens so we can kill them on leave
-    const idleTweens: Record<string, gsap.core.Tween[]> = {};
-
     const ctx = gsap.context(() => {
       // ── Shape hover effects for nav links ─────────────
       const menuItems = containerRef.current!.querySelectorAll(".menu-list-item[data-shape]");
@@ -45,218 +42,64 @@ export function SterlingGateNav() {
         if (!shape) return;
         const els = shape.querySelectorAll(".shape-element");
 
-        const killIdle = () => {
-          (idleTweens[shapeIndex] || []).forEach((t) => t.kill());
-          idleTweens[shapeIndex] = [];
-        };
-
-        const startIdle = () => {
-          killIdle();
-          // Generic gentle float on the whole shape container
-          const floatTween = gsap.to(shape, {
-            y: "-=10",
-            duration: 2.8,
-            ease: "sine.inOut",
-            yoyo: true,
-            repeat: -1,
-          });
-          idleTweens[shapeIndex] = [floatTween];
-
-          if (shapeIndex === "1") {
-            // Grid tiles: subtle scale breathe on each tile staggered
-            const breathe = gsap.to(els, {
-              scale: 1.04,
-              duration: 1.6,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-              stagger: { each: 0.25, from: "random" },
-              transformOrigin: "center center",
-            });
-            idleTweens[shapeIndex].push(breathe);
-          }
-          if (shapeIndex === "2") {
-            // Magnifier: gentle slow rotation
-            const mag = shape.querySelectorAll(".shape-element:nth-child(n+3)");
-            const spin = gsap.to(mag, {
-              rotation: 4,
-              transformOrigin: "center center",
-              duration: 2.2,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-            });
-            idleTweens[shapeIndex].push(spin);
-          }
-          if (shapeIndex === "3") {
-            // Plus badge: pulse scale
-            const badge = shape.querySelectorAll(".shape-element:nth-child(n+3)");
-            const pulse = gsap.to(badge, {
-              scale: 1.1,
-              transformOrigin: "center center",
-              duration: 1.4,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-            });
-            idleTweens[shapeIndex].push(pulse);
-          }
-          if (shapeIndex === "4") {
-            // Shield inner ring: slow pulse
-            const ring = Array.from(els).slice(1);
-            const glow = gsap.to(ring, {
-              scale: 1.06,
-              transformOrigin: "center center",
-              duration: 2,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-            });
-            idleTweens[shapeIndex].push(glow);
-          }
-          if (shapeIndex === "5") {
-            // Steps: each step circle pulses in sequence
-            const circles = [
-              shape.querySelector(".shape-element:nth-child(1)"),
-              shape.querySelector(".shape-element:nth-child(5)"),
-              shape.querySelector(".shape-element:nth-child(9)"),
-            ].filter(Boolean);
-            const cascade = gsap.to(circles, {
-              scale: 1.12,
-              transformOrigin: "center center",
-              duration: 1.0,
-              ease: "sine.inOut",
-              yoyo: true,
-              repeat: -1,
-              stagger: 0.35,
-            });
-            idleTweens[shapeIndex].push(cascade);
-          }
-        };
+        let activeTl: gsap.core.Timeline | null = null;
 
         const onEnter = () => {
+          // Deactivate and hide all other shapes cleanly
           shapesContainer?.querySelectorAll(".bg-shape").forEach((s) => {
             if (s !== shape) {
               s.classList.remove("active");
-              const otherIdx = (s.className.match(/bg-shape-(\d)/) || [])[1];
-              if (otherIdx) killIdle();
+              gsap.killTweensOf(s);
+              gsap.killTweensOf(s.querySelectorAll(".shape-element"));
+              gsap.set(s, { opacity: 0, scale: 0.9 });
             }
           });
+
           shape.classList.add("active");
-
-          // Kill any leftover tweens on these elements
-          gsap.killTweensOf(els);
           gsap.killTweensOf(shape);
+          gsap.killTweensOf(els);
 
-          if (shapeIndex === "1") {
-            // Grid tiles: each tile slides up from below with a card pop
-            gsap.fromTo(Array.from(els).slice(0, 4).filter((_, i) => i % 4 === 0),
-              { y: 40, opacity: 0, scale: 0.85 },
-              { y: 0, opacity: 1, scale: 1, duration: 0.6, stagger: 0.12, ease: "back.out(2)", overwrite: "auto" }
-            );
-            // Text lines fade in after
-            gsap.fromTo(Array.from(els).filter((_, i) => i % 4 !== 0),
-              { x: -12, opacity: 0 },
-              { x: 0, opacity: 1, duration: 0.45, stagger: 0.04, ease: "power3.out", delay: 0.2, overwrite: "auto" }
-            );
-          } else if (shapeIndex === "2") {
-            // Person: head drops in, body grows up
-            const [head, body, magCircle, magHandle, crossH, crossV] = Array.from(els);
-            gsap.fromTo(head,
-              { y: -30, scale: 0.6, opacity: 0 },
-              { y: 0, scale: 1, opacity: 1, duration: 0.55, ease: "back.out(2.5)", overwrite: "auto" }
-            );
-            gsap.fromTo(body,
-              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
-              { scaleY: 1, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.18, overwrite: "auto" }
-            );
-            // Magnifier swings in from right
-            gsap.fromTo([magCircle, magHandle, crossH, crossV],
-              { x: 30, opacity: 0, scale: 0.7, rotation: -25, transformOrigin: "center center" },
-              { x: 0, opacity: 1, scale: 1, rotation: 0, duration: 0.65, stagger: 0.06, ease: "back.out(2.2)", delay: 0.25, overwrite: "auto" }
-            );
-          } else if (shapeIndex === "3") {
-            // Person: slides in from left; plus badge bounces in from right
-            const [head, body, badgeCircle, crossH, crossV] = Array.from(els);
-            gsap.fromTo([head, body],
-              { x: -30, opacity: 0 },
-              { x: 0, opacity: 1, duration: 0.55, stagger: 0.1, ease: "power4.out", overwrite: "auto" }
-            );
-            gsap.fromTo(badgeCircle,
-              { scale: 0, opacity: 0, transformOrigin: "center center" },
-              { scale: 1, opacity: 1, duration: 0.55, ease: "back.out(3)", delay: 0.3, overwrite: "auto" }
-            );
-            gsap.fromTo([crossH, crossV],
-              { scale: 0, opacity: 0, transformOrigin: "290px 148px" },
-              { scale: 1, opacity: 1, duration: 0.45, stagger: 0.08, ease: "back.out(4)", delay: 0.48, overwrite: "auto" }
-            );
-          } else if (shapeIndex === "4") {
-            // Shield draws in, then checkmark strokes on
-            const [shieldOuter, shieldInner, checkmark] = Array.from(els);
-            gsap.fromTo(shieldOuter,
-              { scale: 0.5, opacity: 0, transformOrigin: "200px 208px" },
-              { scale: 1, opacity: 1, duration: 0.65, ease: "back.out(2)", overwrite: "auto" }
-            );
-            gsap.fromTo(shieldInner,
-              { scale: 0.6, opacity: 0, transformOrigin: "200px 210px" },
-              { scale: 1, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.2, overwrite: "auto" }
-            );
-            // Checkmark strokes in via dashoffset
-            gsap.set(checkmark, { strokeDasharray: 160, strokeDashoffset: 160, opacity: 1 });
-            gsap.to(checkmark, {
-              strokeDashoffset: 0,
-              duration: 0.7,
-              ease: "power3.inOut",
-              delay: 0.4,
-              overwrite: "auto",
+          activeTl?.kill();
+          activeTl = gsap.timeline();
+
+          // 1. Entrance of shape container and its internal elements with high-fidelity easing
+          activeTl
+            .fromTo(
+              shape,
+              { scale: 0.8, opacity: 0, y: 15 },
+              { scale: 1, opacity: 1, y: 0, duration: 0.55, ease: "back.out(1.8)", overwrite: "auto" }
+            )
+            .fromTo(
+              els,
+              { opacity: 0, scale: 0.85, y: 10 },
+              { opacity: 1, scale: 1, y: 0, duration: 0.45, stagger: 0.03, ease: "power2.out" },
+              0.1
+            )
+            // 2. Continuous organic floating effect
+            .to(shape, {
+              y: "-=8",
+              duration: 2.2,
+              yoyo: true,
+              repeat: -1,
+              ease: "sine.inOut",
             });
-          } else if (shapeIndex === "5") {
-            // Steps cascade in one-by-one: circle then text bars
-            const allEls = Array.from(els);
-            // Groups: [circle, label, bar1, bar2, connector] × 3
-            const step1 = allEls.slice(0, 4);
-            const conn1  = allEls[4];
-            const step2 = allEls.slice(5, 9);
-            const conn2  = allEls[9];
-            const step3 = allEls.slice(10);
-
-            gsap.fromTo(step1,
-              { y: 20, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", overwrite: "auto" }
-            );
-            gsap.fromTo(conn1,
-              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
-              { scaleY: 1, opacity: 1, duration: 0.3, ease: "power2.out", delay: 0.32, overwrite: "auto" }
-            );
-            gsap.fromTo(step2,
-              { y: 20, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", delay: 0.45, overwrite: "auto" }
-            );
-            gsap.fromTo(conn2,
-              { scaleY: 0, opacity: 0, transformOrigin: "top center" },
-              { scaleY: 1, opacity: 1, duration: 0.3, ease: "power2.out", delay: 0.72, overwrite: "auto" }
-            );
-            gsap.fromTo(step3,
-              { y: 20, opacity: 0 },
-              { y: 0, opacity: 1, duration: 0.5, stagger: 0.06, ease: "back.out(2)", delay: 0.85, overwrite: "auto" }
-            );
-          }
-
-          // Start idle loops after entrance
-          setTimeout(startIdle, shapeIndex === "4" ? 900 : shapeIndex === "5" ? 1200 : 650);
         };
 
         const onLeave = () => {
-          killIdle();
-          gsap.to(shape, { y: 0, duration: 0.2, overwrite: "auto" });
-          gsap.to(els, {
-            scale: 0.75,
+          activeTl?.kill();
+          gsap.killTweensOf(shape);
+          gsap.killTweensOf(els);
+
+          gsap.to(shape, {
+            scale: 0.85,
             opacity: 0,
-            y: -8,
-            duration: 0.3,
-            ease: "power3.in",
-            stagger: { each: 0.025, from: "end" },
-            onComplete: () => shape.classList.remove("active"),
+            y: 10,
+            duration: 0.25,
+            ease: "power2.in",
+            onComplete: () => {
+              shape.classList.remove("active");
+              gsap.set(shape, { y: 0 });
+            },
             overwrite: "auto",
           });
         };
@@ -266,7 +109,7 @@ export function SterlingGateNav() {
         (item as any)._cleanup = () => {
           item.removeEventListener("mouseenter", onEnter);
           item.removeEventListener("mouseleave", onLeave);
-          killIdle();
+          activeTl?.kill();
         };
       });
 

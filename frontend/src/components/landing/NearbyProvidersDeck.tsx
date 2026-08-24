@@ -402,15 +402,20 @@ export function NearbyProvidersDeck() {
                 flexDirection: "column",
                 justifyContent: "space-between",
                 backdropFilter: "blur(16px)",
-                transition: "border-color 0.2s ease, transform 0.2s ease",
+                transition: "transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease, box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1)",
+                transform: "translateZ(0)",
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.borderColor = "var(--accent)";
-                e.currentTarget.style.transform = "translateY(-3px)";
+                e.currentTarget.style.transform = "translateY(-6px)";
+                e.currentTarget.style.boxShadow = isDark
+                  ? "0 20px 40px -10px rgba(0,0,0,0.5), 0 0 0 1px var(--accent)"
+                  : "0 20px 40px -10px rgba(15,23,42,0.12), 0 0 0 1px var(--accent)";
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.borderColor = "var(--border)";
                 e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = "none";
               }}
             >
               <div>
