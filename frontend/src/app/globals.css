@@ -65,7 +65,6 @@ a {
   text-decoration: inherit;
 }
 
-
 html {
   transition: background-color 0.4s ease, color 0.4s ease;
   -webkit-font-smoothing: antialiased;
@@ -92,4 +91,22 @@ body {
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: translateZ(0);
+}
+
+/* Ultra Silky Smooth, Cinematic Slow Flowing Chart Animations */
+@keyframes rocketBar {
+  0% { transform: scaleY(0.35); opacity: 0.5; }
+  70% { transform: scaleY(1.06); opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes waveRocket {
+  0% { stroke-dashoffset: 250; }
+  100% { stroke-dashoffset: 0; }
+}
+
+@keyframes beaconPing {
+  0% { r: 3.5; opacity: 1; }
+  50% { r: 6.5; opacity: 0.35; }
+  100% { r: 3.5; opacity: 1; }
 }
