@@ -1,0 +1,366 @@
+/* Sterling Gate: Kinetic Navigation Styles */
+
+.site-header-wrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  pointer-events: none;
+  background: var(--nav-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transition: background 0.4s ease;
+}
+
+.header {
+  width: 100%;
+  padding: 0.95rem 2.5rem;
+  transition: padding 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .header {
+    padding: 0.85rem 1.25rem;
+  }
+}
+
+.nav-bottom-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg,
+      transparent 0%,
+      var(--border) 15%,
+      var(--accent) 50%,
+      var(--border) 85%,
+      transparent 100%);
+  opacity: 0.65;
+  transform: scaleX(1);
+  transform-origin: center;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+
+.nav-bottom-line.is-scrolled {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.container.is--full {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.nav-logo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.nav-row__right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nav-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 1rem;
+  border-radius: 0px;
+  background: rgba(128, 128, 128, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.nav-toggle-label:hover {
+  background: rgba(128, 128, 128, 0.22);
+  border-color: rgba(66, 214, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.nav-close-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 1.1rem;
+  border-radius: 0px;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+}
+
+.nav-close-btn:hover {
+  transform: scale(1.03);
+}
+
+.menu-button-text {
+  position: relative;
+  height: 20px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.menu-button-text .p-large {
+  height: 20px;
+  line-height: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin: 0;
+  display: block;
+}
+
+.icon-wrap {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justifyContent: center;
+}
+
+.menu-button-icon {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fullscreen Navigation Drawer / Kinetic Reveal */
+.fullscreen-menu-container {
+  position: relative;
+  z-index: 90;
+}
+
+.nav-overlay-wrapper {
+  position: fixed;
+  inset: 0;
+  display: none;
+  z-index: 95;
+  overflow: hidden;
+}
+
+.nav-overlay-wrapper .overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  cursor: pointer;
+}
+
+:root:not(.dark) .nav-overlay-wrapper .overlay {
+  background: rgba(15, 23, 42, 0.3);
+}
+
+.menu-content {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100%;
+  max-width: 650px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 3.5rem;
+  overflow: hidden;
+  z-index: 2;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .menu-content {
+    max-width: 100%;
+    padding: 4rem 1.75rem;
+  }
+}
+
+/* Background Multi-Layer Stagger Panels */
+.menu-bg {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.backdrop-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background: #090b0e;
+  z-index: 1;
+  will-change: transform;
+}
+
+.backdrop-layer.first {
+  background: #191f2c;
+  z-index: 2;
+}
+
+.backdrop-layer.second {
+  background: #11141d;
+  z-index: 3;
+}
+
+.backdrop-layer:last-child {
+  background: #090b0e;
+  z-index: 4;
+}
+
+/* Light Theme Drawer Backgrounds */
+:root:not(.dark) .backdrop-layer {
+  background: #f8fafc;
+}
+
+:root:not(.dark) .backdrop-layer.first {
+  background: #e2e8f0;
+}
+
+:root:not(.dark) .backdrop-layer.second {
+  background: #f1f5f9;
+}
+
+:root:not(.dark) .backdrop-layer:last-child {
+  background: #f8fafc;
+}
+
+/* ── Light mode shape color fixes ──────────────────────────────
+   Shapes use neon rgba colors designed for a dark canvas.
+   In light mode we darken + saturate them so they pop on white.
+   The brightness(0.42) turns white strokes into visible dark-gray.   */
+:root:not(.dark) .ambient-background-shapes {
+  filter: saturate(1.9) brightness(0.42) contrast(1.2);
+}
+
+/* Ambient Background Shapes */
+.ambient-background-shapes {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bg-shape {
+  position: absolute;
+  width: 420px;
+  height: 420px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bg-shape.active {
+  opacity: 1;
+}
+
+/* Menu Content & Kinetic Masked Links */
+.menu-content-wrapper {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+}
+
+.menu-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* The Kinetic Mask: Overflow hidden ensures text emerges from underneath cleanly */
+.menu-list-item {
+  position: relative;
+  overflow: hidden;
+  display: block;
+}
+
+.nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 1rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  font-size: clamp(2.2rem, 5.5vw, 3.8rem);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.1;
+  position: relative;
+  padding: 0.35rem 0;
+  will-change: transform, opacity;
+  transform-origin: left bottom;
+}
+
+.nav-link-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 0.9em;
+  height: 0.9em;
+  color: var(--text-secondary);
+  opacity: 0.65;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-link-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.nav-link-text {
+  margin: 0;
+  position: relative;
+  z-index: 2;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+}
+
+.menu-list-item:hover .nav-link-icon {
+  transform: translateX(12px);
+  color: var(--accent);
+  opacity: 1;
+}
+
+.menu-list-item:hover .nav-link-text {
+  transform: translateX(18px);
+  color: var(--accent);
+}
+
+.nav-link-hover-bg {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0%;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0px;
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.menu-list-item:hover .nav-link-hover-bg {
+  width: 100%;
+}
