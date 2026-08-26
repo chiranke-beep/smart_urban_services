@@ -42,10 +42,11 @@ logs/
 Thumbs.db
 desktop.ini
 
-# IDE 
+# IDE & Tooling
 .vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
+.impeccable/
