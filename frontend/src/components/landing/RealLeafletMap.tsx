@@ -12,7 +12,7 @@ import {
   Paintbrush,
   Trees,
   Wrench,
-  Sparkles,
+  Home,
   Laptop,
   Compass,
   Maximize2,
@@ -47,7 +47,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Plumbers", count: 44, icon: Wrench, color: "#06b6d4" },
       { name: "PC Techs", count: 38, icon: Laptop, color: "#8b5cf6" },
       { name: "Tree Cutters", count: 26, icon: Trees, color: "#10b981" },
-      { name: "Cleaners", count: 24, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 24, icon: Home, color: "#3b82f6" },
     ],
     recentJob: {
       title: "2-Storey Wall Color-Wash & Plastering",
@@ -68,7 +68,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Tree Cutters", count: 41, icon: Trees, color: "#10b981" },
       { name: "Painters", count: 36, icon: Paintbrush, color: "#f97316" },
       { name: "Plumbers", count: 29, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 21, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 21, icon: Home, color: "#3b82f6" },
       { name: "PC Techs", count: 15, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
@@ -87,7 +87,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     activeTotal: 118,
     avgResponse: "< 25 mins",
     topTrades: [
-      { name: "Roof Cleaners", count: 34, icon: Sparkles, color: "#3b82f6" },
+      { name: "Roof Cleaners", count: 34, icon: Home, color: "#3b82f6" },
       { name: "Painters", count: 31, icon: Paintbrush, color: "#f97316" },
       { name: "Tree Climbers", count: 24, icon: Trees, color: "#10b981" },
       { name: "Plumbers", count: 18, icon: Wrench, color: "#06b6d4" },
@@ -112,7 +112,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Plumbers", count: 28, icon: Wrench, color: "#06b6d4" },
       { name: "Tree Cutters", count: 22, icon: Trees, color: "#10b981" },
       { name: "Painters", count: 19, icon: Paintbrush, color: "#f97316" },
-      { name: "Cleaners", count: 11, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 11, icon: Home, color: "#3b82f6" },
       { name: "PC Techs", count: 6, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
@@ -132,7 +132,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     avgResponse: "< 25 mins",
     topTrades: [
       { name: "Painters", count: 29, icon: Paintbrush, color: "#f97316" },
-      { name: "Cleaners", count: 25, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 25, icon: Home, color: "#3b82f6" },
       { name: "Tree Cutters", count: 18, icon: Trees, color: "#10b981" },
       { name: "Plumbers", count: 14, icon: Wrench, color: "#06b6d4" },
       { name: "PC Techs", count: 8, icon: Laptop, color: "#8b5cf6" },
@@ -157,7 +157,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Painters", count: 21, icon: Paintbrush, color: "#f97316" },
       { name: "PC Techs", count: 13, icon: Laptop, color: "#8b5cf6" },
       { name: "Plumbers", count: 11, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 6, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 6, icon: Home, color: "#3b82f6" },
     ],
     recentJob: {
       title: "Desktop PC Motherboard Repair & Re-Install",
@@ -178,7 +178,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Tree Cutters", count: 19, icon: Trees, color: "#10b981" },
       { name: "Painters", count: 16, icon: Paintbrush, color: "#f97316" },
       { name: "Plumbers", count: 14, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 9, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 9, icon: Home, color: "#3b82f6" },
       { name: "PC Techs", count: 4, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
@@ -201,7 +201,7 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
       { name: "Tree Cutters", count: 15, icon: Trees, color: "#10b981" },
       { name: "Plumbers", count: 12, icon: Wrench, color: "#06b6d4" },
       { name: "PC Techs", count: 7, icon: Laptop, color: "#8b5cf6" },
-      { name: "Cleaners", count: 4, icon: Sparkles, color: "#3b82f6" },
+      { name: "Cleaners", count: 4, icon: Home, color: "#3b82f6" },
     ],
     recentJob: {
       title: "Residential House Color-Wash & Roof Prep",

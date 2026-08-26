@@ -246,6 +246,30 @@ export function SterlingGateNav() {
                   {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
+                {/* Sign In quick button */}
+                <Link
+                  href="/login"
+                  style={{
+                    pointerEvents: "auto",
+                    padding: "0.42rem 0.95rem",
+                    backgroundColor: "var(--accent)",
+                    color: "var(--accent-text)",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    borderRadius: "0px",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    boxShadow: "0 2px 10px var(--accent-glow)",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                >
+                  Sign In
+                </Link>
+
                 {/* Menu + button — pill shape, matches current theme */}
                 <button
                   role="button"
@@ -390,7 +414,7 @@ export function SterlingGateNav() {
                   { shape: "1", href: "#services", label: "Local Service Directory" },
                   { shape: "2", href: "#workers", label: "Find Workers & Techs" },
                   { shape: "3", href: "/register-provider", label: "Join as a Worker / Volunteer" },
-                  { shape: "4", href: "/admin/dashboard", label: "Admin & Verification" },
+                  { shape: "4", href: "/admin/login", label: "Admin & Verification Gate" },
                   { shape: "5", href: "#how-it-works", label: "How It Works" },
                 ].map(({ shape, href, label }) => (
                   <li key={shape} className="menu-list-item" data-shape={shape} onClick={closeMenu}>
