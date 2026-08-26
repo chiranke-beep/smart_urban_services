@@ -147,11 +147,11 @@ export function Footer() {
             </div>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
               {[
-                { label: "House Owner Dashboard", href: "/dashboard" },
-                { label: "Provider / Worker Portal", href: "/provider" },
+                { label: "House Owner Dashboard", href: "/citizen/dashboard" },
+                { label: "Provider / Worker Portal", href: "/provider/dashboard" },
                 { label: "Interactive Sri Lanka Radar", href: "#workers-map" },
                 { label: "Verified Community Reviews", href: "#reviews" },
-                { label: "Direct In-App Messaging", href: "/dashboard" },
+                { label: "Direct In-App Messaging", href: "/citizen/dashboard" },
                 { label: "How It Works (3 Steps)", href: "#how-it-works" },
               ].map((link) => (
                 <li key={link.label}>
@@ -198,7 +198,7 @@ export function Footer() {
             </div>
 
             <Link
-              href="/register-provider"
+              href="/provider/register"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

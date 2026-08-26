@@ -413,7 +413,7 @@ export function SterlingGateNav() {
                 {[
                   { shape: "1", href: "#services", label: "Local Service Directory" },
                   { shape: "2", href: "#workers", label: "Find Workers & Techs" },
-                  { shape: "3", href: "/register-provider", label: "Join as a Worker / Volunteer" },
+                  { shape: "3", href: "/provider/register", label: "Join as a Worker / Volunteer" },
                   { shape: "4", href: "/admin/login", label: "Admin & Verification Gate" },
                   { shape: "5", href: "#how-it-works", label: "How It Works" },
                 ].map(({ shape, href, label }) => (

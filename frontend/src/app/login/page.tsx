@@ -62,7 +62,7 @@ export default function LoginPage() {
       if (activeRole === "PROVIDER") {
         router.push("/provider/dashboard");
       } else {
-        router.push("/dashboard");
+        router.push("/citizen/dashboard");
       }
     } catch (err: any) {
       setErrorMsg(err?.message || "Invalid credentials. Please try again.");
@@ -476,14 +476,14 @@ export default function LoginPage() {
             {activeRole === "HOMEOWNER" ? (
               <div>
                 Don&apos;t have an account?{" "}
-                <Link href="/register" style={{ color: "var(--accent)", fontWeight: 800, textDecoration: "underline" }}>
+                <Link href="/citizen/register" style={{ color: "var(--accent)", fontWeight: 800, textDecoration: "underline" }}>
                   Create Homeowner Account
                 </Link>
               </div>
             ) : (
               <div>
                 Are you a skilled technician or tree cutter?{" "}
-                <Link href="/register-provider" style={{ color: "var(--accent)", fontWeight: 800, textDecoration: "underline" }}>
+                <Link href="/provider/register" style={{ color: "var(--accent)", fontWeight: 800, textDecoration: "underline" }}>
                   Register as Verified Worker (4 Steps)
                 </Link>
               </div>

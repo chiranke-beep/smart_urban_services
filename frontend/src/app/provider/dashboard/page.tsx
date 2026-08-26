@@ -6,7 +6,7 @@ import { ProviderHeader } from "@/components/provider/ProviderHeader";
 import { IncomingJobCard } from "@/components/provider/IncomingJobCard";
 import { ProviderActiveJobCard } from "@/components/provider/ProviderActiveJobCard";
 import { ProviderEarningsTable } from "@/components/provider/ProviderEarningsTable";
-import { LiveChatDock } from "@/components/dashboard/LiveChatDock";
+import { LiveChatDock } from "@/components/citizen/LiveChatDock";
 import { JobRequest, Quotation } from "@/types/job";
 import { jobService } from "@/services/jobService";
 import {

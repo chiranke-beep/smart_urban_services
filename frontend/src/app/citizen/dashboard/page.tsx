@@ -1,12 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
-import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { ActiveDispatchCard } from "@/components/dashboard/ActiveDispatchCard";
-import { LiveChatDock } from "@/components/dashboard/LiveChatDock";
-import { QuickJobPostModal } from "@/components/dashboard/QuickJobPostModal";
-import { JobHistoryTable } from "@/components/dashboard/JobHistoryTable";
+import { DashboardSidebar } from "@/components/citizen/DashboardSidebar";
+import { DashboardHeader } from "@/components/citizen/DashboardHeader";
+import { ActiveDispatchCard } from "@/components/citizen/ActiveDispatchCard";
+import { LiveChatDock } from "@/components/citizen/LiveChatDock";
+import { QuickJobPostModal } from "@/components/citizen/QuickJobPostModal";
+import { JobHistoryTable } from "@/components/citizen/JobHistoryTable";
 import { JobRequest } from "@/types/job";
 import { jobService } from "@/services/jobService";
 import { CATEGORY_DEFINITIONS } from "@/utils/constants";

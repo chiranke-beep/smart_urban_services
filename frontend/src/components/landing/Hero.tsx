@@ -358,7 +358,7 @@ export function Hero() {
             </Link>
 
             <Link
-              href="/register-provider"
+              href="/provider/register"
               className="hero-cta"
               style={{
                 display: "inline-flex",

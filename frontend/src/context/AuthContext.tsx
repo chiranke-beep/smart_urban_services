@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.push("/provider/dashboard");
     } else {
       await login({ identifier: demos.homeowner.phone, role: "HOMEOWNER" });
-      router.push("/dashboard");
+      router.push("/citizen/dashboard");
     }
   };
 

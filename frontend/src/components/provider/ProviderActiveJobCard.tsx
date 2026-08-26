@@ -15,7 +15,7 @@ import {
   Landmark,
 } from "lucide-react";
 import { JobRequest } from "@/types/job";
-import { LiveGpsRouteMap } from "../dashboard/LiveGpsRouteMap";
+import { LiveGpsRouteMap } from "@/components/citizen/LiveGpsRouteMap";
 import { formatCurrency, formatETA } from "@/utils/formatters";
 import { useTheme } from "@/components/ThemeProvider";
 

@@ -73,7 +73,7 @@ export default function HomeownerRegisterPage() {
         password,
       });
 
-      router.push("/dashboard");
+      router.push("/citizen/dashboard");
     } catch (err: any) {
       setErrorMsg(err?.message || "Failed to create account. Please try again.");
     } finally {
@@ -363,7 +363,7 @@ export default function HomeownerRegisterPage() {
         }}
       >
         <span>Smart Urban Services Sri Lanka</span>
-        <Link href="/register-provider" style={{ color: "var(--text-secondary)", textDecoration: "none", fontWeight: 700 }}>
+        <Link href="/provider/register" style={{ color: "var(--text-secondary)", textDecoration: "none", fontWeight: 700 }}>
           Are you a worker? Register here
         </Link>
       </footer>
