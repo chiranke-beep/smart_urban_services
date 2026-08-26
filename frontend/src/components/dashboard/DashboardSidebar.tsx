@@ -66,26 +66,11 @@ export function DashboardSidebar({
             marginBottom: "20px",
           }}
         >
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              backgroundColor: "var(--accent)",
-              color: "var(--accent-text)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 900,
-              fontSize: "16px",
-            }}
-          >
-            SU
-          </div>
-          <div>
-            <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.02em" }}>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: "17px", fontWeight: 900, color: "var(--text-primary)", letterSpacing: "-0.03em" }}>
               Smart Urban<span style={{ color: "var(--accent)" }}>.</span>
             </div>
-            <div style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: "10.5px", color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginTop: "2px" }}>
               Citizen Portal
             </div>
           </div>

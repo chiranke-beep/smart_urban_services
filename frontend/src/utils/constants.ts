@@ -2,7 +2,7 @@ import {
   Paintbrush,
   Trees,
   Wrench,
-  Sparkles,
+  Home,
   Laptop,
   Hammer,
 } from "lucide-react";
@@ -41,7 +41,7 @@ export const CATEGORY_DEFINITIONS = [
     fullName: "House & Deep Compound Cleaning",
     color: "#3b82f6",
     accentGlow: "rgba(59, 130, 246, 0.2)",
-    icon: Sparkles,
+    icon: Home,
     avgRate: "Rs. 3,000 - 6,000 / day",
   },
   {

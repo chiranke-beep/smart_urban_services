@@ -198,7 +198,7 @@ export function Footer() {
             </div>
 
             <Link
-              href="/register-worker"
+              href="/register-provider"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -240,6 +240,22 @@ export function Footer() {
 
           <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
             <span>Sri Lanka National Community Service Network</span>
+            <span style={{ opacity: 0.4 }}>·</span>
+            <Link
+              href="/admin/login"
+              style={{
+                color: "var(--text-secondary)",
+                textDecoration: "none",
+                fontSize: "12px",
+                fontWeight: 600,
+                opacity: 0.6,
+                transition: "opacity 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.6")}
+            >
+              Staff Console
+            </Link>
           </div>
         </div>
 

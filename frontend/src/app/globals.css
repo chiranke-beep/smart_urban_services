@@ -110,3 +110,34 @@ body {
   50% { r: 6.5; opacity: 0.35; }
   100% { r: 3.5; opacity: 1; }
 }
+
+/* Fluid Auth Page Transitions */
+@keyframes authEntrance {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stepSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.auth-card-animate {
+  animation: authEntrance 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.auth-step-animate {
+  animation: stepSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
