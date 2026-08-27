@@ -9,6 +9,7 @@ import {
   ProviderRegistrationData,
 } from "@/types/auth";
 import { authService } from "@/services/authService";
+import { socketService } from "@/services/socketService";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
@@ -22,6 +23,8 @@ interface AuthContextType {
   adminLogin: (staffId: string, securityPass: string) => Promise<UserProfile>;
   logout: () => void;
   quickDemoLogin: (role: UserRole) => Promise<void>;
+  updateUser: (updated: Partial<UserProfile>) => void;
+  reloadUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,13 +34,77 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
+  const refreshProfile = (userId?: string | number) => {
+    const rawId = String(userId || "").replace(/\D/g, "");
+    fetch(`http://localhost:5000/api/users/profile/${rawId || 2}`)
+      .then((r) => r.json())
+      .then((res) => {
+        if (res?.data) {
+          const d = res.data;
+          setUser((prev) => {
+            if (!prev) return prev;
+            const synced: UserProfile = {
+              ...prev,
+              id: `USR-${d.id}`,
+              fullName: d.fullName || prev.fullName,
+              phone: d.phone || prev.phone,
+              profilePicture: d.profilePicture ? d.profilePicture : undefined,
+              homeAddress: d.homeAddress || prev.homeAddress,
+              savedLat: d.savedLat ? Number(d.savedLat) : prev.savedLat,
+              savedLng: d.savedLng ? Number(d.savedLng) : prev.savedLng,
+              birthday: d.birthday || prev.birthday,
+              gender: d.gender || prev.gender,
+              language: d.language || prev.language,
+              trade: d.trade || prev.trade,
+              dailyRate: d.dailyRate ? Number(d.dailyRate) : prev.dailyRate,
+              verifiedBadge: d.verified === true,
+              verificationStatus: d.verificationStatus || (d.verified ? "APPROVED" : "PENDING"),
+              rejectionReason: d.rejectionReason || undefined,
+            };
+            if (!d.profilePicture) {
+              delete synced.profilePicture;
+            }
+            authService.setSession(synced, authService.getToken() || "");
+            return synced;
+          });
+        }
+      })
+      .catch(() => {});
+  };
+
   useEffect(() => {
     // Rehydrate session from localStorage
     const existing = authService.getCurrentUser();
     if (existing) {
       setUser(existing);
+      refreshProfile(existing.id);
     }
     setIsLoading(false);
+
+    // Real-time WebSocket listener for admin verification / suspension updates
+    const handleVerificationUpdate = (data: { userId: string; verified: boolean; status: string; rejectionReason?: string }) => {
+      const cur = authService.getCurrentUser();
+      const curId = cur ? String(cur.id).replace(/\D/g, "") : "";
+      if (curId && curId === String(data.userId).replace(/\D/g, "")) {
+        setUser((prev) => {
+          if (!prev) return prev;
+          const updated: UserProfile = {
+            ...prev,
+            verifiedBadge: data.verified === true && data.status === "APPROVED",
+            verificationStatus: data.status as any,
+            rejectionReason: data.rejectionReason,
+          };
+          authService.setSession(updated, authService.getToken() || "");
+          return updated;
+        });
+      }
+    };
+
+    const unsub = socketService.onWorkerVerificationUpdated(handleVerificationUpdate);
+
+    return () => {
+      unsub();
+    };
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
@@ -84,6 +151,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateUser = (updated: Partial<UserProfile>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const next = { ...prev, ...updated };
+      if (!updated.profilePicture) {
+        delete next.profilePicture;
+      }
+      authService.setSession(next, authService.getToken() || "");
+      return next;
+    });
+  };
+
+  const reloadUser = () => {
+    const fresh = authService.getCurrentUser();
+    if (fresh) {
+      setUser(fresh);
+      refreshProfile(fresh.id);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -97,6 +184,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         adminLogin,
         logout,
         quickDemoLogin,
+        updateUser,
+        reloadUser,
       }}
     >
       {children}
@@ -118,6 +207,8 @@ export function useAuth() {
       adminLogin: async (staffId: string, securityPass: string) => authService.adminLogin(staffId, securityPass),
       logout: () => authService.logout(),
       quickDemoLogin: async () => {},
+      updateUser: () => {},
+      reloadUser: () => {},
     };
   }
   return context;

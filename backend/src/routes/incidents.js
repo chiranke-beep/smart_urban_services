@@ -9,13 +9,13 @@ const {
   deleteIncident,
   getStats,
 } = require('../controllers/incidentsController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, optionalAuth, authorize } = require('../middleware/auth');
 const upload = require('../config/upload');
 
 const router = express.Router();
 
-// All routes require login
-router.use(protect);
+// Allow optional auth for incident viewing and creation
+router.use(optionalAuth);
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
@@ -28,9 +28,7 @@ const createValidation = [
     .trim().notEmpty().withMessage('Description is required.'),
 
   body('category')
-    .notEmpty().withMessage('Category is required.')
-    .isIn(['road', 'water', 'electricity', 'waste', 'public_safety', 'other'])
-    .withMessage('Invalid category.'),
+    .notEmpty().withMessage('Category is required.'),
 
   body('priority')
     .optional()
@@ -74,10 +72,9 @@ router.get('/:id', getIncidentById);
 // PUT  /api/incidents/:id      → update incident details
 router.put('/:id', upload.single('image'), updateValidation, updateIncident);
 
-// PATCH /api/incidents/:id/status → update status (admin/service_provider)
+// PATCH /api/incidents/:id/status → update status (admin, service_provider, citizen)
 router.patch(
   '/:id/status',
-  authorize('admin', 'service_provider'),
   updateIncidentStatus
 );
 

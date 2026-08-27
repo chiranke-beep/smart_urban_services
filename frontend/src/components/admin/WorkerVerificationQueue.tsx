@@ -31,6 +31,7 @@ export function WorkerVerificationQueue({
   onReject,
 }: WorkerVerificationQueueProps) {
   const [selectedApp, setSelectedApp] = useState<PendingWorkerApplication | null>(null);
+  const [zoomedNicUrl, setZoomedNicUrl] = useState<string | null>(null);
   const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED">("PENDING");
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -336,30 +337,33 @@ export function WorkerVerificationQueue({
             }}
           >
             {/* Modal Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0"}`, paddingBottom: "14px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                borderBottom: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e2e8f0",
+                paddingBottom: "14px",
+              }}
+            >
               <div>
-                <h3 style={{ fontSize: "18px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a", margin: 0 }}>
-                  National ID & Credentials Inspection
+                <h3 style={{ fontSize: "17px", fontWeight: 800, margin: 0, color: isDark ? "#ffffff" : "#0f172a" }}>
+                  Official NIC & Skill Review: {selectedApp.fullName}
                 </h3>
-                <p style={{ fontSize: "12.5px", color: isDark ? "rgba(255,255,255,0.65)" : "#64748b", margin: "3px 0 0 0" }}>
-                  Applicant: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.fullName}</strong> (#{selectedApp.id})
-                </p>
+                <span style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.6)" : "#64748b" }}>
+                  Registration ID: {selectedApp.id} · Applied {formatRelativeTime(selectedApp.submittedAt)}
+                </span>
               </div>
+
               <button
                 onClick={() => setSelectedApp(null)}
                 style={{
-                  background: isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9",
-                  border: isDark ? "1px solid rgba(255,255,255,0.1)" : "1px solid #e2e8f0",
-                  color: isDark ? "#ffffff" : "#0f172a",
+                  background: "none",
+                  border: "none",
+                  fontSize: "18px",
                   cursor: "pointer",
-                  width: "32px",
-                  height: "32px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "14px",
-                  fontWeight: 800,
-                  transition: "all 0.2s ease",
+                  color: isDark ? "#ffffff" : "#64748b",
+                  padding: "4px",
                 }}
               >
                 ✕
@@ -370,53 +374,101 @@ export function WorkerVerificationQueue({
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
               <div
                 style={{
-                  padding: "18px 16px",
-                  border: isDark ? "1.5px dashed rgba(255,255,255,0.15)" : "1.5px dashed #cbd5e1",
-                  backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#f8fafc",
+                  padding: "14px",
+                  border: isDark ? "1.5px solid rgba(2,132,199,0.3)" : "1.5px solid #bae6fd",
+                  backgroundColor: isDark ? "rgba(2,132,199,0.05)" : "#f0f9ff",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
                   textAlign: "center",
-                  minHeight: "140px",
+                  minHeight: "160px",
+                  position: "relative",
                 }}
               >
-                <FileText size={28} color="#0284c7" />
-                <div style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a" }}>
-                  Sri Lanka National ID (NIC)
+                {selectedApp.nicFrontUrl ? (
+                  <div
+                    onClick={() => setZoomedNicUrl(selectedApp.nicFrontUrl || null)}
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: "6px",
+                      cursor: "zoom-in",
+                    }}
+                    title="Click to view large full-size NIC image"
+                  >
+                    <div style={{ position: "relative", width: "100%" }}>
+                      <img
+                        src={selectedApp.nicFrontUrl}
+                        alt="Uploaded National ID (NIC)"
+                        style={{
+                          width: "100%",
+                          maxHeight: "140px",
+                          objectFit: "contain",
+                          border: "1px solid var(--border)",
+                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                          transition: "transform 0.2s ease",
+                        }}
+                      />
+                      <div
+                        style={{
+                          position: "absolute",
+                          bottom: "6px",
+                          right: "6px",
+                          padding: "2px 6px",
+                          backgroundColor: "rgba(0,0,0,0.75)",
+                          color: "#ffffff",
+                          fontSize: "10px",
+                          fontWeight: 700,
+                          borderRadius: "2px",
+                        }}
+                      >
+                        🔍 Click to Enlarge
+                      </div>
+                    </div>
+                    <div style={{ fontSize: "11px", color: "#0284c7", fontWeight: 700 }}>
+                      NIC Front Document Attached
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <FileText size={28} color="#0284c7" />
+                    <div style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a" }}>
+                      Sri Lanka National ID (NIC)
+                    </div>
+                  </>
+                )}
+                <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.75)" : "#64748b" }}>
+                  NIC Number: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.nicNumber}</strong>
                 </div>
-                <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.65)" : "#64748b" }}>
-                  Number: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.nicNumber}</strong>
-                </div>
-                <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700 }}>
-                  ✓ Hologram & Signature Valid
-                </span>
               </div>
 
               <div
                 style={{
-                  padding: "18px 16px",
-                  border: isDark ? "1.5px dashed rgba(255,255,255,0.15)" : "1.5px dashed #cbd5e1",
-                  backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#f8fafc",
+                  padding: "14px",
+                  border: isDark ? "1.5px solid rgba(217,119,6,0.3)" : "1.5px solid #fde68a",
+                  backgroundColor: isDark ? "rgba(217,119,6,0.05)" : "#fefce8",
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
                   textAlign: "center",
-                  minHeight: "140px",
+                  minHeight: "160px",
                 }}
               >
                 <Award size={28} color="#d97706" />
                 <div style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a" }}>
                   Trade Skill Certification
                 </div>
-                <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.65)" : "#64748b" }}>
-                  {selectedApp.trade} ({selectedApp.experienceYears} yrs)
+                <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.75)" : "#64748b" }}>
+                  {selectedApp.trade} ({selectedApp.experienceYears} yrs experience)
                 </div>
                 <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700 }}>
-                  ✓ Vocational Proof Attached
+                  ✓ Official Applicant Record
                 </span>
               </div>
             </div>
@@ -442,12 +494,6 @@ export function WorkerVerificationQueue({
                 <Phone size={14} color="#10b981" />
                 <span>Contact Phone: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.phone}</strong></span>
               </div>
-              {selectedApp.vehicleType && (
-                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  <Truck size={14} color="#0284c7" />
-                  <span>Equipment Vehicle: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.plateNumber} ({selectedApp.vehicleType})</strong></span>
-                </div>
-              )}
             </div>
 
             {/* Actions */}
@@ -460,12 +506,6 @@ export function WorkerVerificationQueue({
                   border: isDark ? "1px solid rgba(255,255,255,0.12)" : "1px solid #cbd5e1",
                   color: isDark ? "#ffffff" : "#334155",
                   fontWeight: 700,
-                  fontSize: "13px",
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isDark ? "rgba(255,255,255,0.1)" : "#e2e8f0";
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.backgroundColor = isDark ? "rgba(255,255,255,0.06)" : "#f1f5f9";
@@ -474,30 +514,155 @@ export function WorkerVerificationQueue({
                 Close
               </button>
 
-              {selectedApp.status !== "APPROVED" && (
+              {selectedApp.status === "APPROVED" ? (
                 <button
                   onClick={() => {
-                    onApprove(selectedApp.id);
+                    onReject(selectedApp.id, "Verification revoked by administrator");
                     setSelectedApp(null);
                   }}
                   style={{
-                    padding: "8px 20px",
-                    backgroundColor: "#10b981",
+                    padding: "8px 18px",
+                    backgroundColor: "#ef4444",
                     color: "#ffffff",
                     border: "none",
                     fontWeight: 800,
                     fontSize: "13px",
                     cursor: "pointer",
-                    boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+                    boxShadow: "0 2px 8px rgba(239,68,68,0.3)",
                     transition: "transform 0.2s ease",
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                 >
-                  Confirm & Issue Verified Badge
+                  Revoke & Suspend Badge
                 </button>
+              ) : (
+                <>
+                  <button
+                    onClick={() => {
+                      onReject(selectedApp.id, "NIC credentials failed verification check");
+                      setSelectedApp(null);
+                    }}
+                    style={{
+                      padding: "8px 18px",
+                      backgroundColor: "transparent",
+                      border: "1px solid #ef4444",
+                      color: "#ef4444",
+                      fontWeight: 800,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      transition: "transform 0.2s ease",
+                    }}
+                  >
+                    Reject Application
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      onApprove(selectedApp.id);
+                      setSelectedApp(null);
+                    }}
+                    style={{
+                      padding: "8px 20px",
+                      backgroundColor: "#10b981",
+                      color: "#ffffff",
+                      border: "none",
+                      fontWeight: 800,
+                      fontSize: "13px",
+                      cursor: "pointer",
+                      boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+                      transition: "transform 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                  >
+                    Confirm & Issue Verified Badge
+                  </button>
+                </>
               )}
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* FULL-SCREEN LARGE NIC IMAGE LIGHTBOX POP-UP */}
+      {mounted && zoomedNicUrl && createPortal(
+        <div
+          onClick={() => setZoomedNicUrl(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.92)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            zIndex: 9999999,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "24px",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              position: "relative",
+              maxWidth: "92vw",
+              maxHeight: "90vh",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: "12px",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                color: "#ffffff",
+                padding: "0 4px",
+              }}
+            >
+              <div style={{ fontSize: "14px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}>
+                <ShieldCheck size={18} color="#0284c7" />
+                <span>Sri Lanka National Identity Card (NIC Document Preview)</span>
+              </div>
+
+              <button
+                onClick={() => setZoomedNicUrl(null)}
+                style={{
+                  background: "rgba(255,255,255,0.15)",
+                  border: "1px solid rgba(255,255,255,0.3)",
+                  color: "#ffffff",
+                  fontSize: "13px",
+                  fontWeight: 800,
+                  cursor: "pointer",
+                  padding: "6px 14px",
+                  borderRadius: "4px",
+                }}
+              >
+                ✕ Close Full View
+              </button>
+            </div>
+
+            <img
+              src={zoomedNicUrl}
+              alt="Full Size National Identity Card"
+              style={{
+                maxWidth: "100%",
+                maxHeight: "82vh",
+                objectFit: "contain",
+                border: "2px solid rgba(255,255,255,0.2)",
+                boxShadow: "0 25px 60px rgba(0,0,0,0.8)",
+                backgroundColor: "#000000",
+              }}
+            />
           </div>
         </div>,
         document.body

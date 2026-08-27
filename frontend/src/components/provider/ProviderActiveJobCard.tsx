@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   PhoneCall,
   MessageSquare,
@@ -13,25 +13,55 @@ import {
   ShieldCheck,
   Banknote,
   Landmark,
+  Edit3,
+  Check,
 } from "lucide-react";
 import { JobRequest } from "@/types/job";
 import { LiveGpsRouteMap } from "@/components/citizen/LiveGpsRouteMap";
 import { formatCurrency, formatETA } from "@/utils/formatters";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { jobService } from "@/services/jobService";
 
 interface ProviderActiveJobCardProps {
   job: JobRequest;
   onOpenChat: (jobId: string) => void;
   onAdvanceStage: (jobId: string, stage: JobRequest["stage"]) => void;
+  onUpdateQuote?: (jobId: string, amountLKR: number) => void;
 }
 
 export function ProviderActiveJobCard({
   job,
   onOpenChat,
   onAdvanceStage,
+  onUpdateQuote,
 }: ProviderActiveJobCardProps) {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const isDark = theme === "dark";
+
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  // displayPrice tracks the live price and stays in sync with parent prop
+  const [displayPrice, setDisplayPrice] = useState(job.costLKR || job.quotation?.amountLKR || 3500);
+  const [editedPrice, setEditedPrice] = useState(job.costLKR || job.quotation?.amountLKR || 3500);
+
+  // Sync when parent job prop is updated (e.g. after socket update)
+  useEffect(() => {
+    const latestPrice = job.costLKR || job.quotation?.amountLKR || 3500;
+    setDisplayPrice(latestPrice);
+    setEditedPrice(latestPrice);
+  }, [job.costLKR, job.quotation?.amountLKR]);
+
+  const handleSavePrice = () => {
+    const updated = jobService.updateQuotation(job.id, editedPrice, user?.fullName);
+    if (updated) {
+      setDisplayPrice(editedPrice);
+    }
+    if (onUpdateQuote) {
+      onUpdateQuote(job.id, editedPrice);
+    }
+    setIsEditingPrice(false);
+  };
 
   return (
     <div
@@ -46,7 +76,7 @@ export function ProviderActiveJobCard({
         position: "relative",
       }}
     >
-      {/* Top Status & Homeowner Address */}
+      {/* Top Status & Real Homeowner Address */}
       <div
         style={{
           display: "flex",
@@ -68,21 +98,20 @@ export function ProviderActiveJobCard({
               color: "#10b981",
               fontSize: "12px",
               fontWeight: 800,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              letterSpacing: "0.02em",
             }}
           >
-            <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981" }} />
-            ASSIGNED WORK ORDER · #{job.id}
+            <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%" }} />
+            Active Job
           </span>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-secondary)" }}>
-            Stage: {job.stage}
+            Status: {job.stage === "QUOTED" ? "Price Quoted" : job.stage === "EN_ROUTE" ? "On the way" : job.stage === "IN_PROGRESS" ? "Working" : job.stage === "COMPLETED" ? "Finished" : "Requested"}
           </span>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13.5px", color: "var(--text-primary)", fontWeight: 700 }}>
           <MapPin size={15} color="#10b981" />
-          <span>{job.address || "No. 42, Temple Road, Maharagama"}</span>
+          <span>{job.address || `${job.locality}, ${job.district}`}</span>
         </div>
       </div>
 
@@ -99,27 +128,30 @@ export function ProviderActiveJobCard({
         >
           {job.title}
         </h3>
-        <p style={{ fontSize: "14.5px", color: "var(--text-secondary)", lineHeight: 1.6, margin: 0 }}>
+        <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.5, margin: 0 }}>
           {job.description}
         </p>
       </div>
 
-      {/* Live Route Navigation GPS Map */}
+      {/* Live GPS Route Map */}
       <LiveGpsRouteMap
-        workerName="You (Sunil Kumara)"
-        vehiclePlate="WP-ABX-8821"
+        workerName={user?.fullName || "You (Technician)"}
+        vehiclePlate={user?.plateNumber || "WP-ABX-8821"}
         locality={job.locality}
-        etaMinutes={job.etaMinutes}
+        homeLat={job.latitude}
+        homeLng={job.longitude}
+        etaMinutes={job.etaMinutes || 15}
         stage={job.stage}
+        isProviderView={true}
         onGeofenceArrival={() => onAdvanceStage(job.id, "IN_PROGRESS")}
       />
 
-      {/* Homeowner Contact & Payout Bar */}
+      {/* Direct Settlement & Quotation Renegotiation Bar */}
       <div
         style={{
           marginTop: "20px",
           padding: "18px 20px",
-          backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)",
+          backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
           border: "1px solid var(--border)",
           display: "flex",
           flexWrap: "wrap",
@@ -129,18 +161,79 @@ export function ProviderActiveJobCard({
         }}
       >
         <div>
-          <div style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 700 }}>
-            Approved Direct Payout (Zero Commission)
+          <div style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 800, marginBottom: "4px" }}>
+            Quoted Direct Payout (Zero Platform Commission)
           </div>
-          <div style={{ fontSize: "20px", fontWeight: 900, color: "#10b981", marginTop: "2px" }}>
-            {formatCurrency(job.quotation?.amountLKR || job.costLKR || 3500)}
-          </div>
-          <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
-            Payment Mode: <strong>Direct Cash on Hand or Bank Transfer</strong>
+
+          {isEditingPrice ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+              <span style={{ fontSize: "16px", fontWeight: 800 }}>Rs.</span>
+              <input
+                type="number"
+                value={editedPrice}
+                onChange={(e) => setEditedPrice(Number(e.target.value))}
+                style={{
+                  width: "120px",
+                  padding: "6px 10px",
+                  fontSize: "16px",
+                  fontWeight: 800,
+                  backgroundColor: "var(--bg)",
+                  border: "1.5px solid var(--accent)",
+                  color: "var(--text-primary)",
+                  outline: "none",
+                }}
+              />
+              <button
+                onClick={handleSavePrice}
+                style={{
+                  padding: "6px 12px",
+                  backgroundColor: "#10b981",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <Check size={14} />
+                <span>Update Quote</span>
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ fontSize: "24px", fontWeight: 900, color: "#10b981" }}>
+                {formatCurrency(displayPrice)}
+              </div>
+              <button
+                onClick={() => setIsEditingPrice(true)}
+                style={{
+                  padding: "4px 8px",
+                  backgroundColor: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-secondary)",
+                  fontSize: "11.5px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <Edit3 size={12} />
+                <span>Negotiate / Edit Price</span>
+              </button>
+            </div>
+          )}
+
+          <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
+            Payment Mode: {job.paymentMethod} · Direct Cash on Hand or Bank Transfer
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Homeowner Communication Controls */}
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
           <button
             onClick={() => onOpenChat(job.id)}
@@ -201,12 +294,14 @@ export function ProviderActiveJobCard({
         <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px" }}>
           <ShieldCheck size={18} color="#10b981" />
           <span>
-            <strong>Current Work State:</strong>{" "}
-            {job.stage === "EN_ROUTE"
-              ? "Travelling to customer destination via High Level Rd"
+            <strong>Current Status:</strong>{" "}
+            {job.stage === "QUOTED"
+              ? "Quotation sent. Awaiting homeowner price confirmation or negotiation."
+              : job.stage === "EN_ROUTE"
+              ? `Travelling to customer property in ${job.locality}`
               : job.stage === "IN_PROGRESS"
               ? "On site at property. Task underway."
-              : "Job completed."}
+              : "Job completed & settled."}
           </span>
         </div>
 

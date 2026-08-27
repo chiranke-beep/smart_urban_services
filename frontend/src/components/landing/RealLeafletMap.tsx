@@ -19,6 +19,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { apiClient } from "@/services/api";
 import type * as LeafletType from "leaflet";
 
 interface DistrictLocation {
@@ -223,6 +224,7 @@ const FILTER_TRADES = [
 ];
 
 export function RealLeafletMap() {
+  const [districts, setDistricts] = useState<DistrictLocation[]>(DISTRICT_LOCATIONS);
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictLocation>(DISTRICT_LOCATIONS[0]);
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [isMapLoaded, setIsMapLoaded] = useState(false);
@@ -234,6 +236,38 @@ export function RealLeafletMap() {
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    Promise.all([
+      apiClient<{ success: boolean; data?: any[] }>("/providers").catch(() => null),
+      apiClient<{ success: boolean; data?: any[] }>("/reviews").catch(() => null),
+    ]).then(([providersRes, reviewsRes]) => {
+      if (providersRes?.data && providersRes.data.length > 0) {
+        const liveWorkers = providersRes.data;
+        setDistricts((prev) =>
+          prev.map((d) => {
+            const districtShort = d.name.toLowerCase().replace(" district", "").trim();
+            const matched = liveWorkers.filter(
+              (w) => (w.district || "").toLowerCase().includes(districtShort)
+            );
+            if (matched.length > 0) {
+              return {
+                ...d,
+                activeTotal: matched.length,
+                recentJob: {
+                  title: matched[0].trade || "Verified Specialist",
+                  worker: `${matched[0].fullName || "Specialist"} (${Number(matched[0].rating || 5).toFixed(1)} Rating)`,
+                  rating: Number(matched[0].rating || 5).toFixed(1),
+                  locality: `${matched[0].locality || "Town"}, ${d.name}`,
+                },
+              };
+            }
+            return d;
+          })
+        );
+      }
+    });
+  }, []);
 
   // Initialize Real Leaflet Map
   useEffect(() => {
@@ -265,11 +299,10 @@ export function RealLeafletMap() {
       // Add Zoom control at top right
       L.control.zoom({ position: "topright" }).addTo(map);
 
-      // High-visibility crisp map tiles (CartoDB Voyager / OpenStreetMap)
-      const tileUrl = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+      // Standard OpenStreetMap tile server (100% Free, no API keys)
+      const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
       const tiles = L.tileLayer(tileUrl, {
-        subdomains: "abcd",
         maxZoom: 19,
       }).addTo(map);
 

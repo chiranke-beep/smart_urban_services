@@ -160,11 +160,12 @@ export default function AdminLoginPage() {
           <form onSubmit={handleAdminLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
             <div>
               <label style={{ display: "block", fontSize: "11.5px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "rgba(255,255,255,0.8)", marginBottom: "6px" }}>
-                Staff ID / Badge Identifier
+                Admin Email or Staff Username
               </label>
               <input
                 type="text"
-                placeholder="STF-COL-8890"
+                required
+                placeholder="admin@smarturban.lk"
                 value={staffId}
                 onChange={(e) => setStaffId(e.target.value)}
                 style={{
@@ -176,18 +177,19 @@ export default function AdminLoginPage() {
                   fontSize: "13.5px",
                   outline: "none",
                   fontWeight: 700,
-                  letterSpacing: "0.04em",
+                  letterSpacing: "0.02em",
                 }}
               />
             </div>
 
             <div>
               <label style={{ display: "block", fontSize: "11.5px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.04em", color: "rgba(255,255,255,0.8)", marginBottom: "6px" }}>
-                Console Security Key / PIN
+                Admin Password
               </label>
               <input
                 type="password"
-                placeholder="••••••••••••"
+                required
+                placeholder="Enter admin password"
                 value={securityKey}
                 onChange={(e) => setSecurityKey(e.target.value)}
                 style={{

@@ -20,97 +20,160 @@ import {
   MapPin,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+
+import { socketService } from "@/services/socketService";
+
+function isJobMatchingProviderSkills(jobCategory: string, providerTradeText?: string): boolean {
+  if (!providerTradeText || !providerTradeText.trim()) return true;
+  const text = providerTradeText.toLowerCase();
+  const cat = (jobCategory || "").toLowerCase();
+
+  if (text.includes("all") || text.includes("general") || text.includes("handyman") || text.includes("craftsman") || text.includes("specialist")) {
+    return true;
+  }
+
+  if ((cat.includes("paint") || cat === "painting") && (text.includes("paint") || text.includes("decor") || text.includes("wall"))) {
+    return true;
+  }
+  if ((cat.includes("tree") || cat === "tree-cutting" || cat === "waste" || cat.includes("yard")) && (text.includes("tree") || text.includes("yard") || text.includes("cut") || text.includes("garden"))) {
+    return true;
+  }
+  if ((cat.includes("plumb") || cat === "plumbing" || cat === "water" || cat.includes("pipe")) && (text.includes("plumb") || text.includes("pipe") || text.includes("water") || text.includes("leak") || text.includes("tap"))) {
+    return true;
+  }
+  if ((cat.includes("clean") || cat === "cleaning") && (text.includes("clean") || text.includes("wash") || text.includes("roof") || text.includes("sweep"))) {
+    return true;
+  }
+  if ((cat.includes("pc") || cat.includes("tech") || cat === "pc-repair" || cat === "electricity" || cat.includes("electr")) && (text.includes("pc") || text.includes("tech") || text.includes("electr") || text.includes("repair") || text.includes("comput"))) {
+    return true;
+  }
+  if ((cat.includes("odd") || cat === "odd_jobs" || cat === "road" || cat === "other") && (text.includes("odd") || text.includes("handy") || text.includes("mason") || text.includes("carpent") || text.includes("construct"))) {
+    return true;
+  }
+
+  const words = text.split(/[\s,;&/]+/).filter((w) => w.length > 3);
+  if (words.some((w) => cat.includes(w) || w.includes(cat))) {
+    return true;
+  }
+
+  return false;
+}
 
 export default function ProviderDashboardPage() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobRequest[]>([]);
+  const [incomingJobs, setIncomingJobs] = useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [isOnline, setIsOnline] = useState(true);
   const [selectedLocality, setSelectedLocality] = useState("Maharagama");
-  const [activeChatJobId, setActiveChatJobId] = useState<string | null>("JOB-7821");
+  const [activeChatJobId, setActiveChatJobId] = useState<string | null>(null);
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   useEffect(() => {
-    setJobs(jobService.getJobs());
-  }, []);
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
-  const activeJobs = jobs.filter((j) => j.stage !== "COMPLETED" && j.stage !== "CANCELLED");
-  const currentAssignedJob = activeJobs[0] || jobs[0];
-  const activeChatJob = jobs.find((j) => j.id === activeChatJobId) || currentAssignedJob;
+  useEffect(() => {
+    jobService.fetchRemoteJobs().then((allJobs) => {
+      setJobs(allJobs);
+      setIncomingJobs(
+        allJobs.filter(
+          (j) => j.stage === "REQUESTED" && isJobMatchingProviderSkills(j.category, user?.trade)
+        )
+      );
+    });
 
-  // Mock incoming broadcasts for demo
-  const [incomingJobs, setIncomingJobs] = useState<JobRequest[]>([
-    {
-      id: "JOB-9104",
-      title: "Dangerous Overhanging Tree Branch Above Power Line",
-      category: "tree-cutting",
-      description: "Coconut tree branch is resting on Ceylon Electricity Board wires. Needs careful chainsaw branch cutting.",
-      locality: "Maharagama Town",
-      district: "Colombo",
-      address: "No. 18, High Level Road, Maharagama",
-      urgency: "emergency",
-      createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-      stage: "REQUESTED",
-      stageUpdatedAt: new Date().toISOString(),
-      photos: ["tree_danger.jpg"],
-    },
-    {
-      id: "JOB-8841",
-      title: "Front Lawn & Boundary Wall Compound Cleaning",
-      category: "cleaning",
-      description: "Post-rain debris and deep yard sweeping. High-pressure water cleaner needed for boundary moss.",
-      locality: "Nugegoda",
-      district: "Colombo",
-      urgency: "today",
-      createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      stage: "REQUESTED",
-      stageUpdatedAt: new Date().toISOString(),
-    },
-  ]);
+    const unsubIncoming = socketService.onIncomingJob((newJob: JobRequest) => {
+      if (!isJobMatchingProviderSkills(newJob.category, user?.trade)) return;
+      setIncomingJobs((prev) => {
+        if (prev.some((j) => j.id === newJob.id)) return prev;
+        return [newJob, ...prev];
+      });
+      // Also switch to feed tab when new broadcast arrives
+      setActiveTab("feed");
+    });
+
+    const unsubStage = socketService.onStageChanged(() => {
+      jobService.fetchRemoteJobs().then((refreshed) => {
+        setJobs(refreshed);
+        setIncomingJobs(
+          refreshed.filter(
+            (j) => j.stage === "REQUESTED" && isJobMatchingProviderSkills(j.category, user?.trade)
+          )
+        );
+      });
+    });
+
+    return () => {
+      unsubIncoming();
+      unsubStage();
+    };
+  }, [user?.trade]);
+
+  // HTML5 Live Geolocation Telemetry Streaming (when LIVE LOCATION is ON)
+  useEffect(() => {
+    let watchId: number | null = null;
+    if (isOnline && typeof window !== "undefined" && "geolocation" in navigator) {
+      watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          let lat = pos.coords.latitude;
+          let lng = pos.coords.longitude;
+          if (lat > 7.28 && lat < 7.32 && lng > 80.625 && lng < 80.645) {
+            lat = 7.264242;
+            lng = 80.621701;
+          }
+          socketService.emitGpsMove({
+            lat,
+            lng,
+            speed: pos.coords.speed || 30,
+            timestamp: new Date().toISOString(),
+          });
+        },
+        (err) => console.log("Geolocation status:", err.message),
+        { enableHighAccuracy: true, maximumAge: 3000, timeout: 10000 }
+      );
+    }
+    return () => {
+      if (watchId !== null && "geolocation" in navigator) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, [isOnline]);
+
+  const activeJobs = jobs.filter(
+    (j) => j.stage !== "COMPLETED" && j.stage !== "CANCELLED" && j.stage !== "REQUESTED"
+  );
+  const acceptedJobs = jobs.filter((j) => j.stage !== "REQUESTED");
+  const currentAssignedJob = activeJobs[0] || null;
+  const activeChatJob = acceptedJobs.find((j) => j.id === activeChatJobId) || acceptedJobs[0] || null;
+  const hasActiveJob = activeJobs.some(
+    (j) => j.stage === "QUOTED" || j.stage === "EN_ROUTE" || j.stage === "IN_PROGRESS"
+  );
 
   const handleSendQuote = (
     jobId: string,
     quoteData: Omit<Quotation, "id" | "workerId" | "workerName" | "avatarBg" | "submittedAt" | "status">
   ) => {
-    // Remove from incoming broadcast and add to active jobs
-    const targetJob = incomingJobs.find((j) => j.id === jobId);
-    if (!targetJob) return;
-
-    const fullJob: JobRequest = {
-      ...targetJob,
-      stage: "EN_ROUTE",
-      stageUpdatedAt: new Date().toISOString(),
-      etaMinutes: 14,
-      assignedWorker: {
-        id: "W-401",
-        name: "Sunil Kumara",
-        trade: "Master Tree Climber & Yard Care",
-        rating: 4.9,
-        reviewCount: 142,
-        phone: "+94 77 123 4567",
-        avatarBg: "#10b981",
-        verified: true,
-        vehicleType: "Three Wheeler & Chainsaw Gear",
-        plateNumber: "WP-ABX-8821",
-      },
-      quotation: {
-        id: `Q-${Date.now()}`,
-        workerId: "W-401",
-        workerName: "Sunil Kumara",
-        avatarBg: "#10b981",
-        amountLKR: quoteData.amountLKR,
-        rateType: quoteData.rateType,
-        notes: quoteData.notes,
-        submittedAt: new Date().toISOString(),
-        status: "accepted",
-      },
-      costLKR: quoteData.amountLKR,
-      paymentMethod: "Cash on Hand",
-    };
-
+    if (!user) return;
+    if (user.verifiedBadge !== true) {
+      alert("Your account is pending admin verification. You will be able to accept jobs once your NIC is approved by admin.");
+      return;
+    }
+    if (hasActiveJob) {
+      alert("You currently have an active job in progress. You can only work on 1 job at a time.");
+      return;
+    }
+    jobService.acceptJob(jobId, user, quoteData.amountLKR);
+    const refreshed = jobService.getJobs();
+    setJobs(refreshed);
     setIncomingJobs((prev) => prev.filter((j) => j.id !== jobId));
-    jobService.createJob(fullJob);
-    setJobs(jobService.getJobs());
+    setActiveChatJobId(jobId);
     setActiveTab("active");
   };
 
@@ -120,7 +183,19 @@ export default function ProviderDashboardPage() {
 
   const handleAdvanceStage = (jobId: string, nextStage: JobRequest["stage"]) => {
     jobService.advanceStage(jobId, nextStage);
-    setJobs(jobService.getJobs());
+    const refreshed = jobService.getJobs();
+    setJobs(refreshed);
+    setIncomingJobs(
+      refreshed.filter(
+        (j) => j.stage === "REQUESTED" && isJobMatchingProviderSkills(j.category, user?.trade)
+      )
+    );
+  };
+
+  const handleUpdateQuote = (jobId: string, amountLKR: number) => {
+    // Re-read from localStorage so the updated price is reflected in the jobs list
+    const refreshed = jobService.getJobs();
+    setJobs([...refreshed]);
   };
 
   return (
@@ -167,10 +242,10 @@ export default function ProviderDashboardPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
                 <div>
                   <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>
-                    Current Assigned Dispatch ({activeJobs.length})
+                    Active Job ({activeJobs.length})
                   </h2>
                   <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
-                    Turn-by-turn route navigation to customer property & direct cash/bank settlement
+                    Live map navigation to customer location
                   </p>
                 </div>
 
@@ -179,6 +254,7 @@ export default function ProviderDashboardPage() {
                     job={currentAssignedJob}
                     onOpenChat={(id) => setActiveChatJobId(id)}
                     onAdvanceStage={handleAdvanceStage}
+                    onUpdateQuote={handleUpdateQuote}
                   />
                 ) : (
                   <div
@@ -191,10 +267,10 @@ export default function ProviderDashboardPage() {
                   >
                     <Sparkles size={32} color="#10b981" style={{ marginBottom: "12px" }} />
                     <h3 style={{ fontSize: "16px", fontWeight: 800, marginBottom: "6px" }}>
-                      No Active Work Orders Right Now
+                      No Active Jobs Right Now
                     </h3>
                     <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "16px" }}>
-                      Check the Broadcast Feed to quote and accept incoming local jobs.
+                      Check new requests to quote and accept local jobs.
                     </p>
                     <button
                       onClick={() => setActiveTab("feed")}
@@ -207,7 +283,7 @@ export default function ProviderDashboardPage() {
                         cursor: "pointer",
                       }}
                     >
-                      View Incoming Broadcast Feed ({incomingJobs.length})
+                      View New Requests ({incomingJobs.length})
                     </button>
                   </div>
                 )}
@@ -263,6 +339,8 @@ export default function ProviderDashboardPage() {
                   <IncomingJobCard
                     key={job.id}
                     job={job}
+                    hasActiveJob={hasActiveJob}
+                    isVerified={user?.verifiedBadge === true}
                     onSendQuote={handleSendQuote}
                     onDecline={handleDeclineIncoming}
                   />
@@ -275,7 +353,7 @@ export default function ProviderDashboardPage() {
               TAB 3: HOMEOWNER CHAT HUB
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "chat" && (
-            <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px", minHeight: "680px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: acceptedJobs.length > 0 ? "320px 1fr" : "1fr", gap: "24px", minHeight: "680px" }}>
               {/* Left: Homeowner Chat Sessions */}
               <div
                 style={{
@@ -288,69 +366,98 @@ export default function ProviderDashboardPage() {
                 }}
               >
                 <div style={{ fontSize: "14px", fontWeight: 800, padding: "8px 4px 12px", borderBottom: "1px solid var(--border)" }}>
-                  Customer Conversations ({jobs.length})
+                  Customer Conversations ({acceptedJobs.length})
                 </div>
 
-                {jobs.map((job) => {
-                  const isSelected = activeChatJobId === job.id;
-
-                  return (
+                {acceptedJobs.length === 0 ? (
+                  <div style={{ padding: "32px 16px", textAlign: "center" }}>
+                    <MessageSquare size={28} color="var(--text-secondary)" style={{ margin: "0 auto 10px", opacity: 0.6 }} />
+                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>No Active Conversations</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+                      You have 0 accepted jobs. Accept incoming requests from the Broadcast Feed to initiate encrypted live chat.
+                    </div>
                     <button
-                      key={job.id}
-                      onClick={() => setActiveChatJobId(job.id)}
+                      onClick={() => setActiveTab("feed")}
                       style={{
-                        padding: "12px",
-                        backgroundColor: isSelected
-                          ? "rgba(16,185,129,0.12)"
-                          : "transparent",
-                        borderLeft: isSelected ? "3px solid #10b981" : "3px solid transparent",
-                        borderTop: "none",
-                        borderRight: "none",
-                        borderBottom: "1px solid var(--border)",
+                        padding: "8px 16px",
+                        backgroundColor: "#10b981",
+                        color: "#ffffff",
+                        border: "none",
+                        fontWeight: 800,
+                        fontSize: "12px",
                         cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        textAlign: "left",
-                        fontFamily: "inherit",
                       }}
                     >
-                      <div
+                      Go to Broadcast Feed ({incomingJobs.length})
+                    </button>
+                  </div>
+                ) : (
+                  acceptedJobs.map((job) => {
+                    const isSelected = (activeChatJobId || acceptedJobs[0]?.id) === job.id;
+
+                    return (
+                      <button
+                        key={job.id}
+                        onClick={() => setActiveChatJobId(job.id)}
                         style={{
-                          width: "36px",
-                          height: "36px",
-                          backgroundColor: "#0891b2",
-                          color: "#ffffff",
+                          padding: "12px",
+                          backgroundColor: isSelected
+                            ? "rgba(16,185,129,0.12)"
+                            : "transparent",
+                          borderLeft: isSelected ? "3px solid #10b981" : "3px solid transparent",
+                          borderTop: "none",
+                          borderRight: "none",
+                          borderBottom: "1px solid var(--border)",
+                          cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 800,
-                          fontSize: "13px",
-                          flexShrink: 0,
+                          gap: "12px",
+                          textAlign: "left",
+                          fontFamily: "inherit",
                         }}
                       >
-                        HO
-                      </div>
-                      <div style={{ overflow: "hidden" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          Homeowner ({job.locality})
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            backgroundColor: "#0891b2",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                            fontSize: "13px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          HO
                         </div>
-                        <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {job.title}
+                        <div style={{ overflow: "hidden" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                            Homeowner ({job.locality})
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                            {job.title}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })
+                )}
               </div>
 
               {/* Right: Active Chat Window */}
-              {activeChatJob && (
+              {activeChatJob ? (
                 <LiveChatDock
                   job={activeChatJob}
                   onClose={() => setActiveTab("active")}
                 />
-              )}
+              ) : acceptedJobs.length > 0 && acceptedJobs[0] ? (
+                <LiveChatDock
+                  job={acceptedJobs[0]}
+                  onClose={() => setActiveTab("active")}
+                />
+              ) : null}
             </div>
           )}
 

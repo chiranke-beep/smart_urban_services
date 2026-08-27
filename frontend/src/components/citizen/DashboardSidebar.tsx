@@ -10,7 +10,9 @@ import {
   ShieldCheck,
   Home,
   Plus,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface DashboardSidebarProps {
   activeTab: string;
@@ -27,10 +29,11 @@ export function DashboardSidebar({
   unreadChatCount = 0,
   activeJobsCount = 1,
 }: DashboardSidebarProps) {
+  const { logout } = useAuth();
   const navItems = [
-    { id: "active", label: "Active Orders & Live GPS", icon: ClipboardList, badge: activeJobsCount },
-    { id: "chat", label: "Worker Chat Hub", icon: MessageSquare, badge: unreadChatCount },
-    { id: "history", label: "Payments & Job History", icon: History },
+    { id: "active", label: "Active Jobs & Map", icon: ClipboardList, badge: activeJobsCount },
+    { id: "chat", label: "Messages", icon: MessageSquare, badge: unreadChatCount },
+    { id: "history", label: "Past Jobs & History", icon: History },
   ];
 
   return (
@@ -166,8 +169,8 @@ export function DashboardSidebar({
         </nav>
       </div>
 
-      {/* Bottom info & Return Home */}
-      <div style={{ paddingTop: "16px", borderTop: "1px solid var(--border)" }}>
+      {/* Bottom info & Return Home & Logout */}
+      <div style={{ paddingTop: "14px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "4px" }}>
         <Link
           href="/"
           style={{
@@ -187,6 +190,30 @@ export function DashboardSidebar({
           <Home size={16} />
           <span>Back to Landing</span>
         </Link>
+
+        <button
+          onClick={logout}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: "#ef4444",
+            fontSize: "13px",
+            background: "none",
+            border: "none",
+            padding: "8px 12px",
+            fontWeight: 700,
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+            transition: "opacity 0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        >
+          <LogOut size={16} />
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );

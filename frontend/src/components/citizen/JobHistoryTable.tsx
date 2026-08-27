@@ -47,8 +47,6 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
         border: "1px solid var(--border)",
         borderRadius: "0px",
         padding: "28px",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
       }}
     >
       {/* Top Header & Lifetime Summary */}
@@ -259,10 +257,14 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
         <div
           style={{
             position: "fixed",
-            inset: 0,
-            backgroundColor: "rgba(0,0,0,0.75)",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: isDark ? "rgba(0, 0, 0, 0.85)" : "rgba(15, 23, 42, 0.65)",
             backdropFilter: "blur(6px)",
-            zIndex: 110,
+            WebkitBackdropFilter: "blur(6px)",
+            zIndex: 99999,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -272,24 +274,24 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
           <div
             style={{
               width: "100%",
-              maxWidth: "500px",
-              backgroundColor: "var(--card-bg)",
+              maxWidth: "520px",
+              backgroundColor: isDark ? "#0f172a" : "#ffffff",
               border: "1.5px solid var(--accent)",
-              padding: "28px",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.45)",
+              padding: "32px",
               borderRadius: "0px",
-              backdropFilter: "blur(20px)",
             }}
           >
-            <h3 style={{ fontSize: "18px", fontWeight: 800, color: "var(--text-primary)", marginBottom: "6px" }}>
-              Submit Community Review
+            <h3 style={{ fontSize: "20px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a", marginBottom: "6px" }}>
+              Submit Review
             </h3>
-            <p style={{ fontSize: "13px", color: "var(--text-secondary)", marginBottom: "18px" }}>
-              Rate your direct service experience with <strong>{reviewingJob.assignedWorker?.name}</strong>:
+            <p style={{ fontSize: "13.5px", color: isDark ? "#94a3b8" : "#64748b", marginBottom: "20px" }}>
+              Rate your service experience with <strong>{reviewingJob.assignedWorker?.name || "the specialist"}</strong>:
             </p>
 
-            <form onSubmit={handleReviewSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <form onSubmit={handleReviewSubmit} style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "8px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 800, color: isDark ? "#e2e8f0" : "#334155", marginBottom: "8px", textTransform: "uppercase" }}>
                   Rating Score:
                 </label>
                 <div style={{ display: "flex", gap: "8px" }}>
@@ -306,9 +308,9 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
                       }}
                     >
                       <Star
-                        size={28}
+                        size={30}
                         fill={star <= rating ? "#eab308" : "none"}
-                        color={star <= rating ? "#eab308" : "var(--text-secondary)"}
+                        color={star <= rating ? "#eab308" : (isDark ? "#475569" : "#cbd5e1")}
                       />
                     </button>
                   ))}
@@ -316,24 +318,25 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
               </div>
 
               <div>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "6px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 800, color: isDark ? "#e2e8f0" : "#334155", marginBottom: "6px", textTransform: "uppercase" }}>
                   Your Review / Comment:
                 </label>
                 <textarea
                   required
                   rows={3}
-                  placeholder="e.g. Arrived on time with proper chainsaw equipment. Very polite and accepted cash upon completion."
+                  placeholder="e.g. Arrived on time with proper equipment. Very polite and accepted cash upon completion."
                   value={reviewText}
                   onChange={(e) => setReviewText(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "10px",
-                    backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#ffffff",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
+                    padding: "12px",
+                    backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+                    border: isDark ? "1.5px solid #334155" : "1.5px solid #cbd5e1",
+                    color: isDark ? "#ffffff" : "#0f172a",
                     outline: "none",
                     fontFamily: "inherit",
-                    fontSize: "13px",
+                    fontSize: "13.5px",
+                    resize: "none",
                   }}
                 />
               </div>
@@ -343,11 +346,12 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
                   type="button"
                   onClick={() => setReviewingJob(null)}
                   style={{
-                    padding: "8px 16px",
-                    backgroundColor: "transparent",
-                    border: "1px solid var(--border)",
-                    color: "var(--text-primary)",
+                    padding: "10px 18px",
+                    backgroundColor: isDark ? "#1e293b" : "#f1f5f9",
+                    border: isDark ? "1px solid #334155" : "1px solid #e2e8f0",
+                    color: isDark ? "#cbd5e1" : "#475569",
                     fontWeight: 700,
+                    fontSize: "13px",
                     cursor: "pointer",
                   }}
                 >
@@ -356,12 +360,14 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
                 <button
                   type="submit"
                   style={{
-                    padding: "8px 18px",
+                    padding: "10px 22px",
                     backgroundColor: "var(--accent)",
                     color: "var(--accent-text)",
                     border: "none",
                     fontWeight: 800,
+                    fontSize: "13px",
                     cursor: "pointer",
+                    boxShadow: "0 4px 14px rgba(8,145,178,0.25)",
                   }}
                 >
                   Publish Review

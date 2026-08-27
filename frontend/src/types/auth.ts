@@ -9,6 +9,13 @@ export interface UserProfile {
   locality: string;
   district: string;
   avatarUrl?: string;
+  profilePicture?: string;
+  homeAddress?: string;
+  savedLat?: number;
+  savedLng?: number;
+  birthday?: string;
+  gender?: string;
+  language?: string;
   createdAt: string;
 
   // Specific to SERVICE PROVIDER
@@ -19,6 +26,8 @@ export interface UserProfile {
   dailyRate?: number;
   hourlyRate?: number;
   verifiedBadge?: boolean;
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
   vehicleType?: string;
   plateNumber?: string;
   status?: "AVAILABLE" | "BUSY" | "OFFLINE";
@@ -50,13 +59,17 @@ export interface ProviderRegistrationData {
   phone: string;
   hasWhatsApp: boolean;
   email?: string;
+  password?: string;
   locality: string;
   district: string;
   trade: string;
-  tradeType: "painting" | "plumbing" | "trees" | "cleaning" | "tech" | "odd_jobs";
-  skills: string[];
+  tradeType?: "painting" | "plumbing" | "trees" | "cleaning" | "tech" | "odd_jobs" | string;
+  skills?: string[];
   experienceYears: number;
   nicNumber: string;
+  nicFrontUrl?: string;
+  nicDocumentUrl?: string;
+  skillCertUrl?: string;
   nvqCertificateName?: string;
   vehicleType?: string;
   plateNumber?: string;

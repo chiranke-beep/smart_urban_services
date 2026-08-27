@@ -14,8 +14,11 @@ import {
 import { JobRequest } from "@/types/job";
 import { ChatMessage } from "@/types/chat";
 import { chatService } from "@/services/chatService";
+import { socketService } from "@/services/socketService";
+import { jobService } from "@/services/jobService";
 import { formatCurrency, formatRelativeTime } from "@/utils/formatters";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 
 interface LiveChatDockProps {
   job: JobRequest;
@@ -25,13 +28,55 @@ interface LiveChatDockProps {
 export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [currentQuotePrice, setCurrentQuotePrice] = useState<number>(job.quotation?.amountLKR || job.costLKR || 3500);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
+  const { user } = useAuth();
   const isDark = theme === "dark";
   const worker = job.assignedWorker;
 
   useEffect(() => {
-    setMessages(chatService.getMessages(job.id));
+    setCurrentQuotePrice(job.quotation?.amountLKR || job.costLKR || 3500);
+  }, [job.costLKR, job.quotation?.amountLKR]);
+
+  useEffect(() => {
+    // Initial fetch from DB
+    chatService.fetchMessages(job.id).then((msgs) => {
+      setMessages(msgs);
+    });
+    socketService.joinJob(job.id);
+
+    const unsubscribe = socketService.onNewMessage((newMsg: ChatMessage) => {
+      if (newMsg && newMsg.jobId === job.id) {
+        chatService.receiveExternalMessage(newMsg);
+        setMessages((prev) => {
+          // Only deduplicate by ID — don't block messages with same text from other user
+          if (prev.some((m) => m.id === newMsg.id)) {
+            return prev;
+          }
+          return [...prev, newMsg];
+        });
+      }
+    });
+
+    const unsubQuote = socketService.onQuotationUpdated((data) => {
+      if (data.jobId === job.id) {
+        setCurrentQuotePrice(data.amountLKR);
+      }
+    });
+
+    // Poll DB every 5s as a reliable fallback to catch any missed socket messages
+    const pollInterval = setInterval(() => {
+      chatService.fetchMessages(job.id).then((msgs) => {
+        setMessages(msgs);
+      });
+    }, 5000);
+
+    return () => {
+      unsubscribe();
+      unsubQuote();
+      clearInterval(pollInterval);
+    };
   }, [job.id]);
 
   useEffect(() => {
@@ -42,36 +87,11 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
     e.preventDefault();
     if (!input.trim()) return;
 
-    const userMsg = chatService.sendMessage(job.id, input, "user");
+    const senderRole = user?.role === "PROVIDER" ? "worker" : "user";
+    const senderName = user?.fullName || (senderRole === "user" ? "Homeowner" : "Technician");
+    const userMsg = chatService.sendMessage(job.id, input, senderRole, senderName);
     setMessages((prev) => [...prev, userMsg]);
     setInput("");
-
-    // Simulate natural worker reply based on job stage and trade
-    setTimeout(() => {
-      let replyText = "Ayubowan! Got your message. I am on my way to your address now, will be there shortly!";
-      
-      if (job.stage === "EN_ROUTE") {
-        const enRouteReplies = [
-          "Ayubowan! Got your message. I have loaded all my tools and I'm heading towards your location now!",
-          "Got it! Just passing the main junction. See you in a few minutes at your gate.",
-          "Understood! Travelling via the main road now, will reach your address very shortly.",
-        ];
-        replyText = enRouteReplies[Math.floor(Math.random() * enRouteReplies.length)];
-      } else if (job.stage === "IN_PROGRESS") {
-        const inProgressReplies = [
-          "Yes! I am working on the task right now. Everything is going smoothly.",
-          "Understood! Making good progress on the work. Will let you know as soon as it is finished.",
-        ];
-        replyText = inProgressReplies[Math.floor(Math.random() * inProgressReplies.length)];
-      } else if (job.stage === "COMPLETED") {
-        replyText = "Thank you very much! Glad I could complete the work for you today. Please leave a rating if you're satisfied!";
-      } else {
-        replyText = "Ayubowan! I received your request and I'm checking the details now. Let me know if you have any questions!";
-      }
-
-      const workerReply = chatService.sendMessage(job.id, replyText, "worker");
-      setMessages((prev) => [...prev, workerReply]);
-    }, 1000);
   };
 
   return (
@@ -102,36 +122,38 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          {worker && (
-            <div
-              style={{
-                width: "36px",
-                height: "36px",
-                backgroundColor: worker.avatarBg,
-                color: "#ffffff",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 900,
-                fontSize: "14px",
-              }}
-            >
-              {worker.name.split(" ").map((n) => n[0]).join("")}
-            </div>
-          )}
+          <div
+            style={{
+              width: "36px",
+              height: "36px",
+              backgroundColor: worker?.avatarBg || "var(--accent)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: 900,
+              fontSize: "14px",
+            }}
+          >
+            {worker?.name ? worker.name.split(" ").map((n) => n[0]).join("").slice(0, 2) : "SP"}
+          </div>
           <div>
             <div style={{ fontSize: "14px", fontWeight: 800 }}>
-              {worker?.name || "Technician"}
+              {worker?.name || "Service Provider Dispatch"}
             </div>
             <div style={{ fontSize: "11px", opacity: 0.85, display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981" }} />
-              <span>Active on Job #{job.id} · {job.locality}</span>
+              <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%" }} />
+              <span>
+                {worker
+                  ? `Active on Job #${job.id} · ${job.locality}`
+                  : `Awaiting Dispatch Acceptance · ${job.locality}`}
+              </span>
             </div>
           </div>
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          {worker && (
+          {worker?.phone && (
             <a
               href={`tel:${worker.phone}`}
               style={{
@@ -160,27 +182,61 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         </div>
       </div>
 
-      {/* Quote Pin Banner if available */}
-      {job.quotation && (
-        <div
-          style={{
-            padding: "10px 16px",
-            backgroundColor: "rgba(16,185,129,0.12)",
-            borderBottom: "1px solid var(--border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: "12px",
-          }}
-        >
-          <span style={{ color: "#10b981", fontWeight: 700 }}>
-            ✓ Verified Rate: {formatCurrency(job.quotation.amountLKR)} ({job.quotation.rateType})
+      {/* Interactive Quotation & Acceptance Banner */}
+      <div
+        style={{
+          padding: "10px 16px",
+          backgroundColor: isDark ? "rgba(16,185,129,0.12)" : "rgba(16,185,129,0.08)",
+          borderBottom: "1px solid rgba(16,185,129,0.25)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "12px",
+          fontSize: "12.5px",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ color: "#10b981", fontWeight: 800 }}>
+            🏷️ Price: {formatCurrency(currentQuotePrice)}
           </span>
           <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-            Zero Middleman Fees
+            {job.stage === "QUOTED"
+              ? "Price sent (Waiting for your approval)"
+              : job.stage === "EN_ROUTE"
+              ? "Accepted · Worker on the way"
+              : job.stage === "IN_PROGRESS"
+              ? "Worker is working"
+              : job.stage === "COMPLETED"
+              ? "Finished & Paid"
+              : "Waiting for worker price"}
           </span>
         </div>
-      )}
+
+        {job.stage === "QUOTED" && job.quotation && user?.role !== "PROVIDER" && (
+          <button
+            onClick={() => {
+              jobService.acceptQuote(job.id);
+              socketService.updateStage(job.id, "EN_ROUTE");
+            }}
+            style={{
+              padding: "5px 12px",
+              backgroundColor: "#10b981",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 800,
+              fontSize: "11.5px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+            }}
+          >
+            <CheckCircle size={13} />
+            <span>Accept Price & Start</span>
+          </button>
+        )}
+      </div>
 
       {/* Chat Messages Scroll Feed */}
       <div

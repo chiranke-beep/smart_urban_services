@@ -1,15 +1,30 @@
-"use client";
-
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
-import { ArrowRight, AlertTriangle } from "lucide-react";
+import { ArrowRight, AlertTriangle, Compass, ShieldCheck } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/services/api";
 
 export function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const { theme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const isDark = theme === "dark";
+  const [platformStats, setPlatformStats] = useState<{
+    totalWorkers?: number;
+    totalCitizens?: number;
+    totalCompletedJobs?: number;
+    totalReviews?: number;
+  }>({});
+
+  useEffect(() => {
+    apiClient<{ success: boolean; data?: any }>("/analytics/platform-stats")
+      .then((res) => {
+        if (res?.data) setPlatformStats(res.data);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!sectionRef.current) return;
@@ -331,59 +346,143 @@ export function Hero() {
             Find trusted village and town painters, tree cutters, plumbers, house cleaners, and PC technicians. Chat directly on the platform, view verified reviews, share job details, and connect seamlessly (with call and WhatsApp options).
           </p>
 
-          {/* ⑤ CTA Buttons */}
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", paddingTop: "8px" }}>
-            <Link
-              href="#services"
-              className="hero-cta"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "10px",
-                padding: "15px 32px",
-                borderRadius: "0px",
-                backgroundColor: "var(--accent)",
-                color: "var(--accent-text)",
-                fontSize: "15px",
-                fontWeight: 800,
-                textDecoration: "none",
-                boxShadow: "0 8px 24px var(--accent-glow)",
-                transition: "transform 0.2s ease, box-shadow 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              <span>Explore Services</span>
-              <ArrowRight size={16} />
-            </Link>
+          {/* ⑤ Action Buttons — Dynamic matching state when logged in */}
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: "14px",
+              paddingTop: "6px",
+            }}
+          >
+            {isAuthenticated && user ? (
+              <>
+                <Link
+                  href={
+                    user.role === "ADMIN"
+                      ? "/admin/dashboard"
+                      : user.role === "PROVIDER"
+                      ? "/provider/dashboard"
+                      : "/citizen/dashboard"
+                  }
+                  className="hero-cta"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "15px 32px",
+                    borderRadius: "0px",
+                    backgroundColor: "var(--accent)",
+                    color: "var(--accent-text)",
+                    fontSize: "15px",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxShadow: "0 8px 24px var(--accent-glow)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <span>
+                    {user.role === "ADMIN"
+                      ? "Enter Operations Console"
+                      : user.role === "PROVIDER"
+                      ? "Enter Dispatch Console"
+                      : "Enter Resident Console"}
+                  </span>
+                  <ArrowRight size={16} />
+                </Link>
 
-            <Link
-              href="/provider/register"
-              className="hero-cta"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "8px",
-                padding: "14px 28px",
-                borderRadius: "0px",
-                border: "1.5px solid var(--border)",
-                backgroundColor: "var(--card-bg)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-                color: "var(--text-primary)",
-                fontSize: "15px",
-                fontWeight: 700,
-                textDecoration: "none",
-                transition: "transform 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-            >
-              Join as a Worker / Volunteer
-            </Link>
+                <Link
+                  href={
+                    user.role === "ADMIN"
+                      ? "/admin/dashboard"
+                      : user.role === "PROVIDER"
+                      ? "/provider/dashboard"
+                      : "#workers"
+                  }
+                  className="hero-cta"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "14px 28px",
+                    borderRadius: "0px",
+                    border: "1.5px solid var(--border)",
+                    backgroundColor: "var(--card-bg)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    color: "var(--text-primary)",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  {user.role === "ADMIN"
+                    ? "Review Verification Queue"
+                    : user.role === "PROVIDER"
+                    ? "View Live Job Feed"
+                    : "Find Nearby Technicians"}
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="#services"
+                  className="hero-cta"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "15px 32px",
+                    borderRadius: "0px",
+                    backgroundColor: "var(--accent)",
+                    color: "var(--accent-text)",
+                    fontSize: "15px",
+                    fontWeight: 800,
+                    textDecoration: "none",
+                    boxShadow: "0 8px 24px var(--accent-glow)",
+                    transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  <span>Explore Services</span>
+                  <ArrowRight size={16} />
+                </Link>
+
+                <Link
+                  href="/provider/register"
+                  className="hero-cta"
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    padding: "14px 28px",
+                    borderRadius: "0px",
+                    border: "1.5px solid var(--border)",
+                    backgroundColor: "var(--card-bg)",
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
+                    color: "var(--text-primary)",
+                    fontSize: "15px",
+                    fontWeight: 700,
+                    textDecoration: "none",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                >
+                  Join as a Worker / Volunteer
+                </Link>
+              </>
+            )}
           </div>
 
-          {/* ⑥ Stats Row */}
+          {/* Stats Row (Dynamic from PostgreSQL Database) */}
           <div
             style={{
               paddingTop: "28px",
@@ -396,14 +495,14 @@ export function Hero() {
             }}
           >
             {[
-              { value: "500+",    label: "Local Workers & Volunteers" },
-              { value: "Live Chat", label: "Direct On-Platform Messaging" },
-              { value: "4.9 ★",   label: "Verified Quality Reviews" },
+              { value: `${platformStats.totalWorkers ?? 2} Specialists`, label: "Registered Local Workers" },
+              { value: `${platformStats.totalCompletedJobs ?? 2} Completed`, label: "Finished Neighborhood Jobs" },
+              { value: `${platformStats.totalReviews ?? 2} Verified`, label: "Community Star Reviews" },
             ].map((stat) => (
               <div key={stat.label} className="hero-stat">
                 <div
                   style={{
-                    fontSize: "28px",
+                    fontSize: "24px",
                     fontWeight: 900,
                     color: "var(--text-primary)",
                     lineHeight: 1.1,
@@ -413,7 +512,7 @@ export function Hero() {
                 </div>
                 <div
                   style={{
-                    fontSize: "13.5px",
+                    fontSize: "12.5px",
                     fontWeight: 600,
                     color: "var(--text-secondary)",
                     marginTop: "5px",

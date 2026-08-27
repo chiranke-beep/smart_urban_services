@@ -28,23 +28,10 @@ export default function LoginPage() {
   const isDark = theme === "dark";
 
   const [activeRole, setActiveRole] = useState<"HOMEOWNER" | "PROVIDER">("HOMEOWNER");
-  const [authMode, setAuthMode] = useState<"PHONE" | "EMAIL">("PHONE");
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
-  const [otpCode, setOtpCode] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
-
-  const handleSendOtp = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!identifier.trim()) {
-      setErrorMsg("Please enter your Sri Lankan phone number (+94 7X XXX XXXX)");
-      return;
-    }
-    setErrorMsg("");
-    setOtpSent(true);
-  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,8 +41,7 @@ export default function LoginPage() {
     try {
       await login({
         identifier: identifier.trim(),
-        password: authMode === "EMAIL" ? password : undefined,
-        otp: authMode === "PHONE" ? otpCode : undefined,
+        password: password,
         role: activeRole,
       });
 
@@ -193,7 +179,6 @@ export default function LoginPage() {
               onClick={() => {
                 setActiveRole("HOMEOWNER");
                 setErrorMsg("");
-                setOtpSent(false);
               }}
               style={{
                 padding: "10px",
@@ -219,7 +204,6 @@ export default function LoginPage() {
               onClick={() => {
                 setActiveRole("PROVIDER");
                 setErrorMsg("");
-                setOtpSent(false);
               }}
               style={{
                 padding: "10px",
@@ -241,57 +225,6 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Auth Mode Toggle */}
-          <div style={{ display: "flex", gap: "16px", borderBottom: "1px solid var(--border)", paddingBottom: "10px" }}>
-            <button
-              type="button"
-              onClick={() => setAuthMode("PHONE")}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "12.5px",
-                fontWeight: authMode === "PHONE" ? 800 : 600,
-                color: authMode === "PHONE" ? "var(--accent)" : "var(--text-secondary)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 0",
-                position: "relative",
-              }}
-            >
-              <Phone size={13} />
-              <span>Sri Lankan Phone (SMS OTP)</span>
-              {authMode === "PHONE" && (
-                <div style={{ position: "absolute", bottom: "-11px", left: 0, right: 0, height: "2px", backgroundColor: "var(--accent)" }} />
-              )}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setAuthMode("EMAIL")}
-              style={{
-                background: "none",
-                border: "none",
-                fontSize: "12.5px",
-                fontWeight: authMode === "EMAIL" ? 800 : 600,
-                color: authMode === "EMAIL" ? "var(--accent)" : "var(--text-secondary)",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "4px 0",
-                position: "relative",
-              }}
-            >
-              <Mail size={13} />
-              <span>Email & Password</span>
-              {authMode === "EMAIL" && (
-                <div style={{ position: "absolute", bottom: "-11px", left: 0, right: 0, height: "2px", backgroundColor: "var(--accent)" }} />
-              )}
-            </button>
-          </div>
-
           {errorMsg && (
             <div
               style={{
@@ -307,156 +240,74 @@ export default function LoginPage() {
             </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={authMode === "PHONE" && !otpSent ? handleSendOtp : handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-            {authMode === "PHONE" ? (
-              <>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>
-                    Sri Lanka Mobile Number
-                  </label>
-                  <div style={{ display: "flex", border: "1px solid var(--border)", backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff" }}>
-                    <span style={{ padding: "10px 12px", backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9", fontSize: "13px", fontWeight: 800, borderRight: "1px solid var(--border)", display: "flex", alignItems: "center" }}>
-                      +94
-                    </span>
-                    <input
-                      type="tel"
-                      placeholder="77 123 4567"
-                      value={identifier}
-                      onChange={(e) => setIdentifier(e.target.value)}
-                      disabled={otpSent}
-                      style={{
-                        flex: 1,
-                        padding: "10px 14px",
-                        border: "none",
-                        backgroundColor: "transparent",
-                        color: "var(--text-primary)",
-                        fontSize: "14px",
-                        outline: "none",
-                        fontWeight: 600,
-                      }}
-                    />
-                  </div>
-                </div>
+          {/* Clean Email & Password Form */}
+          <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                required
+                placeholder="e.g. yourname@gmail.com"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
+                  color: "var(--text-primary)",
+                  fontSize: "14px",
+                  outline: "none",
+                  fontWeight: 600,
+                }}
+              />
+            </div>
 
-                {otpSent && (
-                  <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
-                      <label style={{ fontSize: "12px", fontWeight: 800 }}>
-                        Enter 6-Digit SMS Code
-                      </label>
-                      <button
-                        type="button"
-                        onClick={() => setOtpSent(false)}
-                        style={{ background: "none", border: "none", color: "var(--accent)", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
-                      >
-                        Change Number
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      placeholder="582194"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      autoFocus
-                      style={{
-                        width: "100%",
-                        padding: "12px 14px",
-                        border: "1.5px solid var(--accent)",
-                        backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
-                        color: "var(--text-primary)",
-                        fontSize: "18px",
-                        letterSpacing: "0.2em",
-                        fontWeight: 900,
-                        textAlign: "center",
-                        outline: "none",
-                      }}
-                    />
-                    <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "#10b981", marginTop: "6px", fontWeight: 700 }}>
-                      <Check size={13} />
-                      <span>Demo SMS pass ready: enter any 6 digits (e.g. 123456)</span>
-                    </div>
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    placeholder="you@domain.lk"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "10px 14px",
-                      border: "1px solid var(--border)",
-                      backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
-                      color: "var(--text-primary)",
-                      fontSize: "13.5px",
-                      outline: "none",
-                      fontWeight: 600,
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    placeholder="••••••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    style={{
-                      width: "100%",
-                      padding: "10px 14px",
-                      border: "1px solid var(--border)",
-                      backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
-                      color: "var(--text-primary)",
-                      fontSize: "13.5px",
-                      outline: "none",
-                      fontWeight: 600,
-                    }}
-                  />
-                </div>
-              </>
-            )}
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 800 }}>Password</label>
+              </div>
+              <input
+                type="password"
+                required
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "11px 14px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
+                  color: "var(--text-primary)",
+                  fontSize: "14px",
+                  outline: "none",
+                  fontWeight: 600,
+                }}
+              />
+            </div>
 
             <button
               type="submit"
               disabled={isSubmitting}
               style={{
-                marginTop: "8px",
-                padding: "13px 20px",
+                marginTop: "6px",
+                padding: "12px",
                 backgroundColor: "var(--accent)",
                 color: "var(--accent-text)",
                 border: "none",
                 fontSize: "14px",
-                fontWeight: 900,
+                fontWeight: 800,
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
-                boxShadow: "0 6px 20px var(--accent-glow)",
-                transition: "all 0.2s ease",
+                boxShadow: "0 4px 14px rgba(8,145,178,0.3)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
             >
-              <span>
-                {authMode === "PHONE" && !otpSent
-                  ? "Send SMS OTP Verification"
-                  : `Sign In as ${activeRole === "HOMEOWNER" ? "Homeowner" : "Worker"}`}
-              </span>
+              <span>{isSubmitting ? "Signing in..." : `Sign In as ${activeRole === "PROVIDER" ? "Worker" : "Citizen"}`}</span>
               <ArrowRight size={15} />
             </button>
           </form>

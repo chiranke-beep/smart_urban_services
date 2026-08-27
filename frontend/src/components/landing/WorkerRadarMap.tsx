@@ -22,6 +22,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { apiClient } from "@/services/api";
 
 interface DistrictData {
   id: string;
@@ -215,6 +216,7 @@ const FILTER_TRADES = [
 ];
 
 export function WorkerRadarMap() {
+  const [districts, setDistricts] = useState<DistrictData[]>(DISTRICT_LIST);
   const [selectedDistrict, setSelectedDistrict] = useState<DistrictData>(DISTRICT_LIST[0]);
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -222,6 +224,35 @@ export function WorkerRadarMap() {
   const isDark = theme === "dark";
 
   useEffect(() => {
+    apiClient<{ success: boolean; data?: any[] }>("/providers")
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          const liveWorkers = res.data;
+          setDistricts((prev) =>
+            prev.map((d) => {
+              const districtShort = d.name.toLowerCase().replace(" district", "").trim();
+              const matched = liveWorkers.filter(
+                (w) => (w.district || "").toLowerCase().includes(districtShort)
+              );
+              if (matched.length > 0) {
+                return {
+                  ...d,
+                  activeTotal: matched.length,
+                  recentJob: {
+                    title: matched[0].trade || "Verified Specialist",
+                    worker: `${matched[0].fullName || "Specialist"} (${Number(matched[0].rating || 5).toFixed(1)} Rating)`,
+                    rating: Number(matched[0].rating || 5).toFixed(1),
+                    locality: `${matched[0].locality || "Town"}, ${d.name}`,
+                  },
+                };
+              }
+              return d;
+            })
+          );
+        }
+      })
+      .catch(() => {});
+
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(

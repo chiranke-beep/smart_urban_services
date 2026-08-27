@@ -218,6 +218,29 @@ export default function HomeownerRegisterPage() {
               />
             </div>
 
+            <div>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>
+                Email Address
+              </label>
+              <input
+                type="email"
+                placeholder="anura.senanayake@gmail.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{
+                  width: "100%",
+                  padding: "10px 14px",
+                  border: "1px solid var(--border)",
+                  backgroundColor: isDark ? "rgba(0,0,0,0.3)" : "#ffffff",
+                  color: "var(--text-primary)",
+                  fontSize: "13.5px",
+                  outline: "none",
+                  fontWeight: 600,
+                }}
+              />
+            </div>
+
             <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "12px" }}>
               <div>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 800, marginBottom: "6px" }}>

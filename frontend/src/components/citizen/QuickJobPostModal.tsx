@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X,
   Sparkles,
@@ -19,6 +19,7 @@ import {
   POPULAR_LOCALITIES,
 } from "@/utils/constants";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 
 interface QuickJobPostModalProps {
   isOpen: boolean;
@@ -31,16 +32,33 @@ export function QuickJobPostModal({
   onClose,
   onSubmitJob,
 }: QuickJobPostModalProps) {
+  const { user } = useAuth();
   const [selectedCategory, setSelectedCategory] = useState<JobCategory>("tree-cutting");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [district, setDistrict] = useState("Colombo");
-  const [locality, setLocality] = useState("Maharagama");
-  const [urgency, setUrgency] = useState<JobUrgency>("today");
+  const [district, setDistrict] = useState(user?.district || "Kandy");
+  const [locality, setLocality] = useState(user?.locality || "Heerassagala");
+  const [urgency, setUrgency] = useState<JobUrgency>("flexible");
   const [hasPhoto, setHasPhoto] = useState(false);
+  const [locationMode, setLocationMode] = useState<"saved" | "custom">("saved");
+  const [gpsCoords, setGpsCoords] = useState<{ lat?: number; lng?: number }>({
+    lat: user?.savedLat || 7.264242,
+    lng: user?.savedLng || 80.621701,
+  });
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    if (isOpen && user) {
+      setDistrict(user.district || "Kandy");
+      setLocality(user.locality || "Heerassagala");
+      setGpsCoords({
+        lat: user.savedLat || 7.264242,
+        lng: user.savedLng || 80.621701,
+      });
+    }
+  }, [isOpen, user]);
 
   if (!isOpen) return null;
 
@@ -54,6 +72,8 @@ export function QuickJobPostModal({
       description: description || "Direct request dispatched to verified local workers.",
       district,
       locality,
+      latitude: gpsCoords.lat,
+      longitude: gpsCoords.lng,
       urgency,
       photos: hasPhoto ? ["hazard_evidence_photo.jpg"] : [],
     });

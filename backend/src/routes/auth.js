@@ -21,9 +21,7 @@ const registerValidation = [
 
   body('password')
     .notEmpty().withMessage('Password is required.')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters.')
-    .matches(/[A-Z]/).withMessage('Password must contain at least one uppercase letter.')
-    .matches(/[0-9]/).withMessage('Password must contain at least one number.'),
+    .isLength({ min: 6 }).withMessage('Password must be at least 6 characters.'),
 
   body('role')
     .optional()
@@ -31,15 +29,14 @@ const registerValidation = [
 
   body('phone')
     .optional()
-    .isMobilePhone().withMessage('Please provide a valid phone number.'),
+    .custom((val) => !val || (typeof val === 'string' && val.replace(/\D/g, '').length >= 9))
+    .withMessage('Please provide a valid phone number with at least 9 digits.'),
 ];
 
 const loginValidation = [
   body('email')
     .trim()
-    .notEmpty().withMessage('Email is required.')
-    .isEmail().withMessage('Please provide a valid email address.')
-    .normalizeEmail(),
+    .notEmpty().withMessage('Email or phone number is required.'),
 
   body('password')
     .notEmpty().withMessage('Password is required.'),

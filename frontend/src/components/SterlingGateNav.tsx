@@ -4,8 +4,9 @@ import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import "./SterlingGateNav.css";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon, LogOut, ArrowRight } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 
 export function SterlingGateNav() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -16,6 +17,7 @@ export function SterlingGateNav() {
   const closeTl = useRef<gsap.core.Timeline | null>(null);
   const isFirstRender = useRef(true);
   const { theme, toggleTheme } = useTheme();
+  const { user, isAuthenticated, logout } = useAuth();
 
   // ─── Scroll listener for smooth navbar line disappearance ──────────
   useEffect(() => {
@@ -246,29 +248,96 @@ export function SterlingGateNav() {
                   {isDark ? <Sun size={18} /> : <Moon size={18} />}
                 </button>
 
-                {/* Sign In quick button */}
-                <Link
-                  href="/login"
-                  style={{
-                    pointerEvents: "auto",
-                    padding: "0.42rem 0.95rem",
-                    backgroundColor: "var(--accent)",
-                    color: "var(--accent-text)",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    textDecoration: "none",
-                    borderRadius: "0px",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    boxShadow: "0 2px 10px var(--accent-glow)",
-                    transition: "transform 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-                >
-                  Sign In
-                </Link>
+                {/* User Portal / Sign In quick button */}
+                {isAuthenticated && user ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
+                    <Link
+                      href={
+                        user.role === "ADMIN"
+                          ? "/admin/dashboard"
+                          : user.role === "PROVIDER"
+                          ? "/provider/dashboard"
+                          : "/citizen/dashboard"
+                      }
+                      style={{
+                        padding: "0.42rem 0.95rem",
+                        backgroundColor: "var(--accent)",
+                        color: "var(--accent-text)",
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        textDecoration: "none",
+                        borderRadius: "0px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: "6px",
+                        boxShadow: "0 2px 10px var(--accent-glow)",
+                        transition: "transform 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                    >
+                      <span>
+                        {user.role === "ADMIN"
+                          ? "Operations Console"
+                          : user.role === "PROVIDER"
+                          ? "Dispatch Console"
+                          : "Resident Console"}
+                      </span>
+                      <ArrowRight size={13} />
+                    </Link>
+
+                    <button
+                      onClick={logout}
+                      title="Sign Out"
+                      aria-label="Sign Out"
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: iconColor,
+                        padding: "6px",
+                        cursor: "pointer",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity: 0.75,
+                        transition: "opacity 0.2s ease, transform 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = "1";
+                        e.currentTarget.style.transform = "scale(1.1)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = "0.75";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
+                    >
+                      <LogOut size={16} />
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    style={{
+                      pointerEvents: "auto",
+                      padding: "0.42rem 0.95rem",
+                      backgroundColor: "var(--accent)",
+                      color: "var(--accent-text)",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      textDecoration: "none",
+                      borderRadius: "0px",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      boxShadow: "0 2px 10px var(--accent-glow)",
+                      transition: "transform 0.2s ease",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                  >
+                    Sign In
+                  </Link>
+                )}
 
                 {/* Menu + button — pill shape, matches current theme */}
                 <button

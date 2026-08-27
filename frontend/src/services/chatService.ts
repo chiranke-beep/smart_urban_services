@@ -1,84 +1,57 @@
 import { ChatMessage } from "@/types/chat";
+import { apiClient } from "./api";
+import { socketService } from "./socketService";
 
-const INITIAL_MESSAGES: Record<string, ChatMessage[]> = {
-  "JOB-7821": [
-    {
-      id: "M-1",
-      jobId: "JOB-7821",
-      sender: "system",
-      senderName: "Smart Urban Dispatch",
-      text: "Sunil Kumara accepted your request. Real-time encrypted channel active.",
-      timestamp: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-      read: true,
-    },
-    {
-      id: "M-2",
-      jobId: "JOB-7821",
-      sender: "worker",
-      senderName: "Sunil Kumara",
-      text: "Ayubowan! I reviewed your tree hazard photo. The branch is leaning close to the Ceylon Electricity line. I have a long telescoping chainsaw and ropes.",
-      timestamp: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-      read: true,
-    },
-    {
-      id: "M-3",
-      jobId: "JOB-7821",
-      sender: "worker",
-      senderName: "Sunil Kumara",
-      text: "Official Quote: Rs. 3,500 for full cut and compound clearance.",
-      attachmentType: "quote",
-      timestamp: new Date(Date.now() - 20 * 60 * 1000).toISOString(),
-      read: true,
-    },
-    {
-      id: "M-4",
-      jobId: "JOB-7821",
-      sender: "user",
-      senderName: "Homeowner",
-      text: "Agreed! Quote accepted. Please be careful around the fiber internet line on the boundary.",
-      timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-      read: true,
-    },
-    {
-      id: "M-5",
-      jobId: "JOB-7821",
-      sender: "worker",
-      senderName: "Sunil Kumara",
-      text: "Understood! I've loaded my gear into my three-wheeler (WP-ABX-8821). Travelling via High Level Road. ETA 14 minutes!",
-      timestamp: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-      read: false,
-    },
-  ],
-};
-
-const STORAGE_KEY = "sus_chat_sessions_v1";
+const STORAGE_KEY = "sus_live_db_chat_v4";
 
 export const chatService = {
   getMessages(jobId: string): ChatMessage[] {
-    if (typeof window === "undefined") return INITIAL_MESSAGES[jobId] || [];
+    if (typeof window === "undefined" || !jobId) return [];
+
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_MESSAGES));
-      return INITIAL_MESSAGES[jobId] || [];
-    }
+    if (!stored) return [];
     try {
       const data = JSON.parse(stored);
       return data[jobId] || [];
     } catch {
-      return INITIAL_MESSAGES[jobId] || [];
+      return [];
     }
   },
 
-  sendMessage(jobId: string, text: string, sender: "user" | "worker" = "user"): ChatMessage {
-    const all = typeof window !== "undefined" && localStorage.getItem(STORAGE_KEY)
-      ? JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      : INITIAL_MESSAGES;
+  async fetchMessages(jobId: string): Promise<ChatMessage[]> {
+    if (!jobId) return [];
+    try {
+      const res = await apiClient<{ success: boolean; data?: ChatMessage[] }>(`/chat/${jobId}`);
+      if (res?.success && Array.isArray(res.data)) {
+        if (typeof window !== "undefined") {
+          const stored = localStorage.getItem(STORAGE_KEY);
+          const all = stored ? JSON.parse(stored) : {};
+          all[jobId] = res.data;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+        }
+        return res.data;
+      }
+    } catch (err: any) {
+      console.warn("[Fetch chat API error]:", err.message);
+    }
+    return this.getMessages(jobId);
+  },
+
+  sendMessage(
+    jobId: string,
+    text: string,
+    sender: "user" | "worker" = "user",
+    senderName?: string
+  ): ChatMessage {
+    const sName = senderName || (sender === "user" ? "Homeowner" : "Technician");
+    const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
+    const all = stored ? JSON.parse(stored) : {};
 
     const newMsg: ChatMessage = {
       id: `M-${Date.now()}`,
       jobId,
       sender,
-      senderName: sender === "user" ? "You" : "Technician",
+      senderName: sName,
       text,
       timestamp: new Date().toISOString(),
       read: true,
@@ -90,6 +63,34 @@ export const chatService = {
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
     }
+
+    // 1. Sync over WebSocket in real time
+    socketService.sendMessage(newMsg);
+
+    // 2. Persist to PostgreSQL database
+    apiClient(`/chat/${jobId}`, {
+      method: "POST",
+      body: JSON.stringify({
+        sender,
+        senderName: sName,
+        text,
+      }),
+    }).catch((err) => {
+      console.warn("[Chat DB persist]:", err.message);
+    });
+
     return newMsg;
+  },
+
+  receiveExternalMessage(newMsg: ChatMessage) {
+    if (typeof window === "undefined" || !newMsg.jobId) return;
+    const stored = localStorage.getItem(STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : {};
+    const existingList = all[newMsg.jobId] || [];
+
+    if (!existingList.some((m: ChatMessage) => m.id === newMsg.id)) {
+      all[newMsg.jobId] = [...existingList, newMsg];
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+    }
   },
 };

@@ -39,6 +39,8 @@ export interface JobRequest {
   locality: string;
   district: string;
   address?: string;
+  latitude?: number;
+  longitude?: number;
   urgency: JobUrgency;
   photos?: string[];
   createdAt: string;

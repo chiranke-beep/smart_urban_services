@@ -24,29 +24,108 @@ import {
   Filter,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
+
+import { socketService } from "@/services/socketService";
 
 export default function DashboardPage() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
   const [jobs, setJobs] = useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [selectedLocality, setSelectedLocality] = useState("Maharagama");
   const [searchQuery, setSearchQuery] = useState("");
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [activeChatJobId, setActiveChatJobId] = useState<string | null>("JOB-7821");
+  const [activeChatJobId, setActiveChatJobId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "en_route" | "in_progress" | "requested">("all");
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
   useEffect(() => {
-    setJobs(jobService.getJobs());
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/login");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    jobService.fetchRemoteJobs().then((remote) => {
+      setJobs(remote);
+    });
+
+    const unsubStage = socketService.onStageChanged((data) => {
+      if (data?.jobId && data?.stage) {
+        setJobs((prev) =>
+          prev.map((j) => (j.id === data.jobId ? { ...j, stage: data.stage as any } : j))
+        );
+      }
+      jobService.fetchRemoteJobs().then((remote) => {
+        setJobs(remote);
+      });
+    });
+
+    const unsubQuote = socketService.onQuotationUpdated((data) => {
+      setJobs((prev) => {
+        const updated = prev.map((j) => {
+          if (j.id === data.jobId) {
+            return {
+              ...j,
+              costLKR: Number(data.amountLKR),
+              stage: "QUOTED" as const,
+              quotation: {
+                id: `quote-${Date.now()}`,
+                workerId: "w-1",
+                workerName: data.workerName || "Technician",
+                avatarBg: "var(--accent)",
+                amountLKR: Number(data.amountLKR),
+                rateType: "fixed" as const,
+                notes: data.notes || "Official quotation",
+                submittedAt: new Date().toISOString(),
+                status: "pending" as const,
+              },
+            };
+          }
+          return j;
+        });
+        if (typeof window !== "undefined") {
+          localStorage.setItem("sus_live_db_jobs_v6", JSON.stringify(updated));
+        }
+        return updated;
+      });
+    });
+
+    return () => {
+      unsubStage();
+      unsubQuote();
+    };
   }, []);
 
   const activeJobs = jobs.filter((j) => j.stage !== "COMPLETED" && j.stage !== "CANCELLED");
-  const activeChatJob = jobs.find((j) => j.id === activeChatJobId) || activeJobs[0] || jobs[0];
+  const activeChatJob = jobs.find((j) => j.id === activeChatJobId) || null;
 
-  const handleCreateJob = (data: Omit<JobRequest, "id" | "createdAt" | "stage" | "stageUpdatedAt">) => {
-    const newJob = jobService.createJob(data);
-    setJobs(jobService.getJobs());
+  const handleCreateJob = async (data: Omit<JobRequest, "id" | "createdAt" | "stage" | "stageUpdatedAt">) => {
+    const newJob = await jobService.createJob(data);
+    const updated = await jobService.fetchRemoteJobs();
+    setJobs(updated);
     setActiveChatJobId(newJob.id);
+  };
+
+  const handleCancelJob = async (jobId: string) => {
+    jobService.cancelJob(jobId);
+    const updated = await jobService.fetchRemoteJobs();
+    setJobs(updated);
+    if (activeChatJobId === jobId) {
+      setActiveChatJobId(null);
+    }
+  };
+
+  const handleAcceptQuote = async (jobId: string) => {
+    // Accept the quote locally (sets stage EN_ROUTE)
+    jobService.acceptQuote(jobId);
+    // Emit stage change via socket so service provider sees it instantly
+    socketService.updateStage(jobId, "EN_ROUTE");
+    // Refresh from local storage (don't re-fetch to preserve quotation data)
+    setJobs([...jobService.getJobs()]);
   };
 
   const handleAdvanceStage = (jobId: string, nextStage: JobRequest["stage"]) => {
@@ -181,10 +260,10 @@ export default function DashboardPage() {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
                     <div>
                       <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>
-                        Active Work Orders & Live Tracking ({activeJobs.length})
+                        Active Jobs ({activeJobs.length})
                       </h2>
                       <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
-                        Real-time GPS route telemetry, stage updates, and worker arrival ETAs
+                        Live map tracking and arrival updates
                       </p>
                     </div>
 
@@ -205,7 +284,7 @@ export default function DashboardPage() {
                       }}
                     >
                       <Plus size={15} />
-                      <span>New Request</span>
+                      <span>Post Job Request</span>
                     </button>
                   </div>
 
@@ -213,9 +292,9 @@ export default function DashboardPage() {
                   <div style={{ display: "flex", gap: "8px" }}>
                     {[
                       { id: "all", label: "All Active" },
-                      { id: "en_route", label: "En Route" },
-                      { id: "in_progress", label: "In Progress" },
-                      { id: "requested", label: "Pending Match" },
+                      { id: "en_route", label: "On the way" },
+                      { id: "in_progress", label: "Working" },
+                      { id: "requested", label: "Waiting for Worker" },
                     ].map((f) => (
                       <button
                         key={f.id}
@@ -272,6 +351,8 @@ export default function DashboardPage() {
                         job={job}
                         onOpenChat={(id) => setActiveChatJobId(id)}
                         onAdvanceStage={handleAdvanceStage}
+                        onCancelJob={handleCancelJob}
+                        onAcceptQuote={handleAcceptQuote}
                       />
                     ))
                   )}
@@ -294,7 +375,7 @@ export default function DashboardPage() {
               TAB 2: WORKER CHAT HUB VIEW
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "chat" && (
-            <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px", minHeight: "680px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: activeJobs.length > 0 ? "320px 1fr" : "1fr", gap: "24px", minHeight: "680px" }}>
               {/* Left: Chat Sessions List */}
               <div
                 style={{
@@ -307,71 +388,99 @@ export default function DashboardPage() {
                 }}
               >
                 <div style={{ fontSize: "14px", fontWeight: 800, padding: "8px 4px 12px", borderBottom: "1px solid var(--border)" }}>
-                  Active Worker Conversations ({jobs.length})
+                  Active Worker Conversations ({activeJobs.length})
                 </div>
 
-                {jobs.map((job) => {
-                  const isSelected = activeChatJobId === job.id;
-                  const worker = job.assignedWorker;
-                  if (!worker) return null;
-
-                  return (
+                {activeJobs.length === 0 ? (
+                  <div style={{ padding: "32px 16px", textAlign: "center" }}>
+                    <MessageSquare size={28} color="var(--text-secondary)" style={{ margin: "0 auto 10px", opacity: 0.6 }} />
+                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>No Active Conversations</div>
+                    <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginBottom: "16px" }}>
+                      Post a new job request to connect with local verified technicians in real time.
+                    </div>
                     <button
-                      key={job.id}
-                      onClick={() => setActiveChatJobId(job.id)}
+                      onClick={() => setIsPostModalOpen(true)}
                       style={{
-                        padding: "12px",
-                        backgroundColor: isSelected
-                          ? "rgba(66,214,255,0.12)"
-                          : "transparent",
-                        borderLeft: isSelected ? "3px solid var(--accent)" : "3px solid transparent",
-                        borderTop: "none",
-                        borderRight: "none",
-                        borderBottom: "1px solid var(--border)",
+                        padding: "8px 16px",
+                        backgroundColor: "var(--accent)",
+                        color: "var(--accent-text)",
+                        border: "none",
+                        fontWeight: 800,
+                        fontSize: "12px",
                         cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "12px",
-                        textAlign: "left",
-                        fontFamily: "inherit",
                       }}
                     >
-                      <div
+                      + Post New Job Request
+                    </button>
+                  </div>
+                ) : (
+                  activeJobs.map((job) => {
+                    const isSelected = (activeChatJobId || activeJobs[0]?.id) === job.id;
+                    const worker = job.assignedWorker;
+
+                    return (
+                      <button
+                        key={job.id}
+                        onClick={() => setActiveChatJobId(job.id)}
                         style={{
-                          width: "36px",
-                          height: "36px",
-                          backgroundColor: worker.avatarBg,
-                          color: "#ffffff",
+                          padding: "12px",
+                          backgroundColor: isSelected
+                            ? "rgba(66,214,255,0.12)"
+                            : "transparent",
+                          borderLeft: isSelected ? "3px solid var(--accent)" : "3px solid transparent",
+                          borderTop: "none",
+                          borderRight: "none",
+                          borderBottom: "1px solid var(--border)",
+                          cursor: "pointer",
                           display: "flex",
                           alignItems: "center",
-                          justifyContent: "center",
-                          fontWeight: 800,
-                          fontSize: "13px",
-                          flexShrink: 0,
+                          gap: "12px",
+                          textAlign: "left",
+                          fontFamily: "inherit",
                         }}
                       >
-                        {worker.name.split(" ").map((n) => n[0]).join("")}
-                      </div>
-                      <div style={{ overflow: "hidden" }}>
-                        <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {worker.name}
+                        <div
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            backgroundColor: worker?.avatarBg || "var(--accent)",
+                            color: "#ffffff",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                            fontSize: "13px",
+                            flexShrink: 0,
+                          }}
+                        >
+                          {worker ? worker.name.split(" ").map((n) => n[0]).join("") : "SP"}
                         </div>
-                        <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                          {job.title}
+                        <div style={{ overflow: "hidden" }}>
+                          <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                            {worker?.name || "Service Provider Dispatch"}
+                          </div>
+                          <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                            {job.title}
+                          </div>
                         </div>
-                      </div>
-                    </button>
-                  );
-                })}
+                      </button>
+                    );
+                  })
+                )}
               </div>
 
               {/* Right: Full Chat Dock */}
-              {activeChatJob && (
+              {activeChatJob ? (
                 <LiveChatDock
                   job={activeChatJob}
                   onClose={() => setActiveTab("active")}
                 />
-              )}
+              ) : activeJobs.length > 0 && activeJobs[0] ? (
+                <LiveChatDock
+                  job={activeJobs[0]}
+                  onClose={() => setActiveTab("active")}
+                />
+              ) : null}
             </div>
           )}
 

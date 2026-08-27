@@ -13,6 +13,7 @@ import {
   DollarSign,
   ArrowRight,
   Sparkles,
+  ShieldAlert,
 } from "lucide-react";
 import { JobRequest, Quotation } from "@/types/job";
 import { formatCurrency, formatRelativeTime } from "@/utils/formatters";
@@ -21,12 +22,16 @@ import { useTheme } from "@/components/ThemeProvider";
 
 interface IncomingJobCardProps {
   job: JobRequest;
+  hasActiveJob?: boolean;
+  isVerified?: boolean;
   onSendQuote: (jobId: string, quote: Omit<Quotation, "id" | "workerId" | "workerName" | "avatarBg" | "submittedAt" | "status">) => void;
   onDecline: (jobId: string) => void;
 }
 
 export function IncomingJobCard({
   job,
+  hasActiveJob = false,
+  isVerified = true,
   onSendQuote,
   onDecline,
 }: IncomingJobCardProps) {
@@ -305,52 +310,98 @@ export function IncomingJobCard({
           </div>
         </form>
       ) : (
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <button
-            onClick={() => setIsQuoting(true)}
+        !isVerified ? (
+          <div
             style={{
-              flex: 1,
-              padding: "12px 18px",
-              borderRadius: "0px",
-              backgroundColor: "#10b981",
-              color: "#ffffff",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: 800,
-              fontSize: "13.5px",
+              padding: "12px 16px",
+              backgroundColor: "rgba(239, 68, 68, 0.08)",
+              border: "1.5px solid #ef4444",
+              color: isDark ? "#fca5a5" : "#b91c1c",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              transition: "transform 0.2s ease",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
-            onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-          >
-            <DollarSign size={16} />
-            <span>Send Quotation & Accept Request</span>
-          </button>
-
-          <button
-            onClick={() => onDecline(job.id)}
-            style={{
-              padding: "12px 18px",
-              borderRadius: "0px",
-              backgroundColor: "transparent",
-              border: "1px solid var(--border)",
-              color: "var(--text-secondary)",
-              cursor: "pointer",
-              fontWeight: 700,
+              gap: "10px",
               fontSize: "13px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
+              fontWeight: 700,
             }}
           >
-            <X size={15} />
-            <span>Pass / Next</span>
-          </button>
-        </div>
+            <ShieldAlert size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+            <div>
+              <div style={{ fontWeight: 800 }}>Account Pending Admin Verification</div>
+              <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px" }}>
+                Your National Identity Card (NIC) is currently under review by admin. You will be able to accept job requests once verified.
+              </div>
+            </div>
+          </div>
+        ) : hasActiveJob ? (
+          <div
+            style={{
+              padding: "12px 16px",
+              backgroundColor: "rgba(234, 179, 8, 0.12)",
+              border: "1.5px solid #eab308",
+              color: isDark ? "#fde047" : "#b45309",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              fontSize: "13px",
+              fontWeight: 700,
+            }}
+          >
+            <AlertTriangle size={18} color="#eab308" />
+            <div>
+              <div>Active Job In Progress (1 Job Limit)</div>
+              <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px" }}>
+                You already have an active job in your Active Job tab. Please complete your current task before accepting new requests.
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <button
+              onClick={() => setIsQuoting(true)}
+              style={{
+                flex: 1,
+                padding: "12px 18px",
+                borderRadius: "0px",
+                backgroundColor: "#10b981",
+                color: "#ffffff",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 800,
+                fontSize: "13.5px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "transform 0.2s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+            >
+              <DollarSign size={16} />
+              <span>Send Quotation & Accept Request</span>
+            </button>
+
+            <button
+              onClick={() => onDecline(job.id)}
+              style={{
+                padding: "12px 18px",
+                borderRadius: "0px",
+                backgroundColor: "transparent",
+                border: "1px solid var(--border)",
+                color: "var(--text-secondary)",
+                cursor: "pointer",
+                fontWeight: 700,
+                fontSize: "13px",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <X size={15} />
+              <span>Pass / Next</span>
+            </button>
+          </div>
+        )
       )}
     </div>
   );

@@ -18,16 +18,18 @@ const createIncident = async (req, res) => {
       ? `/uploads/incidents/${req.file.filename}`
       : null;
 
+    const reported_by = req.user ? req.user.id : 1;
+
     const incident = await Incident.create({
       title,
       description,
       category,
-      priority,
+      priority: priority || 'medium',
       location_text,
       latitude: latitude || null,
       longitude: longitude || null,
       image_url,
-      reported_by: req.user.id,
+      reported_by,
     });
 
     // Emit real-time event to admins
@@ -46,7 +48,7 @@ const createIncident = async (req, res) => {
 // ── @access  Private — all roles (filtered by role)
 const getAllIncidents = async (req, res) => {
   try {
-    const { status, category, priority, page = 1, limit = 20 } = req.query;
+    const { status, category, priority, page = 1, limit = 50 } = req.query;
     const offset = (parseInt(page) - 1) * parseInt(limit);
 
     // Citizens only see their own incidents
@@ -58,10 +60,10 @@ const getAllIncidents = async (req, res) => {
       offset,
     };
 
-    if (req.user.role === 'citizen') {
+    if (req.user && req.user.role === 'citizen') {
       filters.reported_by = req.user.id;
-    } else if (req.user.role === 'service_provider') {
-      filters.assigned_to = req.user.id;
+    } else if (req.user && req.user.role === 'service_provider') {
+      filters.provider_id = req.user.id;
     }
     // admin sees all
 
@@ -149,7 +151,7 @@ const updateIncident = async (req, res) => {
 // ── @access  Private — admin, service_provider
 const updateIncidentStatus = async (req, res) => {
   try {
-    const { status, assigned_to } = req.body;
+    const { status, assigned_to, cost_lkr, stage, quotation_notes } = req.body;
 
     const validStatuses = ['pending', 'assigned', 'in_progress', 'resolved', 'closed', 'rejected'];
     if (!validStatuses.includes(status)) {
@@ -161,19 +163,62 @@ const updateIncidentStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Incident not found.' });
     }
 
-    // Service providers can only update incidents assigned to them
-    if (req.user.role === 'service_provider' && incident.assigned_to !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'You can only update incidents assigned to you.',
-      });
+    // Citizens can cancel, accept quotation, or confirm progress/completion
+    if (req.user && req.user.role === 'citizen') {
+      if (incident.reported_by !== req.user.id) {
+        return res.status(403).json({ success: false, message: 'Access denied.' });
+      }
+      if (status !== 'rejected' && status !== 'assigned' && status !== 'in_progress' && status !== 'resolved') {
+        return res.status(400).json({ success: false, message: 'Invalid status transition for citizen.' });
+      }
     }
 
-    const updated = await Incident.updateStatus(req.params.id, status, assigned_to);
+    // Service providers can accept pending jobs, send quotes, or update jobs assigned to them
+    if (req.user && req.user.role === 'service_provider') {
+      const isAcceptingOrQuoting = incident.status === 'pending' || !incident.assigned_to;
+      const isAssigned = incident.assigned_to === req.user.id;
+      if (!isAcceptingOrQuoting && !isAssigned) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only update incidents assigned to you or accept pending broadcasts.',
+        });
+      }
+    }
 
-    // Emit real-time status update
+    // Determine assigned_to:
+    // 1. If explicitly provided in body, use it.
+    // 2. If already assigned to a provider, preserve that provider's ID!
+    // 3. If a service_provider is accepting a pending job, assign to req.user.id.
+    const resolvedAssignedTo =
+      assigned_to !== undefined
+        ? assigned_to
+        : incident.assigned_to || (req.user && req.user.role === 'service_provider' ? req.user.id : undefined);
+
+    const updated = await Incident.updateStatus(
+      req.params.id,
+      status,
+      resolvedAssignedTo,
+      cost_lkr,
+      stage,
+      quotation_notes
+    );
+
+    // Emit real-time status update & quotation updates
     const io = req.app.get('io');
-    if (io) io.emit('incident:status_update', { id: updated.id, status: updated.status });
+    if (io) {
+      io.emit('incident:status_update', { id: updated.id, status: updated.status });
+      if (updated.stage) {
+        io.emit('job_stage_changed', { jobId: `JOB-${updated.id}`, stage: updated.stage });
+      }
+      if (updated.cost_lkr) {
+        io.emit('quotation_updated', {
+          jobId: `JOB-${updated.id}`,
+          amountLKR: updated.cost_lkr,
+          workerName: req.user ? req.user.name : undefined,
+          notes: updated.quotation_notes,
+        });
+      }
+    }
 
     res.status(200).json({ success: true, data: updated });
   } catch (err) {

@@ -96,7 +96,7 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
           </div>
         </div>
 
-        {/* Quality Rating */}
+        {/* Quality Rating (Dynamic from real DB jobs & reviews) */}
         <div
           style={{
             padding: "20px",
@@ -114,10 +114,19 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
             <Star size={18} color="#eab308" fill="#eab308" />
           </div>
           <div style={{ fontSize: "24px", fontWeight: 900, color: "#eab308" }}>
-            4.9 ★ Rating
+            {(() => {
+              const reviewed = completedJobs.filter((j) => j.ratingGiven);
+              if (reviewed.length === 0) return "5.0 Rating";
+              const avg = reviewed.reduce((s, r) => s + (Number(r.ratingGiven) || 5), 0) / reviewed.length;
+              return `${avg.toFixed(1)} Rating`;
+            })()}
           </div>
           <div style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>
-            Based on 142 verified jobs in Colombo
+            {(() => {
+              const reviewed = completedJobs.filter((j) => j.ratingGiven);
+              if (reviewed.length === 0) return "Based on verified specialist registration";
+              return `Based on ${reviewed.length} verified review${reviewed.length > 1 ? "s" : ""} from completed jobs`;
+            })()}
           </div>
         </div>
       </div>

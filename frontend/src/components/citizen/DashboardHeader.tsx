@@ -1,8 +1,8 @@
-"use client";
-
-import React from "react";
-import { Search, MapPin, Sun, Moon, Bell, ShieldCheck } from "lucide-react";
+import React, { useState } from "react";
+import { Search, MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { ProfileModal } from "@/components/profile/ProfileModal";
 
 interface DashboardHeaderProps {
   selectedLocality: string;
@@ -18,7 +18,18 @@ export function DashboardHeader({
   onSearchChange,
 }: DashboardHeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const isDark = theme === "dark";
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const initials = user?.fullName
+    ? user.fullName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "HO";
 
   return (
     <header
@@ -81,50 +92,6 @@ export function DashboardHeader({
 
       {/* Right Controls */}
       <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-        {/* Locality Selector Pill */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "8px 14px",
-            backgroundColor: isDark ? "rgba(66,214,255,0.08)" : "rgba(8,145,178,0.08)",
-            border: "1px solid var(--border)",
-            fontSize: "13px",
-            fontWeight: 700,
-            color: "var(--accent)",
-          }}
-        >
-          <MapPin size={15} />
-          <span>{selectedLocality} · Western Province</span>
-        </div>
-
-        {/* Live Network Status */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "#10b981",
-            padding: "6px 12px",
-            backgroundColor: "rgba(16,185,129,0.1)",
-            border: "1px solid rgba(16,185,129,0.2)",
-          }}
-        >
-          <span
-            style={{
-              width: "7px",
-              height: "7px",
-              borderRadius: "50%",
-              backgroundColor: "#10b981",
-              boxShadow: "0 0 8px #10b981",
-            }}
-          />
-          <span>Radar Live</span>
-        </div>
-
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -146,7 +113,7 @@ export function DashboardHeader({
           {isDark ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* User profile avatar */}
+        {/* User profile avatar (Clickable to open profile) */}
         <div
           style={{
             display: "flex",
@@ -157,30 +124,92 @@ export function DashboardHeader({
           }}
         >
           <div
+            onClick={() => setIsProfileOpen(true)}
+            title="Click to view/edit profile and saved home address"
             style={{
-              width: "36px",
-              height: "36px",
-              backgroundColor: "var(--accent)",
-              color: "var(--accent-text)",
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              padding: "4px 8px",
+              borderRadius: "4px",
+              transition: "background-color 0.2s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)")}
+            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+          >
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                backgroundColor: "var(--accent)",
+                color: "var(--accent-text)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontWeight: 800,
+                fontSize: "14px",
+                borderRadius: "50%",
+                overflow: "hidden",
+              }}
+            >
+              {user?.profilePicture ? (
+                <img
+                  src={user.profilePicture}
+                  alt="Avatar"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              ) : (
+                initials
+              )}
+            </div>
+            <div>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
+                {user?.fullName || "Homeowner"}
+              </div>
+              <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+                {user?.homeAddress ? user.homeAddress.split(",")[0] : (user?.locality || "Heerassagala, Kandy")}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Sign Out Action */}
+          <button
+            onClick={logout}
+            title="Sign Out"
+            aria-label="Sign Out"
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-secondary)",
+              cursor: "pointer",
+              padding: "6px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              fontWeight: 800,
-              fontSize: "14px",
+              transition: "color 0.2s ease, transform 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#ef4444";
+              e.currentTarget.style.transform = "scale(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.transform = "scale(1)";
             }}
           >
-            HO
-          </div>
-          <div>
-            <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
-              Homeowner
-            </div>
-            <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-              Verified Resident
-            </div>
-          </div>
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
+
+      <ProfileModal
+        isOpen={isProfileOpen}
+        onClose={() => setIsProfileOpen(false)}
+      />
     </header>
   );
 }

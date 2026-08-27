@@ -22,6 +22,10 @@ const sendTokenResponse = (user, statusCode, res) => {
       email: user.email,
       role: user.role,
       phone: user.phone,
+      profile_picture: user.profile_picture,
+      home_address: user.home_address,
+      saved_lat: user.saved_lat,
+      saved_lng: user.saved_lng,
       created_at: user.created_at,
     },
   });

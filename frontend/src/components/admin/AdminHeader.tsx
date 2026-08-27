@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Sun, Moon, Lock, Activity, Layers } from "lucide-react";
+import { ShieldCheck, Sun, Moon, Lock, Activity, Layers, LogOut } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 
 interface AdminHeaderProps {
   activeDistrictCount?: number;
@@ -14,6 +15,7 @@ export function AdminHeader({
   totalResolutions = 96.4,
 }: AdminHeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { user, logout } = useAuth();
   const isDark = theme === "dark";
 
   return (
@@ -109,12 +111,40 @@ export function AdminHeader({
           </div>
           <div>
             <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>
-              Platform Operations
+              {user?.fullName || "Platform Operations"}
             </div>
             <div style={{ fontSize: "11px", color: "var(--text-secondary)", fontWeight: 600 }}>
-              Super Admin Manager
+              {user?.staffId ? `Staff ID: ${user.staffId}` : "Super Admin Manager"}
             </div>
           </div>
+
+          {/* Quick Sign Out Action */}
+          <button
+            onClick={logout}
+            title="Sign Out"
+            aria-label="Sign Out"
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--text-secondary)",
+              cursor: "pointer",
+              padding: "6px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "color 0.2s ease, transform 0.2s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "#ef4444";
+              e.currentTarget.style.transform = "scale(1.1)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.transform = "scale(1)";
+            }}
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </header>

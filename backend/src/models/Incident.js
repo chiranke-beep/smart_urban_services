@@ -52,6 +52,12 @@ const Incident = {
       CREATE INDEX IF NOT EXISTS idx_incidents_category ON incidents(category);
       CREATE INDEX IF NOT EXISTS idx_incidents_reported ON incidents(reported_by);
       CREATE INDEX IF NOT EXISTS idx_incidents_assigned ON incidents(assigned_to);
+
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS cost_lkr INTEGER DEFAULT 3500;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS stage VARCHAR(30) DEFAULT 'REQUESTED';
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS quotation_notes TEXT;
+      ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_category_check;
+      ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_status_check;
     `);
   },
 
@@ -68,7 +74,7 @@ const Incident = {
   },
 
   // ── Get all incidents with filters + pagination ──────────────────────────
-  async findAll({ status, category, priority, reported_by, assigned_to, limit = 20, offset = 0 } = {}) {
+  async findAll({ status, category, priority, reported_by, assigned_to, provider_id, limit = 50, offset = 0 } = {}) {
     const conditions = [];
     const values = [];
     let idx = 1;
@@ -78,6 +84,7 @@ const Incident = {
     if (priority)    { conditions.push(`priority = $${idx++}`);    values.push(priority); }
     if (reported_by) { conditions.push(`reported_by = $${idx++}`); values.push(reported_by); }
     if (assigned_to) { conditions.push(`assigned_to = $${idx++}`); values.push(assigned_to); }
+    if (provider_id) { conditions.push(`(assigned_to = $${idx++} OR status = 'pending' OR stage = 'REQUESTED' OR assigned_to IS NULL)`); values.push(provider_id); }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const countVals = [...values];
@@ -147,8 +154,8 @@ const Incident = {
     return rows[0] || null;
   },
 
-  // ── Update status (admin/service_provider) ───────────────────────────────
-  async updateStatus(id, status, assigned_to = undefined) {
+  // ── Update status (admin/service_provider/citizen) ─────────────────────────
+  async updateStatus(id, status, assigned_to = undefined, cost_lkr = undefined, stage = undefined, quotation_notes = undefined) {
     const setClauses = ['status = $1'];
     const values = [status];
     let idx = 2;
@@ -156,6 +163,18 @@ const Incident = {
     if (assigned_to !== undefined) {
       setClauses.push(`assigned_to = $${idx++}`);
       values.push(assigned_to);
+    }
+    if (cost_lkr !== undefined) {
+      setClauses.push(`cost_lkr = $${idx++}`);
+      values.push(cost_lkr);
+    }
+    if (stage !== undefined) {
+      setClauses.push(`stage = $${idx++}`);
+      values.push(stage);
+    }
+    if (quotation_notes !== undefined) {
+      setClauses.push(`quotation_notes = $${idx++}`);
+      values.push(quotation_notes);
     }
     if (status === 'resolved') {
       setClauses.push(`resolved_at = NOW()`);

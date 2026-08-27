@@ -23,9 +23,9 @@ import {
   Trees,
   Paintbrush,
   Laptop,
-  Check,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { apiClient } from "@/services/api";
 
 interface Provider {
   id: string;
@@ -153,6 +153,7 @@ const PROVIDERS_DATA: Provider[] = [
 ];
 
 export function NearbyProvidersDeck() {
+  const [providers, setProviders] = useState<Provider[]>(PROVIDERS_DATA);
   const [selectedTrade, setSelectedTrade] = useState<string>("all");
   const [activeChatProvider, setActiveChatProvider] = useState<Provider | null>(null);
   const [chatMessages, setChatMessages] = useState<{ sender: "user" | "provider"; text: string; time: string }[]>([]);
@@ -163,6 +164,36 @@ export function NearbyProvidersDeck() {
   const isDark = theme === "dark";
 
   useEffect(() => {
+    // Fetch live service providers from PostgreSQL database
+    apiClient<{ success: boolean; data?: any[] }>("/providers")
+      .then((res) => {
+        if (res?.data && res.data.length > 0) {
+          const mapped: Provider[] = res.data.map((p, idx) => ({
+            id: `p-${p.id}`,
+            name: p.fullName || "Verified Technician",
+            avatarBg: ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899"][idx % 5],
+            trade: p.trade || "Master Craftsman",
+            tradeType: (p.trade?.toLowerCase().includes("paint") ? "painting"
+              : p.trade?.toLowerCase().includes("tree") ? "trees"
+              : p.trade?.toLowerCase().includes("plumb") ? "plumbing"
+              : p.trade?.toLowerCase().includes("tech") ? "tech"
+              : "cleaning") as any,
+            rating: Number(p.rating || 4.9).toFixed(1),
+            reviewCount: Number(p.reviewCount || 1),
+            distance: "1.2 km away",
+            eta: "~15 min arrival",
+            rate: `Rs. ${p.dailyRate || 3500} / day`,
+            locality: `${p.locality}, ${p.district}`,
+            verified: Boolean(p.verifiedBadge),
+            status: "available",
+            skills: ["Verified Work Standards", "Direct Cash/Bank Settlement", "Safety Equipped"],
+            recentJob: "Local Verified Service Completed (5.0 Rating)",
+          }));
+          setProviders(mapped);
+        }
+      })
+      .catch((err) => console.warn("[DB Providers load notice]:", err.message));
+
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
       gsap.fromTo(
@@ -229,8 +260,8 @@ export function NearbyProvidersDeck() {
 
   const filteredProviders =
     selectedTrade === "all"
-      ? PROVIDERS_DATA
-      : PROVIDERS_DATA.filter((p) => p.tradeType === selectedTrade);
+      ? providers
+      : providers.filter((p) => p.tradeType === selectedTrade);
 
   return (
     <section

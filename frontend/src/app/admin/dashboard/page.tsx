@@ -13,8 +13,12 @@ import {
   DistrictMetric,
 } from "@/types/admin";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function AdminDashboardPage() {
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
   const [applications, setApplications] = useState<PendingWorkerApplication[]>([]);
   const [hazards, setHazards] = useState<CivicHazardIncident[]>([]);
   const [metrics, setMetrics] = useState<DistrictMetric[]>([]);
@@ -22,22 +26,37 @@ export default function AdminDashboardPage() {
   const { theme } = useTheme();
 
   useEffect(() => {
-    setApplications(adminService.getApplications());
-    setHazards(adminService.getHazards());
-    setMetrics(adminService.getDistrictMetrics());
+    if (!isLoading && (!isAuthenticated || user?.role !== "ADMIN")) {
+      router.replace("/admin/login");
+    }
+  }, [isLoading, isAuthenticated, user, router]);
+
+  const loadAdminData = async () => {
+    const [apps, haz, met] = await Promise.all([
+      adminService.fetchApplications(),
+      adminService.fetchHazards(),
+      adminService.fetchDistrictMetrics(),
+    ]);
+    setApplications(apps);
+    setHazards(haz);
+    setMetrics(met);
+  };
+
+  useEffect(() => {
+    loadAdminData();
   }, []);
 
   const pendingAppsCount = applications.filter((a) => a.status === "PENDING").length;
   const openHazardsCount = hazards.filter((h) => h.status !== "RESOLVED").length;
 
-  const handleApprove = (appId: string) => {
-    adminService.updateApplicationStatus(appId, "APPROVED");
-    setApplications(adminService.getApplications());
+  const handleApprove = async (appId: string) => {
+    await adminService.updateApplicationStatus(appId, "APPROVED");
+    loadAdminData();
   };
 
-  const handleReject = (appId: string, reason?: string) => {
-    adminService.updateApplicationStatus(appId, "REJECTED", reason);
-    setApplications(adminService.getApplications());
+  const handleReject = async (appId: string, reason?: string) => {
+    await adminService.updateApplicationStatus(appId, "REJECTED", reason);
+    loadAdminData();
   };
 
   const handleDispatchHazard = (hazardId: string, crewName: string) => {

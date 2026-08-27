@@ -39,11 +39,19 @@ const User = {
     await pool.query(sql);
   },
 
-  // ── Find by email (used for login) ──────────────────────────────────────
-  async findByEmail(email) {
+  // ── Find by email or phone (used for login) ───────────────────────────
+  async findByEmail(identifier) {
+    const clean = (identifier || "").trim().toLowerCase();
+    const rawDigits = clean.replace(/\D/g, "");
+
     const { rows } = await pool.query(
-      'SELECT * FROM users WHERE email = $1 LIMIT 1',
-      [email]
+      `SELECT * FROM users 
+       WHERE LOWER(TRIM(email)) = $1 
+          OR LOWER(TRIM(phone)) = $1
+          OR ($2 <> '' AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') = $2)
+          OR ($2 <> '' AND REGEXP_REPLACE(phone, '[^0-9]', '', 'g') LIKE '%' || $2)
+       LIMIT 1`,
+      [clean, rawDigits]
     );
     return rows[0] || null;
   },

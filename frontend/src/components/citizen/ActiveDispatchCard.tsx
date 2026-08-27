@@ -13,6 +13,7 @@ import {
   ArrowRight,
   ExternalLink,
   Sliders,
+  Radio,
 } from "lucide-react";
 import { JobRequest } from "@/types/job";
 import { TelemetryTimeline } from "./TelemetryTimeline";
@@ -24,12 +25,16 @@ interface ActiveDispatchCardProps {
   job: JobRequest;
   onOpenChat: (jobId: string) => void;
   onAdvanceStage?: (jobId: string, stage: JobRequest["stage"]) => void;
+  onCancelJob?: (jobId: string) => void;
+  onAcceptQuote?: (jobId: string) => void;
 }
 
 export function ActiveDispatchCard({
   job,
   onOpenChat,
   onAdvanceStage,
+  onCancelJob,
+  onAcceptQuote,
 }: ActiveDispatchCardProps) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -71,15 +76,14 @@ export function ActiveDispatchCard({
               color: "#10b981",
               fontSize: "12px",
               fontWeight: 800,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
+              letterSpacing: "0.02em",
             }}
           >
-            <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981" }} />
-            LIVE DISPATCH ACTIVE
+            <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%" }} />
+            Active Job
           </span>
           <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-secondary)" }}>
-            #{job.id}
+            Status: {job.stage === "QUOTED" ? "Price Quoted" : job.stage === "EN_ROUTE" ? "On the way" : job.stage === "IN_PROGRESS" ? "Working" : job.stage === "COMPLETED" ? "Finished" : "Requested"}
           </span>
         </div>
 
@@ -107,17 +111,109 @@ export function ActiveDispatchCard({
         </p>
       </div>
 
-      {/* 5-Stage Telemetry Timeline */}
-      <TelemetryTimeline currentStage={job.stage} etaMinutes={job.etaMinutes} />
+      {/* Stage Telemetry Step Bar */}
+      <TelemetryTimeline currentStage={job.stage} etaMinutes={job.etaMinutes || 15} />
 
-      {/* Live GPS Route Tracker Mini-Map (When En Route or In Progress) */}
+      {/* Quotation Received & Price Confirmation Banner (when QUOTED) */}
+      {(job.stage === "QUOTED" && job.quotation && job.quotation.status === "pending") && (
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "18px 22px",
+            backgroundColor: "rgba(16,185,129,0.1)",
+            border: "2px solid #10b981",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16px",
+          }}
+        >
+          <div>
+            <div style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 800 }}>
+              Worker Sent Price Quote
+            </div>
+            <div style={{ fontSize: "24px", fontWeight: 900, color: "#10b981", marginTop: "2px" }}>
+              {formatCurrency(job.quotation?.amountLKR || job.costLKR || 3500)}
+            </div>
+            <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+              Review the price. You can accept to start, chat to negotiate, or decline.
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+            {onAcceptQuote && (
+              <button
+                onClick={() => onAcceptQuote(job.id)}
+                style={{
+                  padding: "10px 18px",
+                  backgroundColor: "#10b981",
+                  color: "#ffffff",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "13px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  boxShadow: "0 4px 14px rgba(16,185,129,0.3)",
+                }}
+              >
+                <CheckCircle size={16} />
+                <span>Accept Price & Start</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onOpenChat(job.id)}
+              style={{
+                padding: "10px 16px",
+                backgroundColor: "var(--accent)",
+                color: "var(--accent-text)",
+                border: "none",
+                fontWeight: 800,
+                fontSize: "13px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <MessageSquare size={15} />
+              <span>Chat to Negotiate</span>
+            </button>
+
+            {onCancelJob && (
+              <button
+                onClick={() => onCancelJob(job.id)}
+                style={{
+                  padding: "10px 14px",
+                  backgroundColor: "transparent",
+                  color: "#ef4444",
+                  border: "1.5px solid #ef4444",
+                  fontWeight: 800,
+                  fontSize: "12.5px",
+                  cursor: "pointer",
+                }}
+              >
+                Decline & Cancel
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Live GPS Route Map (shown when En Route or In Progress) */}
       {(job.stage === "EN_ROUTE" || job.stage === "IN_PROGRESS") && worker && (
         <LiveGpsRouteMap
           workerName={worker.name}
           vehiclePlate={worker.plateNumber}
           locality={job.locality}
-          etaMinutes={job.etaMinutes}
+          homeLat={job.latitude}
+          homeLng={job.longitude}
+          etaMinutes={job.etaMinutes || 15}
           stage={job.stage}
+          isProviderView={false}
           onGeofenceArrival={() => {
             if (onAdvanceStage) {
               onAdvanceStage(job.id, "IN_PROGRESS");
@@ -144,8 +240,90 @@ export function ActiveDispatchCard({
         >
           <ShieldCheck size={18} />
           <span>
-            <strong>Geofence AI Verified Arrival:</strong> {worker?.name} has arrived at property perimeter (&lt;50m). Task is actively in progress.
+            <strong>Geofence AI Verified Arrival:</strong> {worker?.name || "Technician"} has arrived at property perimeter (&lt;50m). Task is actively in progress.
           </span>
+        </div>
+      )}
+
+      {/* Broadcast Sent / Awaiting Response State */}
+      {!worker && (
+        <div
+          style={{
+            marginTop: "20px",
+            padding: "16px 20px",
+            backgroundColor: "rgba(16,185,129,0.08)",
+            border: "1.5px dashed #10b981",
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "14px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+            <div
+              style={{
+                width: "36px",
+                height: "36px",
+                backgroundColor: "#10b981",
+                color: "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Radio size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
+                Live Broadcast Sent to Local Verified Technicians
+              </div>
+              <div style={{ fontSize: "12px", color: "var(--text-secondary)" }}>
+                Waiting for nearby provider acceptance in {job.locality}, {job.district}...
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            {onCancelJob && (
+              <button
+                onClick={() => onCancelJob(job.id)}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "rgba(239,68,68,0.1)",
+                  color: "#ef4444",
+                  border: "1.5px solid #ef4444",
+                  fontWeight: 800,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                }}
+              >
+                <span>Cancel Request</span>
+              </button>
+            )}
+
+            <button
+              onClick={() => onOpenChat(job.id)}
+              style={{
+                padding: "8px 16px",
+                backgroundColor: "var(--accent)",
+                color: "var(--accent-text)",
+                border: "none",
+                fontWeight: 800,
+                fontSize: "12px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}
+            >
+              <MessageSquare size={14} />
+              <span>Open Dispatch Channel</span>
+            </button>
+          </div>
         </div>
       )}
 
@@ -212,16 +390,32 @@ export function ActiveDispatchCard({
           </div>
 
           {/* Rate & Interactive Actions */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
             {job.quotation && (
               <div style={{ textAlign: "right", paddingRight: "8px" }}>
                 <div style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 700 }}>
-                  Approved Quote
+                  Quoted Price
                 </div>
                 <div style={{ fontSize: "18px", fontWeight: 900, color: "var(--text-primary)" }}>
                   {formatCurrency(job.quotation.amountLKR)}
                 </div>
               </div>
+            )}
+
+            {/* Locked Cancellation notice when En Route or In Progress */}
+            {(job.stage === "EN_ROUTE" || job.stage === "IN_PROGRESS") && (
+              <span
+                style={{
+                  padding: "6px 10px",
+                  backgroundColor: "rgba(100,116,139,0.12)",
+                  color: "var(--text-secondary)",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  border: "1px dashed var(--border)",
+                }}
+              >
+                🔒 Worker on the way
+              </span>
             )}
 
             <button
@@ -244,7 +438,7 @@ export function ActiveDispatchCard({
               onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
             >
               <MessageSquare size={16} />
-              <span>Open Worker Chat</span>
+              <span>Chat with Worker</span>
             </button>
 
             <a
@@ -269,69 +463,6 @@ export function ActiveDispatchCard({
               <PhoneCall size={14} />
               <span>Call</span>
             </a>
-          </div>
-        </div>
-      )}
-
-      {/* Interactive Simulation Controls (Examiner / Degree Demonstration) */}
-      {onAdvanceStage && job.stage !== "COMPLETED" && (
-        <div
-          style={{
-            marginTop: "16px",
-            padding: "10px 14px",
-            backgroundColor: "rgba(66,214,255,0.06)",
-            border: "1px dashed var(--border)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            fontSize: "12px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "var(--text-secondary)" }}>
-            <Sliders size={13} color="var(--accent)" />
-            <span><strong>Simulation Pipeline:</strong> Advance stage to test worker arrival & completion:</span>
-          </div>
-          <div style={{ display: "flex", gap: "8px" }}>
-            {job.stage === "EN_ROUTE" && (
-              <button
-                onClick={() => onAdvanceStage(job.id, "IN_PROGRESS")}
-                style={{
-                  padding: "4px 10px",
-                  backgroundColor: "var(--accent)",
-                  color: "var(--accent-text)",
-                  border: "none",
-                  fontWeight: 700,
-                  fontSize: "11px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <span>Mark as Arrived / In Progress</span>
-                <ArrowRight size={12} />
-              </button>
-            )}
-            {job.stage === "IN_PROGRESS" && (
-              <button
-                onClick={() => onAdvanceStage(job.id, "COMPLETED")}
-                style={{
-                  padding: "4px 10px",
-                  backgroundColor: "#10b981",
-                  color: "#ffffff",
-                  border: "none",
-                  fontWeight: 700,
-                  fontSize: "11px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <CheckCircle size={12} />
-                <span>Mark as Completed</span>
-              </button>
-            )}
           </div>
         </div>
       )}

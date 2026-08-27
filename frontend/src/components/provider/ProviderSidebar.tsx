@@ -11,7 +11,9 @@ import {
   ShieldCheck,
   Power,
   Sliders,
+  LogOut,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface ProviderSidebarProps {
   activeTab: string;
@@ -32,22 +34,23 @@ export function ProviderSidebar({
   isOnline,
   onToggleOnline,
 }: ProviderSidebarProps) {
+  const { logout } = useAuth();
   const navItems = [
     {
       id: "feed",
-      label: "Broadcast Feed",
+      label: "New Requests",
       icon: Radio,
       badge: isOnline ? incomingCount : undefined,
     },
     {
       id: "active",
-      label: "Active Job & GPS Route",
+      label: "Active Job & Map",
       icon: Navigation,
       badge: activeJobsCount,
     },
     {
       id: "chat",
-      label: "Homeowner Chat Hub",
+      label: "Customer Messages",
       icon: MessageSquare,
       badge: unreadChatCount,
     },
@@ -132,7 +135,7 @@ export function ProviderSidebar({
                 boxShadow: isOnline ? "0 0 10px #10b981" : "none",
               }}
             />
-            <span>{isOnline ? "ONLINE · RADAR ON" : "OFFLINE"}</span>
+            <span>{isOnline ? "LIVE LOCATION ON" : "LIVE LOCATION OFF"}</span>
           </div>
           <Power size={15} />
         </button>
@@ -199,8 +202,8 @@ export function ProviderSidebar({
         </nav>
       </div>
 
-      {/* Bottom Return Link */}
-      <div style={{ paddingTop: "16px", borderTop: "1px solid var(--border)" }}>
+      {/* Bottom Return Link & Logout */}
+      <div style={{ paddingTop: "14px", borderTop: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "4px" }}>
         <Link
           href="/"
           style={{
@@ -220,6 +223,30 @@ export function ProviderSidebar({
           <Home size={16} />
           <span>Back to Landing</span>
         </Link>
+
+        <button
+          onClick={logout}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            color: "#ef4444",
+            fontSize: "13px",
+            background: "none",
+            border: "none",
+            padding: "8px 12px",
+            fontWeight: 700,
+            cursor: "pointer",
+            textAlign: "left",
+            width: "100%",
+            transition: "opacity 0.2s ease",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.75")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        >
+          <LogOut size={16} />
+          <span>Sign Out</span>
+        </button>
       </div>
     </aside>
   );

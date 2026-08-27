@@ -6,10 +6,11 @@ import {
   HomeownerRegistrationData,
   ProviderRegistrationData,
 } from "@/types/auth";
+import { apiClient } from "./api";
 
 const AUTH_STORAGE_KEY = "smart_urban_auth_session";
 
-// ── Demo Pre-Seeded Profiles for 1-Click Fast Sign-In ──────────
+// ── Default Fallback Seed Profiles ─────────────────────────────
 const DEMO_HOMEOWNER: UserProfile = {
   id: "USR-8821",
   fullName: "Anura Senanayake",
@@ -81,9 +82,9 @@ class AuthService {
     return session ? session.user : null;
   }
 
-  public setSession(user: UserProfile): AuthSession {
+  public setSession(user: UserProfile, token?: string): AuthSession {
     const session: AuthSession = {
-      token: `jwt_token_${user.id}_${Date.now()}`,
+      token: token || `jwt_token_${user.id}_${Date.now()}`,
       user,
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     };
@@ -95,93 +96,199 @@ class AuthService {
   }
 
   public async login(credentials: LoginCredentials): Promise<UserProfile> {
-    // Simulate slight network verification delay
-    await new Promise((res) => setTimeout(res, 400));
-
     if (credentials.role === "ADMIN") {
       return this.adminLogin(credentials.identifier, credentials.password || "");
     }
 
-    if (credentials.role === "PROVIDER") {
-      const user: UserProfile = {
-        ...DEMO_PROVIDER,
-        phone: credentials.identifier.startsWith("+94") || credentials.identifier.startsWith("07")
-          ? credentials.identifier
-          : DEMO_PROVIDER.phone,
-        email: credentials.identifier.includes("@") ? credentials.identifier : DEMO_PROVIDER.email,
+    const email = credentials.identifier.includes("@")
+      ? credentials.identifier.trim()
+      : `${credentials.identifier.replace(/\D/g, "")}@smarturban.lk`;
+
+    const password = credentials.password || "Password123";
+
+    const response = await apiClient<{ success: boolean; token: string; user: any }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response?.success && response?.user) {
+      const backendUser = response.user;
+
+      if (credentials.role === "PROVIDER" && backendUser.role !== "service_provider") {
+        throw new Error(
+          "This account is registered as a Citizen / Homeowner. Please switch to the Citizen tab to log in, or register as a Service Provider."
+        );
+      }
+
+      if (credentials.role === "HOMEOWNER" && backendUser.role === "service_provider") {
+        throw new Error(
+          "This account is registered as a Service Provider. Please switch to the Service Provider tab to log in, or register as a Citizen."
+        );
+      }
+
+      const mappedUser: UserProfile = {
+        id: `USR-${backendUser.id}`,
+        fullName: backendUser.name,
+        email: backendUser.email,
+        phone: backendUser.phone || credentials.identifier,
+        role: backendUser.role === "service_provider" ? "PROVIDER" : "HOMEOWNER",
+        profilePicture: backendUser.profile_picture || undefined,
+        homeAddress: backendUser.home_address || undefined,
+        savedLat: backendUser.saved_lat ? Number(backendUser.saved_lat) : undefined,
+        savedLng: backendUser.saved_lng ? Number(backendUser.saved_lng) : undefined,
+        locality: backendUser.role === "service_provider" ? "Heerassagala" : "Colombo Urban",
+        district: backendUser.role === "service_provider" ? "Kandy" : "Colombo",
+        trade: backendUser.role === "service_provider" ? "Master Technician & Craftsman" : undefined,
+        createdAt: backendUser.created_at || new Date().toISOString(),
       };
-      this.setSession(user);
-      return user;
+
+      this.setSession(mappedUser, response.token);
+      return mappedUser;
     }
 
-    // Default: Homeowner
-    const user: UserProfile = {
-      ...DEMO_HOMEOWNER,
-      phone: credentials.identifier.startsWith("+94") || credentials.identifier.startsWith("07")
-        ? credentials.identifier
-        : DEMO_HOMEOWNER.phone,
-      email: credentials.identifier.includes("@") ? credentials.identifier : DEMO_HOMEOWNER.email,
-    };
-    this.setSession(user);
-    return user;
+    throw new Error("Invalid email/phone or password. Please try again.");
   }
 
   public async registerHomeowner(data: HomeownerRegistrationData): Promise<UserProfile> {
-    await new Promise((res) => setTimeout(res, 500));
+    const rawPhoneDigits = data.phone.replace(/\D/g, "");
+    const email = data.email?.trim() || `${rawPhoneDigits}@smarturban.lk`;
+    const password = data.password || "Password123";
 
-    const newUser: UserProfile = {
-      id: `USR-${Math.floor(1000 + Math.random() * 9000)}`,
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      role: "HOMEOWNER",
-      locality: data.locality,
-      district: data.district,
-      createdAt: new Date().toISOString(),
-    };
+    const response = await apiClient<{ success: boolean; token: string; user: any }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: data.fullName,
+        email,
+        password,
+        role: "citizen",
+        phone: data.phone,
+      }),
+    });
 
-    this.setSession(newUser);
-    return newUser;
+    if (response?.success && response?.user) {
+      const backendUser = response.user;
+      const newUser: UserProfile = {
+        id: `USR-${backendUser.id}`,
+        fullName: backendUser.name,
+        email: backendUser.email,
+        phone: backendUser.phone || data.phone,
+        role: "HOMEOWNER",
+        locality: data.locality,
+        district: data.district,
+        createdAt: backendUser.created_at || new Date().toISOString(),
+      };
+
+      this.setSession(newUser, response.token);
+      return newUser;
+    }
+
+    throw new Error("Failed to register user in PostgreSQL database.");
   }
 
   public async registerProvider(data: ProviderRegistrationData): Promise<UserProfile> {
-    await new Promise((res) => setTimeout(res, 600));
+    const rawPhoneDigits = data.phone.replace(/\D/g, "");
+    const email = data.email?.trim() || `${rawPhoneDigits}@smarturban.lk`;
+    const password = data.password || "Password123";
 
-    const newProvider: UserProfile = {
-      id: `PRV-${Math.floor(1000 + Math.random() * 9000)}`,
-      fullName: data.fullName,
-      email: data.email,
-      phone: data.phone,
-      role: "PROVIDER",
-      locality: data.locality,
-      district: data.district,
-      trade: data.trade,
-      tradeType: data.tradeType,
-      nicNumber: data.nicNumber,
-      experienceYears: data.experienceYears,
-      dailyRate: data.dailyRate,
-      hourlyRate: data.hourlyRate,
-      verifiedBadge: false, // Pending admin inspection
-      vehicleType: data.vehicleType,
-      plateNumber: data.plateNumber,
-      status: "AVAILABLE",
-      createdAt: new Date().toISOString(),
-    };
+    const response = await apiClient<{ success: boolean; token: string; user: any }>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify({
+        name: data.fullName,
+        email,
+        password,
+        role: "service_provider",
+        phone: data.phone,
+      }),
+    });
 
-    this.setSession(newProvider);
-    return newProvider;
+    if (response?.success && response?.user) {
+      const backendUser = response.user;
+
+      // Sync provider profile details & NIC document into PostgreSQL
+      await apiClient(`/users/profile/${backendUser.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          fullName: data.fullName,
+          phone: data.phone,
+          trade: data.trade,
+          dailyRate: data.dailyRate,
+          hourlyRate: data.hourlyRate,
+          experienceYears: data.experienceYears,
+          nicNumber: data.nicNumber,
+          nicDocumentUrl: data.nicFrontUrl || data.skillCertUrl,
+          locality: data.locality,
+          district: data.district,
+        }),
+      }).catch(() => {});
+
+      const newProvider: UserProfile = {
+        id: `PRV-${backendUser.id}`,
+        fullName: backendUser.name,
+        email: backendUser.email,
+        phone: backendUser.phone || data.phone,
+        role: "PROVIDER",
+        locality: data.locality,
+        district: data.district,
+        trade: data.trade,
+        tradeType: (data.tradeType as any) || "painting",
+        nicNumber: data.nicNumber,
+        experienceYears: data.experienceYears,
+        dailyRate: data.dailyRate,
+        hourlyRate: data.hourlyRate,
+        verifiedBadge: false,
+        status: "AVAILABLE",
+        createdAt: backendUser.created_at || new Date().toISOString(),
+      };
+
+      this.setSession(newProvider, response.token);
+      return newProvider;
+    }
+
+    throw new Error("Failed to register provider in PostgreSQL database.");
   }
 
-  public async adminLogin(staffId: string, securityPass: string): Promise<UserProfile> {
-    await new Promise((res) => setTimeout(res, 400));
+  public async adminLogin(identifier: string, securityPass: string): Promise<UserProfile> {
+    const email = identifier.includes("@") ? identifier.trim() : "admin@smarturban.lk";
+    const password = securityPass.trim();
 
-    const adminUser: UserProfile = {
-      ...DEMO_ADMIN,
-      staffId: staffId.toUpperCase(),
-    };
+    if (!password) {
+      throw new Error("Password is required for admin login.");
+    }
 
-    this.setSession(adminUser);
-    return adminUser;
+    const response = await apiClient<{ success: boolean; token: string; user: any }>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (response?.success && response?.user) {
+      if (response.user.role !== "admin") {
+        throw new Error("Access Denied: This account is not authorized for Admin Console access.");
+      }
+
+      const adminUser: UserProfile = {
+        id: `ADM-${response.user.id}`,
+        fullName: response.user.name || "System Admin",
+        email: response.user.email,
+        phone: response.user.phone || "+94 11 280 4400",
+        role: "ADMIN",
+        staffId: identifier.toUpperCase(),
+        department: "Platform Quality Operations",
+        accessLevel: "SUPER_ADMIN",
+        locality: "Colombo 07",
+        district: "Colombo",
+        createdAt: response.user.created_at || new Date().toISOString(),
+      };
+
+      this.setSession(adminUser, response.token);
+      return adminUser;
+    }
+
+    throw new Error("Invalid admin username/email or password.");
+  }
+
+  public getToken(): string | null {
+    const session = this.getSession();
+    return session ? session.token : null;
   }
 
   public logout(): void {
@@ -191,7 +298,6 @@ class AuthService {
     }
   }
 
-  // Pre-configured 1-click test profiles
   public getDemoProfiles() {
     return {
       homeowner: DEMO_HOMEOWNER,

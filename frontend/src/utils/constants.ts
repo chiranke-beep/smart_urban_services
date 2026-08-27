@@ -98,14 +98,14 @@ export const POPULAR_LOCALITIES: Record<string, string[]> = {
     "Colombo 07 (Cinnamon Gardens)",
   ],
   Gampaha: ["Negombo", "Kelaniya", "Kiribathgoda", "Kadawatha", "Ja-Ela", "Gampaha Town"],
-  Kandy: ["Kandy Town", "Peradeniya", "Katugastota", "Gampola", "Kundasale"],
+  Kandy: ["Heerassagala", "Kandy Town", "Peradeniya", "Katugastota", "Gampola", "Kundasale"],
 };
 
 export const DISPATCH_STAGES_FLOW = [
-  { key: "REQUESTED", label: "Requested", description: "Broadcast to local workers" },
-  { key: "MATCHED", label: "Matched", description: "Worker reviewed your request" },
-  { key: "QUOTED", label: "Quoted", description: "Quote sent for your approval" },
-  { key: "EN_ROUTE", label: "En Route", description: "Worker is travelling to location" },
-  { key: "IN_PROGRESS", label: "In Progress", description: "Work underway at property" },
-  { key: "COMPLETED", label: "Completed", description: "Job verified & finished" },
+  { key: "REQUESTED", label: "Requested", description: "Waiting for local workers" },
+  { key: "MATCHED", label: "Matched", description: "Worker accepted request" },
+  { key: "QUOTED", label: "Quoted", description: "Price sent for approval" },
+  { key: "EN_ROUTE", label: "On the way", description: "Worker is travelling to your location" },
+  { key: "IN_PROGRESS", label: "Working", description: "Work is underway" },
+  { key: "COMPLETED", label: "Finished", description: "Job finished & settled" },
 ] as const;

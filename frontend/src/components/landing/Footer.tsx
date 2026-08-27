@@ -13,9 +13,11 @@ import {
   Laptop,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
 
 export function Footer() {
   const { theme } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const isDark = theme === "dark";
 
   return (
@@ -146,30 +148,106 @@ export function Footer() {
               Portals & Access
             </div>
             <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
-              {[
-                { label: "House Owner Dashboard", href: "/citizen/dashboard" },
-                { label: "Provider / Worker Portal", href: "/provider/dashboard" },
-                { label: "Interactive Sri Lanka Radar", href: "#workers-map" },
-                { label: "Verified Community Reviews", href: "#reviews" },
-                { label: "Direct In-App Messaging", href: "/citizen/dashboard" },
-                { label: "How It Works (3 Steps)", href: "#how-it-works" },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link
-                    href={link.href}
-                    style={{
-                      fontSize: "15px",
-                      color: "var(--text-secondary)",
-                      textDecoration: "none",
-                      transition: "color 0.2s ease",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {isAuthenticated && user ? (
+                <>
+                  <li>
+                    <Link
+                      href={
+                        user.role === "ADMIN"
+                          ? "/admin/dashboard"
+                          : user.role === "PROVIDER"
+                          ? "/provider/dashboard"
+                          : "/citizen/dashboard"
+                      }
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--accent)",
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        transition: "color 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.textDecoration = "underline")}
+                      onMouseLeave={(e) => (e.currentTarget.style.textDecoration = "none")}
+                    >
+                      {user.role === "ADMIN"
+                        ? "Operations Console"
+                        : user.role === "PROVIDER"
+                        ? "Dispatch Console"
+                        : "Resident Console"}
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="#workers-map"
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--text-secondary)",
+                        textDecoration: "none",
+                        transition: "color 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                    >
+                      Interactive Sri Lanka Radar
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="#reviews"
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--text-secondary)",
+                        textDecoration: "none",
+                        transition: "color 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                    >
+                      Verified Community Reviews
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="#how-it-works"
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--text-secondary)",
+                        textDecoration: "none",
+                        transition: "color 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                    >
+                      How It Works (3 Steps)
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                [
+                  { label: "House Owner Sign In", href: "/login" },
+                  { label: "Worker & Technician Gate", href: "/login" },
+                  { label: "Register as a Provider", href: "/provider/register" },
+                  { label: "Interactive Sri Lanka Radar", href: "#workers-map" },
+                  { label: "Verified Community Reviews", href: "#reviews" },
+                  { label: "How It Works (3 Steps)", href: "#how-it-works" },
+                ].map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      style={{
+                        fontSize: "15px",
+                        color: "var(--text-secondary)",
+                        textDecoration: "none",
+                        transition: "color 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--text-primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--text-secondary)")}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
 
