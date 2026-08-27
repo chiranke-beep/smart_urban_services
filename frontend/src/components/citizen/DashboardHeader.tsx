@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Search, MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User } from "lucide-react";
+import { Search, MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/profile/ProfileModal";
@@ -9,6 +9,7 @@ interface DashboardHeaderProps {
   onChangeLocality: (loc: string) => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  onToggleMobileMenu?: () => void;
 }
 
 export function DashboardHeader({
@@ -16,6 +17,7 @@ export function DashboardHeader({
   onChangeLocality,
   searchQuery,
   onSearchChange,
+  onToggleMobileMenu,
 }: DashboardHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -35,7 +37,7 @@ export function DashboardHeader({
     <header
       style={{
         height: "68px",
-        padding: "0 32px",
+        padding: "0 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -48,8 +50,29 @@ export function DashboardHeader({
         zIndex: 40,
       }}
     >
-      {/* Left: Search input */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px", width: "420px" }}>
+      {/* Left: Mobile Hamburger & Search input */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, maxWidth: "460px" }}>
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            aria-label="Open menu"
+            className="mobile-only"
+            style={{
+              background: "none",
+              border: "1px solid var(--border)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              padding: "7px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={18} />
+          </button>
+        )}
+
         <div
           style={{
             position: "relative",
@@ -170,7 +193,7 @@ export function DashboardHeader({
               <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
                 {user?.fullName || "Homeowner"}
               </div>
-              <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+              <div className="desktop-only" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
                 {user?.homeAddress ? user.homeAddress.split(",")[0] : (user?.locality || "Heerassagala, Kandy")}
               </div>
             </div>

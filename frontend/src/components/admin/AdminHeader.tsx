@@ -1,18 +1,20 @@
 "use client";
 
 import React from "react";
-import { ShieldCheck, Sun, Moon, Lock, Activity, Layers, LogOut } from "lucide-react";
+import { ShieldCheck, Sun, Moon, Lock, Activity, Layers, LogOut, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 
 interface AdminHeaderProps {
   activeDistrictCount?: number;
   totalResolutions?: number;
+  onToggleMobileMenu?: () => void;
 }
 
 export function AdminHeader({
   activeDistrictCount = 18,
   totalResolutions = 96.4,
+  onToggleMobileMenu,
 }: AdminHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -22,7 +24,7 @@ export function AdminHeader({
     <header
       style={{
         height: "68px",
-        padding: "0 32px",
+        padding: "0 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -35,8 +37,29 @@ export function AdminHeader({
         zIndex: 40,
       }}
     >
-      {/* Left: Platform Admin Operations Badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      {/* Left: Platform Admin Operations Badge & Hamburger */}
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            aria-label="Open menu"
+            className="mobile-only"
+            style={{
+              background: "none",
+              border: "1px solid var(--border)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              padding: "7px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={18} />
+          </button>
+        )}
+
         <div
           style={{
             display: "flex",
@@ -52,12 +75,7 @@ export function AdminHeader({
           }}
         >
           <Layers size={14} />
-          <span>Platform Operations & Quality Control</span>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: "var(--text-secondary)" }}>
-          <Activity size={14} color="#10b981" />
-          <span>{activeDistrictCount} Service Hubs Active · {totalResolutions}% Job Completion Rate</span>
+          <span>Admin Operations</span>
         </div>
       </div>
 
@@ -109,7 +127,7 @@ export function AdminHeader({
           >
             AD
           </div>
-          <div>
+          <div className="desktop-only">
             <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", lineHeight: 1.2 }}>
               {user?.fullName || "Platform Operations"}
             </div>

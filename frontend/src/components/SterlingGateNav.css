@@ -364,3 +364,9 @@
 .menu-list-item:hover .nav-link-hover-bg {
   width: 100%;
 }
+
+@media (max-width: 768px) {
+  .ambient-background-shapes {
+    display: none !important;
+  }
+}

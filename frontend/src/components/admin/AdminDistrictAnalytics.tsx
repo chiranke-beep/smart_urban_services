@@ -202,13 +202,13 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       {/* ═══════════════════════════════════════════════════════════════
           ROW 1: MATHEMATICALLY EXACT SPLINE CHART + INTERACTIVE DONUT
          ═══════════════════════════════════════════════════════════════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.65fr 0.95fr", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: "20px" }}>
         {/* TOP LEFT: Smooth Spline Multi-Wave Area Chart */}
         <div
           style={{
             backgroundColor: "var(--card-bg)",
             border: "1px solid var(--border)",
-            padding: "24px",
+            padding: "clamp(16px, 3vw, 24px)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             display: "flex",
@@ -218,7 +218,7 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
           }}
         >
           {/* Header & Timeframe Tabs */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
             <div>
               <div style={{ fontSize: "12px", color: "var(--text-secondary)", fontWeight: 700, textTransform: "uppercase" }}>
                 {currentDataset.label}
@@ -584,7 +584,7 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       {/* ═══════════════════════════════════════════════════════════════
           ROW 2: FOUR THEME-AWARE METRIC CARDS (OBSIDIAN DARK & CRISP LIGHT)
          ═══════════════════════════════════════════════════════════════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "18px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "18px" }}>
         {/* CARD 1: Settled Direct Volume (Pink / Rose) */}
         <div
           onMouseEnter={(e) => {
@@ -941,13 +941,13 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       {/* ═══════════════════════════════════════════════════════════════
           ROW 3: RECENT ACTIVITIES & LIVE SERVICE DISPATCH TABLE
          ═══════════════════════════════════════════════════════════════ */}
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1.9fr", gap: "20px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))", gap: "20px" }}>
         {/* Left: Recent Activity Feed */}
         <div
           style={{
             backgroundColor: "var(--card-bg)",
             border: "1px solid var(--border)",
-            padding: "24px",
+            padding: "clamp(16px, 3vw, 24px)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
             display: "flex",

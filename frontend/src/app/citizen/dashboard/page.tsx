@@ -138,6 +138,8 @@ export default function DashboardPage() {
     setJobs(jobService.getJobs());
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const filteredActiveJobs = activeJobs.filter((job) => {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -158,14 +160,23 @@ export default function DashboardPage() {
         backgroundColor: "var(--bg)",
         color: "var(--text-primary)",
         fontFamily: "inherit",
+        position: "relative",
       }}
     >
       {/* ── Left Sidebar Navigation (3 Main Tabs) ── */}
       <DashboardSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        onOpenPostJob={() => setIsPostModalOpen(true)}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
+        onOpenPostJob={() => {
+          setIsPostModalOpen(true);
+          setIsMobileMenuOpen(false);
+        }}
         activeJobsCount={activeJobs.length}
+        isOpenMobile={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* ── Main Content Area ── */}
@@ -175,9 +186,10 @@ export default function DashboardPage() {
           onChangeLocality={setSelectedLocality}
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
-        <main style={{ padding: "32px", flex: 1, display: "flex", flexDirection: "column", gap: "28px" }}>
+        <main style={{ padding: "clamp(16px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* ═══════════════════════════════════════════════════════════════
               TAB 1: ACTIVE ORDERS & LIVE GPS (PRIMARY VIEW)
              ═══════════════════════════════════════════════════════════════ */}
@@ -250,7 +262,7 @@ export default function DashboardPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: activeChatJob ? "1.15fr 0.85fr" : "1fr",
+                  gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 420px), 1fr))" : "1fr",
                   gap: "24px",
                   alignItems: "start",
                 }}
@@ -375,7 +387,7 @@ export default function DashboardPage() {
               TAB 2: WORKER CHAT HUB VIEW
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "chat" && (
-            <div style={{ display: "grid", gridTemplateColumns: activeJobs.length > 0 ? "320px 1fr" : "1fr", gap: "24px", minHeight: "680px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: activeJobs.length > 0 ? "repeat(auto-fit, minmax(min(100%, 300px), 1fr))" : "1fr", gap: "24px", minHeight: "680px" }}>
               {/* Left: Chat Sessions List */}
               <div
                 style={{

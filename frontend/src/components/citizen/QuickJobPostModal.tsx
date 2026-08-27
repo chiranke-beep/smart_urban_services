@@ -211,7 +211,7 @@ export function QuickJobPostModal({
             >
               1. Select Service Category:
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
               {CATEGORY_DEFINITIONS.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
                 const Icon = cat.icon;
@@ -429,7 +429,7 @@ export function QuickJobPostModal({
             >
               5. Urgency Level:
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "10px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "10px" }}>
               {[
                 { id: "emergency", label: "Emergency Leak / Storm", desc: "Worker within 30m", icon: AlertTriangle, iconColor: "#ef4444" },
                 { id: "today", label: "Needed Today", desc: "Within 2-4 hours", icon: Zap, iconColor: isDark ? "#42d6ff" : "#0891b2" },

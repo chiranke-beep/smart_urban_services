@@ -212,7 +212,7 @@ export function HazardCategories() {
       style={{
         position: "relative",
         width: "100%",
-        padding: "90px 48px 120px",
+        padding: "clamp(48px, 6vw, 90px) clamp(16px, 4vw, 48px) clamp(60px, 8vw, 120px)",
         backgroundColor: "var(--bg)",
         transition: "background-color 0.4s ease",
         overflow: "hidden",
@@ -470,40 +470,81 @@ export function HazardCategories() {
                       </div>
                     </div>
                   ) : (
-                    /* Collapsed State: Vertical Text */
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        gap: "16px",
-                        marginTop: "16px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          fontSize: "14px",
-                          fontWeight: 700,
-                          color: "var(--text-secondary)",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        {item.num}
-                      </span>
+                    /* Collapsed State: Responsive Desktop Vertical & Mobile Horizontal */
+                    <>
+                      {/* Desktop Collapsed: Vertical rotated text */}
                       <div
+                        className="service-card-collapsed-vertical"
                         style={{
-                          writingMode: "vertical-rl",
-                          transform: "rotate(180deg)",
-                          fontSize: "16px",
-                          fontWeight: 700,
-                          color: "var(--text-primary)",
-                          letterSpacing: "-0.01em",
-                          whiteSpace: "nowrap",
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          gap: "16px",
+                          marginTop: "16px",
                         }}
                       >
-                        {item.shortTitle}
+                        <span
+                          style={{
+                            fontSize: "14px",
+                            fontWeight: 700,
+                            color: "var(--text-secondary)",
+                            letterSpacing: "0.05em",
+                          }}
+                        >
+                          {item.num}
+                        </span>
+                        <div
+                          style={{
+                            writingMode: "vertical-rl",
+                            transform: "rotate(180deg)",
+                            fontSize: "16px",
+                            fontWeight: 700,
+                            color: "var(--text-primary)",
+                            letterSpacing: "-0.01em",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.shortTitle}
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Mobile & Tablet Collapsed: Clean horizontal tap row */}
+                      <div
+                        className="service-card-collapsed-horizontal"
+                        style={{
+                          display: "none",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          width: "100%",
+                          paddingTop: "6px",
+                        }}
+                      >
+                        <div>
+                          <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--text-primary)" }}>
+                            {item.num}. {item.title}
+                          </div>
+                          <div style={{ fontSize: "12.5px", color: "var(--text-secondary)", marginTop: "2px" }}>
+                            {item.providersAvailable} · {item.rateRange}
+                          </div>
+                        </div>
+
+                        <div
+                          style={{
+                            padding: "6px 12px",
+                            backgroundColor: `${item.color}15`,
+                            color: item.color,
+                            fontSize: "12px",
+                            fontWeight: 800,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          <span>Explore</span>
+                          <ArrowRight size={14} />
+                        </div>
+                      </div>
+                    </>
                   )}
                 </div>
 
@@ -524,7 +565,7 @@ export function HazardCategories() {
                       <div
                         style={{
                           display: "grid",
-                          gridTemplateColumns: "repeat(3, 1fr)",
+                          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
                           gap: "16px",
                         }}
                       >
@@ -617,6 +658,8 @@ export function HazardCategories() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "12px",
                           paddingTop: "6px",
                         }}
                       >

@@ -198,6 +198,8 @@ export default function ProviderDashboardPage() {
     setJobs([...refreshed]);
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div
       style={{
@@ -206,16 +208,22 @@ export default function ProviderDashboardPage() {
         backgroundColor: "var(--bg)",
         color: "var(--text-primary)",
         fontFamily: "inherit",
+        position: "relative",
       }}
     >
       {/* ── Left Sidebar Navigation ── */}
       <ProviderSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
         incomingCount={incomingJobs.length}
         activeJobsCount={activeJobs.length}
         isOnline={isOnline}
         onToggleOnline={() => setIsOnline(!isOnline)}
+        isOpenMobile={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* ── Main Content Area ── */}
@@ -223,9 +231,10 @@ export default function ProviderDashboardPage() {
         <ProviderHeader
           selectedLocality={selectedLocality}
           isOnline={isOnline}
+          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
-        <main style={{ padding: "32px", flex: 1, display: "flex", flexDirection: "column", gap: "28px" }}>
+        <main style={{ padding: "clamp(16px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
           {/* ═══════════════════════════════════════════════════════════════
               TAB 1: ACTIVE JOB & GPS NAVIGATION (PRIMARY VIEW)
              ═══════════════════════════════════════════════════════════════ */}
@@ -233,7 +242,7 @@ export default function ProviderDashboardPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: activeChatJob ? "1.15fr 0.85fr" : "1fr",
+                gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 420px), 1fr))" : "1fr",
                 gap: "24px",
                 alignItems: "start",
               }}
@@ -355,7 +364,7 @@ export default function ProviderDashboardPage() {
               TAB 3: HOMEOWNER CHAT HUB
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "chat" && (
-            <div style={{ display: "grid", gridTemplateColumns: acceptedJobs.length > 0 ? "320px 1fr" : "1fr", gap: "24px", minHeight: "680px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: acceptedJobs.length > 0 ? "repeat(auto-fit, minmax(min(100%, 300px), 1fr))" : "1fr", gap: "24px", minHeight: "680px" }}>
               {/* Left: Homeowner Chat Sessions */}
               <div
                 style={{

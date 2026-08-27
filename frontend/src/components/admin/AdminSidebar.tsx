@@ -18,6 +18,8 @@ interface AdminSidebarProps {
   setActiveTab: (tab: string) => void;
   pendingVerificationsCount?: number;
   openHazardsCount?: number;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export function AdminSidebar({
@@ -25,6 +27,8 @@ export function AdminSidebar({
   setActiveTab,
   pendingVerificationsCount = 3,
   openHazardsCount = 1,
+  isOpenMobile = false,
+  onCloseMobile,
 }: AdminSidebarProps) {
   const { logout } = useAuth();
   const navItems = [
@@ -50,24 +54,42 @@ export function AdminSidebar({
   ];
 
   return (
-    <aside
-      style={{
-        width: "260px",
-        height: "100vh",
-        position: "sticky",
-        top: 0,
-        backgroundColor: "var(--card-bg)",
-        borderRight: "1px solid var(--border)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "24px 16px",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        zIndex: 50,
-        flexShrink: 0,
-      }}
-    >
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpenMobile && (
+        <div
+          onClick={onCloseMobile}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(4px)",
+            zIndex: 90,
+          }}
+          className="mobile-only"
+        />
+      )}
+
+      <aside
+        style={{
+          width: "260px",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+          backgroundColor: "var(--card-bg)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "24px 16px",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          zIndex: 95,
+          flexShrink: 0,
+          transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        className={`admin-sidebar ${isOpenMobile ? "mobile-drawer-open" : ""}`}
+      >
       <div>
         {/* Brand */}
         <Link
@@ -201,5 +223,6 @@ export function AdminSidebar({
         </button>
       </div>
     </aside>
+    </>
   );
 }

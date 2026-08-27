@@ -272,7 +272,21 @@ app.patch('/api/users/profile/:id', async (req, res) => {
       language || null, locality || null, district || null, rawId, shouldUpdatePhoto
     ]);
 
-    if (trade || dailyRate || hourlyRate || vehicleType || plateNumber || nicNumber || nicDocumentUrl) {
+    let finalNicDoc = nicDocumentUrl || null;
+    if (nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.startsWith('data:image/')) {
+      const matches = nicDocumentUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const rawExt = matches[1].split('/')[1] || 'jpg';
+        const ext = rawExt.includes('png') ? 'png' : rawExt.includes('webp') ? 'webp' : 'jpg';
+        const buffer = Buffer.from(matches[2], 'base64');
+        const filename = `nic-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
+        const filePath = path.join(uploadsDir, filename);
+        fs.writeFileSync(filePath, buffer);
+        finalNicDoc = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
+      }
+    }
+
+    if (trade || dailyRate || hourlyRate || vehicleType || plateNumber || nicNumber || finalNicDoc) {
       await pool.query(`
         INSERT INTO provider_profiles (user_id, trade, daily_rate, hourly_rate, vehicle_type, plate_number, nic_number, nic_document_url, experience_years)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -293,7 +307,7 @@ app.patch('/api/users/profile/:id', async (req, res) => {
         vehicleType || 'Service Vehicle',
         plateNumber || 'WP-CAB-8821',
         nicNumber || null,
-        nicDocumentUrl || null,
+        finalNicDoc || null,
         experienceYears || 5
       ]);
     }

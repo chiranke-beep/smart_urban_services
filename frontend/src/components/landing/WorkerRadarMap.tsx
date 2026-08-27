@@ -277,7 +277,7 @@ export function WorkerRadarMap() {
       style={{
         position: "relative",
         width: "100%",
-        padding: "100px 48px 120px",
+        padding: "clamp(48px, 6vw, 100px) clamp(16px, 4vw, 48px) clamp(60px, 8vw, 120px)",
         backgroundColor: "var(--bg)",
         borderTop: "1px solid var(--border)",
         transition: "background-color 0.4s ease",
@@ -400,7 +400,7 @@ export function WorkerRadarMap() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 340px), 1fr))",
             gap: "24px",
             minHeight: "560px",
           }}
@@ -736,7 +736,7 @@ export function WorkerRadarMap() {
                   <span>Available Trades in {selectedDistrict.name.replace(" District", "")}</span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
                   {selectedDistrict.topTrades.map((trade) => {
                     const Icon = trade.icon;
                     return (

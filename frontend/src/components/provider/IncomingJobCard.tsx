@@ -62,7 +62,7 @@ export function IncomingJobCard({
   return (
     <div
       style={{
-        padding: "24px",
+        padding: "clamp(16px, 3.5vw, 24px)",
         borderRadius: "0px",
         backgroundColor: "var(--card-bg)",
         border: `1.5px solid ${categoryInfo.color}`,

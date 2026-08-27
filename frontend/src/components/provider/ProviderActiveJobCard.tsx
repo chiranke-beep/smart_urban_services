@@ -66,7 +66,7 @@ export function ProviderActiveJobCard({
   return (
     <div
       style={{
-        padding: "28px",
+        padding: "clamp(16px, 3.5vw, 28px)",
         borderRadius: "0px",
         backgroundColor: "var(--card-bg)",
         border: "1.5px solid #10b981",
@@ -82,6 +82,8 @@ export function ProviderActiveJobCard({
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "10px",
           paddingBottom: "16px",
           borderBottom: "1px solid var(--border)",
           marginBottom: "20px",

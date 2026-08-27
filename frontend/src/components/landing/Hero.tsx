@@ -249,7 +249,7 @@ export function Hero() {
           position: "relative",
           zIndex: 10,
           width: "100%",
-          padding: "48px 80px",
+          padding: "clamp(32px, 6vw, 64px) clamp(20px, 5vw, 80px)",
         }}
       >
         <div style={{ maxWidth: "680px", display: "flex", flexDirection: "column", gap: "24px" }}>
@@ -485,12 +485,12 @@ export function Hero() {
           {/* Stats Row (Dynamic from PostgreSQL Database) */}
           <div
             style={{
-              paddingTop: "28px",
+              paddingTop: "24px",
               marginTop: "4px",
               borderTop: "1px solid var(--border)",
               display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "24px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+              gap: "16px",
               maxWidth: "520px",
             }}
           >

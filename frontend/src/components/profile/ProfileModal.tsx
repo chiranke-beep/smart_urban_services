@@ -383,19 +383,19 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px",
+        padding: "clamp(8px, 2vw, 20px)",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "620px",
-          maxHeight: "90vh",
+          maxHeight: "94vh",
           overflowY: "auto",
           backgroundColor: isDark ? "#0f172a" : "#ffffff",
           border: "1.5px solid var(--accent)",
           boxShadow: "0 25px 50px -12px rgba(0,0,0,0.6)",
-          padding: "32px",
+          padding: "clamp(16px, 3.5vw, 32px)",
           borderRadius: "0px",
           position: "relative",
         }}

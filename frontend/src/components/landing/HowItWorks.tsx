@@ -108,7 +108,7 @@ export function HowItWorks() {
       style={{
         position: "relative",
         width: "100%",
-        padding: "100px 48px 120px",
+        padding: "clamp(48px, 6vw, 100px) clamp(16px, 4vw, 48px) clamp(60px, 8vw, 120px)",
         backgroundColor: "var(--bg)",
         borderTop: "1px solid var(--border)",
         transition: "background-color 0.4s ease",
@@ -118,7 +118,7 @@ export function HowItWorks() {
       <div style={{ position: "relative", zIndex: 1, width: "100%", margin: "0 auto" }}>
 
         {/* ── Section Header ────────────────────────────────────── */}
-        <div style={{ maxWidth: "780px", marginBottom: "54px" }}>
+        <div style={{ maxWidth: "780px", marginBottom: "36px" }}>
           <div
             className="how-header-anim"
             style={{
@@ -173,8 +173,8 @@ export function HowItWorks() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))",
+            gap: "14px",
             marginBottom: "32px",
           }}
         >
@@ -189,7 +189,7 @@ export function HowItWorks() {
                   display: "flex",
                   alignItems: "flex-start",
                   gap: "16px",
-                  padding: "20px 24px",
+                  padding: "18px 20px",
                   borderRadius: "0px",
                   backgroundColor: isActive
                     ? isDark
@@ -234,7 +234,7 @@ export function HowItWorks() {
                   </div>
                   <div
                     style={{
-                      fontSize: "16px",
+                      fontSize: "14.5px",
                       fontWeight: 700,
                       color: "var(--text-primary)",
                       lineHeight: 1.3,
@@ -252,15 +252,15 @@ export function HowItWorks() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.1fr 1fr",
-            gap: "28px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
+            gap: "24px",
             minHeight: "440px",
           }}
         >
           {/* Left: Step Details Box */}
           <div
             style={{
-              padding: "40px",
+              padding: "clamp(20px, 4vw, 40px)",
               borderRadius: "0px",
               backgroundColor: isDark ? "rgba(18, 24, 38, 0.75)" : "rgba(255, 255, 255, 0.85)",
               border: "1px solid var(--border)",

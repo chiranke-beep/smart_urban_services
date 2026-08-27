@@ -23,6 +23,8 @@ interface ProviderSidebarProps {
   unreadChatCount?: number;
   isOnline: boolean;
   onToggleOnline: () => void;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export function ProviderSidebar({
@@ -33,6 +35,8 @@ export function ProviderSidebar({
   unreadChatCount = 0,
   isOnline,
   onToggleOnline,
+  isOpenMobile = false,
+  onCloseMobile,
 }: ProviderSidebarProps) {
   const { logout } = useAuth();
   const navItems = [
@@ -62,24 +66,42 @@ export function ProviderSidebar({
   ];
 
   return (
-    <aside
-      style={{
-        width: "260px",
-        height: "100vh",
-        position: "sticky",
-        top: 0,
-        backgroundColor: "var(--card-bg)",
-        borderRight: "1px solid var(--border)",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "24px 16px",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        zIndex: 50,
-        flexShrink: 0,
-      }}
-    >
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isOpenMobile && (
+        <div
+          onClick={onCloseMobile}
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(0,0,0,0.65)",
+            backdropFilter: "blur(4px)",
+            zIndex: 90,
+          }}
+          className="mobile-only"
+        />
+      )}
+
+      <aside
+        style={{
+          width: "260px",
+          height: "100vh",
+          position: "sticky",
+          top: 0,
+          backgroundColor: "var(--card-bg)",
+          borderRight: "1px solid var(--border)",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "24px 16px",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          zIndex: 95,
+          flexShrink: 0,
+          transition: "transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)",
+        }}
+        className={`provider-sidebar ${isOpenMobile ? "mobile-drawer-open" : ""}`}
+      >
       <div>
         {/* Brand */}
         <Link
@@ -249,5 +271,6 @@ export function ProviderSidebar({
         </button>
       </div>
     </aside>
+    </>
   );
 }

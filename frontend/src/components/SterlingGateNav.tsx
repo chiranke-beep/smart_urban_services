@@ -193,8 +193,26 @@ export function SterlingGateNav() {
     return () => window.removeEventListener("keydown", handleEsc);
   }, [isMenuOpen]);
 
-  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
-  const closeMenu = () => setIsMenuOpen(false);
+  const closeMenu = () => {
+    if (containerRef.current) {
+      const shapes = containerRef.current.querySelectorAll(".bg-shape");
+      shapes.forEach((s) => {
+        s.classList.remove("active");
+        gsap.killTweensOf(s);
+        gsap.killTweensOf(s.querySelectorAll(".shape-element"));
+        gsap.set(s, { opacity: 0, scale: 0.9, y: 0 });
+      });
+    }
+    setIsMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    if (isMenuOpen) {
+      closeMenu();
+    } else {
+      setIsMenuOpen(true);
+    }
+  };
 
   // ─── Button style logic ─────────────────────────────────────────────
   const isDark = theme === "dark";
@@ -250,7 +268,7 @@ export function SterlingGateNav() {
 
                 {/* User Portal / Sign In quick button */}
                 {isAuthenticated && user ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", pointerEvents: "auto" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", pointerEvents: "auto", flexShrink: 0 }}>
                     <Link
                       href={
                         user.role === "ADMIN"
@@ -260,29 +278,22 @@ export function SterlingGateNav() {
                           : "/citizen/dashboard"
                       }
                       style={{
-                        padding: "0.42rem 0.95rem",
-                        backgroundColor: "var(--accent)",
-                        color: "var(--accent-text)",
-                        fontSize: "12px",
-                        fontWeight: 800,
+                        padding: "0.45rem 1rem",
+                        backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(15,23,42,0.06)",
+                        border: "1px solid var(--border)",
+                        color: "var(--text-primary)",
+                        fontSize: "12.5px",
+                        fontWeight: 700,
                         textDecoration: "none",
                         borderRadius: "0px",
                         display: "inline-flex",
                         alignItems: "center",
                         gap: "6px",
-                        boxShadow: "0 2px 10px var(--accent-glow)",
-                        transition: "transform 0.2s ease",
+                        whiteSpace: "nowrap",
+                        transition: "all 0.2s ease",
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                     >
-                      <span>
-                        {user.role === "ADMIN"
-                          ? "Operations Console"
-                          : user.role === "PROVIDER"
-                          ? "Dispatch Console"
-                          : "Resident Console"}
-                      </span>
+                      <span>{user.fullName ? user.fullName.split(" ")[0] : "Portal"}</span>
                       <ArrowRight size={13} />
                     </Link>
 
@@ -293,10 +304,10 @@ export function SterlingGateNav() {
                       style={{
                         background: "none",
                         border: "none",
-                        color: iconColor,
-                        padding: "6px",
+                        color: "var(--text-secondary)",
                         cursor: "pointer",
-                        display: "inline-flex",
+                        padding: "6px",
+                        display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         opacity: 0.75,
@@ -319,16 +330,18 @@ export function SterlingGateNav() {
                     href="/login"
                     style={{
                       pointerEvents: "auto",
-                      padding: "0.42rem 0.95rem",
+                      padding: "0.45rem 1.1rem",
                       backgroundColor: "var(--accent)",
                       color: "var(--accent-text)",
-                      fontSize: "12px",
+                      fontSize: "12.5px",
                       fontWeight: 800,
                       textDecoration: "none",
                       borderRadius: "0px",
                       display: "inline-flex",
                       alignItems: "center",
                       gap: "6px",
+                      whiteSpace: "nowrap",
+                      flexShrink: 0,
                       boxShadow: "0 2px 10px var(--accent-glow)",
                       transition: "transform 0.2s ease",
                     }}

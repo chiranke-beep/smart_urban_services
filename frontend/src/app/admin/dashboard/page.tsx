@@ -64,6 +64,8 @@ export default function AdminDashboardPage() {
     setHazards(adminService.getHazards());
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div
       style={{
@@ -72,21 +74,29 @@ export default function AdminDashboardPage() {
         backgroundColor: "var(--bg)",
         color: "var(--text-primary)",
         fontFamily: "inherit",
+        position: "relative",
+        width: "100%",
+        overflowX: "hidden",
       }}
     >
-      {/* ── Left Admin Sidebar Navigation ── */}
+      {/* ── Left Sidebar Navigation (3 Operations Hubs) ── */}
       <AdminSidebar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={(tab) => {
+          setActiveTab(tab);
+          setIsMobileMenuOpen(false);
+        }}
         pendingVerificationsCount={pendingAppsCount}
         openHazardsCount={openHazardsCount}
+        isOpenMobile={isMobileMenuOpen}
+        onCloseMobile={() => setIsMobileMenuOpen(false)}
       />
 
       {/* ── Main Content Area ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
-        <AdminHeader />
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, width: "100%", overflowX: "hidden" }}>
+        <AdminHeader onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)} />
 
-        <main style={{ padding: "32px", flex: 1, display: "flex", flexDirection: "column", gap: "28px" }}>
+        <main style={{ padding: "clamp(14px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           {/* ═══════════════════════════════════════════════════════════════
               TAB 1: NIC & TRADE VERIFICATION QUEUE (PRIMARY VIEW)
              ═══════════════════════════════════════════════════════════════ */}

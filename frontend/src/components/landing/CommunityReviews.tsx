@@ -209,7 +209,7 @@ export function CommunityReviews() {
       style={{
         position: "relative",
         width: "100%",
-        padding: "100px 48px 120px",
+        padding: "clamp(48px, 6vw, 100px) clamp(16px, 4vw, 48px) clamp(60px, 8vw, 120px)",
         backgroundColor: "var(--bg)",
         borderTop: "1px solid var(--border)",
         transition: "background-color 0.4s ease",
@@ -219,8 +219,9 @@ export function CommunityReviews() {
       <div style={{ position: "relative", zIndex: 1, width: "100%", margin: "0 auto" }}>
 
         {/* ── Section Header ────────────────────────────────────── */}
-        <div style={{ maxWidth: "800px", marginBottom: "48px" }}>
+        <div style={{ maxWidth: "800px", marginBottom: "36px" }}>
           <div
+            className="service-header-anim"
             style={{
               display: "inline-flex",
               alignItems: "center",
@@ -271,8 +272,8 @@ export function CommunityReviews() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-            gap: "24px",
+            gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 300px), 1fr))",
+            gap: "20px",
           }}
         >
           {reviews.map((rev) => {
@@ -285,7 +286,7 @@ export function CommunityReviews() {
                 className="review-card-anim"
                 style={{
                   position: "relative",
-                  padding: "28px",
+                  padding: "clamp(18px, 3.5vw, 28px)",
                   borderRadius: "0px",
                   backgroundColor: isDark ? "rgba(18, 24, 38, 0.85)" : "rgba(255, 255, 255, 0.95)",
                   border: "1px solid var(--border)",

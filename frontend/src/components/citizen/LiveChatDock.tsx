@@ -100,6 +100,8 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         display: "flex",
         flexDirection: "column",
         height: "640px",
+        maxHeight: "85vh",
+        width: "100%",
         borderRadius: "0px",
         backgroundColor: "var(--card-bg)",
         border: "1.5px solid var(--accent)",
@@ -112,16 +114,17 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
       {/* Chat Header */}
       <div
         style={{
-          padding: "16px 20px",
+          padding: "14px 16px",
           backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "var(--accent)",
           color: isDark ? "#ffffff" : "var(--accent-text)",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           borderBottom: "1px solid var(--border)",
+          gap: "8px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
           <div
             style={{
               width: "36px",
@@ -133,17 +136,18 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
               justifyContent: "center",
               fontWeight: 900,
               fontSize: "14px",
+              flexShrink: 0,
             }}
           >
             {worker?.name ? worker.name.split(" ").map((n) => n[0]).join("").slice(0, 2) : "SP"}
           </div>
-          <div>
-            <div style={{ fontSize: "14px", fontWeight: 800 }}>
+          <div style={{ minWidth: 0, overflow: "hidden" }}>
+            <div style={{ fontSize: "14px", fontWeight: 800, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
               {worker?.name || "Service Provider Dispatch"}
             </div>
-            <div style={{ fontSize: "11px", opacity: 0.85, display: "flex", alignItems: "center", gap: "4px" }}>
-              <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%" }} />
-              <span>
+            <div style={{ fontSize: "11px", opacity: 0.85, display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+              <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%", flexShrink: 0 }} />
+              <span style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                 {worker
                   ? `Active on Job #${job.id} · ${job.locality}`
                   : `Awaiting Dispatch Acceptance · ${job.locality}`}
@@ -152,7 +156,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
           </div>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
           {worker?.phone && (
             <a
               href={`tel:${worker.phone}`}

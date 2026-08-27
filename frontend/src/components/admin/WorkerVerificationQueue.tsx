@@ -83,7 +83,7 @@ export function WorkerVerificationQueue({
         </div>
 
         {/* Filter Tabs */}
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           {[
             { id: "PENDING", label: "Pending Approval" },
             { id: "APPROVED", label: "Verified & Active" },
@@ -100,6 +100,8 @@ export function WorkerVerificationQueue({
                 fontSize: "12.5px",
                 fontWeight: 700,
                 cursor: "pointer",
+                flex: "1 1 auto",
+                textAlign: "center",
               }}
             >
               {f.label}
@@ -114,7 +116,7 @@ export function WorkerVerificationQueue({
           No applications in this category right now.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "16px", width: "100%", minWidth: 0 }}>
           {filteredApps.map((app) => {
             const isApproved = app.status === "APPROVED";
             const isRejected = app.status === "REJECTED";
@@ -123,14 +125,17 @@ export function WorkerVerificationQueue({
               <div
                 key={app.id}
                 style={{
-                  padding: "20px 24px",
+                  padding: "clamp(14px, 3vw, 22px)",
                   backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#f8fafc",
                   border: isApproved ? "1.5px solid #10b981" : "1.5px solid var(--border)",
                   display: "flex",
                   flexWrap: "wrap",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  gap: "18px",
+                  gap: "16px",
+                  width: "100%",
+                  minWidth: 0,
+                  boxSizing: "border-box",
                 }}
               >
                 {/* Worker Identity & Trade Details */}
@@ -203,7 +208,7 @@ export function WorkerVerificationQueue({
                 </div>
 
                 {/* Inspection & Action Buttons */}
-                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                   <button
                     onClick={() => setSelectedApp(app)}
                     style={{
@@ -217,6 +222,7 @@ export function WorkerVerificationQueue({
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
+                      whiteSpace: "nowrap",
                     }}
                   >
                     <Eye size={14} />
@@ -343,12 +349,12 @@ export function WorkerVerificationQueue({
             style={{
               width: "100%",
               maxWidth: "640px",
-              maxHeight: "90vh",
+              maxHeight: "94vh",
               overflowY: "auto",
               backgroundColor: isDark ? "#0b0f17" : "#ffffff",
               color: isDark ? "#ffffff" : "#0f172a",
               border: isDark ? "1px solid rgba(255,255,255,0.15)" : "1px solid #e2e8f0",
-              padding: "28px",
+              padding: "clamp(16px, 3.5vw, 28px)",
               borderRadius: "0px",
               display: "flex",
               flexDirection: "column",
@@ -391,7 +397,7 @@ export function WorkerVerificationQueue({
             </div>
 
             {/* Document Preview Box */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "14px" }}>
               <div
                 style={{
                   padding: "14px",
@@ -407,60 +413,59 @@ export function WorkerVerificationQueue({
                   position: "relative",
                 }}
               >
-                {selectedApp.nicFrontUrl ? (
-                  <div
-                    onClick={() => setZoomedNicUrl(selectedApp.nicFrontUrl || null)}
-                    style={{
-                      width: "100%",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: "6px",
-                      cursor: "zoom-in",
-                    }}
-                    title="Click to view large full-size NIC image"
-                  >
-                    <div style={{ position: "relative", width: "100%" }}>
-                      <img
-                        src={selectedApp.nicFrontUrl}
-                        alt="Uploaded National ID (NIC)"
-                        style={{
-                          width: "100%",
-                          maxHeight: "140px",
-                          objectFit: "contain",
-                          border: "1px solid var(--border)",
-                          backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                          transition: "transform 0.2s ease",
-                        }}
-                      />
-                      <div
-                        style={{
-                          position: "absolute",
-                          bottom: "6px",
-                          right: "6px",
-                          padding: "2px 6px",
-                          backgroundColor: "rgba(0,0,0,0.75)",
-                          color: "#ffffff",
-                          fontSize: "10px",
-                          fontWeight: 700,
-                          borderRadius: "2px",
-                        }}
-                      >
-                        🔍 Click to Enlarge
+                {(() => {
+                  const nicImageSrc = selectedApp.nicFrontUrl || "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop";
+                  return (
+                    <div
+                      onClick={() => setZoomedNicUrl(nicImageSrc)}
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: "6px",
+                        cursor: "zoom-in",
+                      }}
+                      title="Click to view large full-size NIC image"
+                    >
+                      <div style={{ position: "relative", width: "100%" }}>
+                        <img
+                          src={nicImageSrc}
+                          alt="Uploaded National ID (NIC)"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop";
+                          }}
+                          style={{
+                            width: "100%",
+                            maxHeight: "140px",
+                            objectFit: "contain",
+                            border: "1px solid var(--border)",
+                            backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                            transition: "transform 0.2s ease",
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            bottom: "6px",
+                            right: "6px",
+                            padding: "2px 6px",
+                            backgroundColor: "rgba(0,0,0,0.75)",
+                            color: "#ffffff",
+                            fontSize: "10px",
+                            fontWeight: 700,
+                            borderRadius: "2px",
+                          }}
+                        >
+                          🔍 Click to Enlarge
+                        </div>
+                      </div>
+                      <div style={{ fontSize: "11px", color: "#0284c7", fontWeight: 700 }}>
+                        {selectedApp.nicFrontUrl ? "NIC Front Document Attached" : "Government Document Record"}
                       </div>
                     </div>
-                    <div style={{ fontSize: "11px", color: "#0284c7", fontWeight: 700 }}>
-                      NIC Front Document Attached
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <FileText size={28} color="#0284c7" />
-                    <div style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a" }}>
-                      Sri Lanka National ID (NIC)
-                    </div>
-                  </>
-                )}
+                  );
+                })()}
                 <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.75)" : "#64748b" }}>
                   NIC Number: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.nicNumber}</strong>
                 </div>

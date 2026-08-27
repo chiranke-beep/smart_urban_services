@@ -27,19 +27,19 @@ export function Footer() {
         width: "100%",
         backgroundColor: isDark ? "#06080b" : "#e2e8f0",
         borderTop: "1px solid var(--border)",
-        padding: "80px 48px 40px",
+        padding: "clamp(48px, 6vw, 80px) clamp(16px, 4vw, 48px) 32px",
         transition: "background-color 0.4s ease",
       }}
     >
       <div style={{ width: "100%", margin: "0 auto" }}>
 
-        {/* ── Top Grid (4 Columns) ─────────────────────────────── */}
+        {/* ── Top Grid (Responsive Auto-Fit Columns) ───────────── */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.4fr 1fr 1fr 1.2fr",
-            gap: "40px",
-            marginBottom: "60px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))",
+            gap: "32px",
+            marginBottom: "48px",
           }}
         >
           {/* Col 1: Brand & Mission */}

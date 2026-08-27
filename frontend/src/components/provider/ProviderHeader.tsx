@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, MapPin, Sun, Moon, ShieldCheck, Star, Truck, LogOut, User } from "lucide-react";
+import { Search, MapPin, Sun, Moon, ShieldCheck, Star, Truck, LogOut, User, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/profile/ProfileModal";
@@ -12,6 +12,7 @@ interface ProviderHeaderProps {
   workerTrade?: string;
   workerRating?: number;
   workerReviews?: number;
+  onToggleMobileMenu?: () => void;
 }
 
 export function ProviderHeader({
@@ -21,6 +22,7 @@ export function ProviderHeader({
   workerTrade,
   workerRating,
   workerReviews,
+  onToggleMobileMenu,
 }: ProviderHeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -61,7 +63,7 @@ export function ProviderHeader({
     <header
       style={{
         height: "68px",
-        padding: "0 32px",
+        padding: "0 20px",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -75,9 +77,29 @@ export function ProviderHeader({
       }}
     >
       {/* Left: Clean Brand / Subtitle */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-        <div style={{ fontSize: "14px", fontWeight: 700, color: "var(--text-secondary)" }}>
-          Worker Dashboard
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        {onToggleMobileMenu && (
+          <button
+            onClick={onToggleMobileMenu}
+            aria-label="Open menu"
+            className="mobile-only"
+            style={{
+              background: "none",
+              border: "1px solid var(--border)",
+              color: "var(--text-primary)",
+              cursor: "pointer",
+              padding: "7px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <Menu size={18} />
+          </button>
+        )}
+        <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
+          Provider Desk
         </div>
       </div>
 
@@ -172,7 +194,7 @@ export function ProviderHeader({
                   <Star size={11} fill="#eab308" />
                   {liveRating.toFixed(1)} ({liveReviews})
                 </span>
-                <span>· {displayTrade}</span>
+                <span className="desktop-only">· {displayTrade}</span>
               </div>
             </div>
           </div>

@@ -172,9 +172,9 @@ export function CivicHazardMonitor({
 
                 {/* Dispatch Button if Open */}
                 {haz.status === "OPEN" && (
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
                     {selectedHazardId === haz.id ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                         <select
                           value={crewName}
                           onChange={(e) => setCrewName(e.target.value)}
@@ -186,6 +186,7 @@ export function CivicHazardMonitor({
                             fontSize: "12.5px",
                             fontWeight: 700,
                             outline: "none",
+                            maxWidth: "100%",
                           }}
                         >
                           <option value="Sunil Kumara Rig (WP-ABX-8821)">Sunil Kumara Rig (Maharagama)</option>
@@ -203,6 +204,7 @@ export function CivicHazardMonitor({
                             fontWeight: 800,
                             fontSize: "12.5px",
                             cursor: "pointer",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           Confirm Dispatch

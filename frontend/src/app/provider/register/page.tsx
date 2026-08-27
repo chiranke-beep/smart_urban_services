@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { apiClient } from "@/services/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import {
@@ -110,16 +111,16 @@ export default function ProviderRegisterPage() {
 
         // 2. Upload to server to get static URL
         try {
-          const res = await fetch("http://localhost:5000/api/upload", {
+          const res = await apiClient<{ success: boolean; url: string }>("/upload", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ imageBase64: base64Data }),
           });
-          const data = await res.json();
-          if (data?.success && data?.url) {
-            setNicDocumentUrl(data.url);
+          if (res?.success && res?.url) {
+            setNicDocumentUrl(res.url);
           }
-        } catch {}
+        } catch {
+          // Keep base64 as valid fallback
+        }
       }
     };
     reader.readAsDataURL(file);

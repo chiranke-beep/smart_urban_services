@@ -426,7 +426,7 @@ export function RealLeafletMap() {
       style={{
         position: "relative",
         width: "100%",
-        padding: "100px 48px 120px",
+        padding: "clamp(48px, 6vw, 100px) clamp(16px, 4vw, 48px) clamp(60px, 8vw, 120px)",
         backgroundColor: "var(--bg)",
         borderTop: "1px solid var(--border)",
         transition: "background-color 0.4s ease",
@@ -566,7 +566,7 @@ export function RealLeafletMap() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1.25fr 1fr",
+            gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
             gap: "24px",
             minHeight: "560px",
           }}
@@ -677,7 +677,7 @@ export function RealLeafletMap() {
           {/* Right Column: Real-Time District Telemetry & Action Panel */}
           <div
             style={{
-              padding: "36px",
+              padding: "clamp(20px, 4vw, 36px)",
               borderRadius: "0px",
               backgroundColor: isDark ? "rgba(18, 24, 38, 0.85)" : "rgba(255, 255, 255, 0.95)",
               border: "1.5px solid var(--accent)",
@@ -694,6 +694,8 @@ export function RealLeafletMap() {
                   display: "flex",
                   alignItems: "flex-start",
                   justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "10px",
                   marginBottom: "20px",
                   paddingBottom: "16px",
                   borderBottom: "1px solid var(--border)",
@@ -758,7 +760,7 @@ export function RealLeafletMap() {
                   <span>Available Trades in {selectedDistrict.name.replace(" District", "")}</span>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", gap: "10px" }}>
                   {selectedDistrict.topTrades.map((trade) => {
                     const Icon = trade.icon;
                     return (
@@ -768,6 +770,8 @@ export function RealLeafletMap() {
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "space-between",
+                          flexWrap: "wrap",
+                          gap: "6px",
                           padding: "10px 14px",
                           borderRadius: "0px",
                           backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
@@ -782,12 +786,13 @@ export function RealLeafletMap() {
                         </div>
                         <span
                           style={{
-                            fontSize: "13px",
+                            fontSize: "12px",
                             fontWeight: 800,
                             color: trade.color,
                             backgroundColor: `${trade.color}15`,
                             padding: "3px 9px",
                             borderRadius: "0px",
+                            whiteSpace: "nowrap",
                           }}
                         >
                           {trade.count} Available
@@ -839,6 +844,7 @@ export function RealLeafletMap() {
               style={{
                 display: "flex",
                 alignItems: "center",
+                flexWrap: "wrap",
                 gap: "12px",
                 paddingTop: "20px",
                 borderTop: "1px solid var(--border)",
