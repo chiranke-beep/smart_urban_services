@@ -117,6 +117,7 @@ export function WorkerVerificationQueue({
         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
           {filteredApps.map((app) => {
             const isApproved = app.status === "APPROVED";
+            const isRejected = app.status === "REJECTED";
 
             return (
               <div
@@ -249,6 +250,25 @@ export function WorkerVerificationQueue({
                     >
                       <XCircle size={13} />
                       <span>Suspend / Revoke</span>
+                    </button>
+                  ) : isRejected ? (
+                    <button
+                      onClick={() => onApprove(app.id)}
+                      style={{
+                        padding: "8px 16px",
+                        backgroundColor: "#10b981",
+                        color: "#ffffff",
+                        border: "none",
+                        fontWeight: 800,
+                        fontSize: "12.5px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <CheckCircle size={14} />
+                      <span>Unsuspend & Restore</span>
                     </button>
                   ) : (
                     <>
@@ -535,6 +555,28 @@ export function WorkerVerificationQueue({
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                 >
                   Revoke & Suspend Badge
+                </button>
+              ) : selectedApp.status === "REJECTED" ? (
+                <button
+                  onClick={() => {
+                    onApprove(selectedApp.id);
+                    setSelectedApp(null);
+                  }}
+                  style={{
+                    padding: "8px 20px",
+                    backgroundColor: "#10b981",
+                    color: "#ffffff",
+                    border: "none",
+                    fontWeight: 800,
+                    fontSize: "13px",
+                    cursor: "pointer",
+                    boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                >
+                  Unsuspend & Re-Approve Worker
                 </button>
               ) : (
                 <>

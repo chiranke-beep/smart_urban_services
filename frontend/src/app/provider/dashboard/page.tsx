@@ -341,6 +341,8 @@ export default function ProviderDashboardPage() {
                     job={job}
                     hasActiveJob={hasActiveJob}
                     isVerified={user?.verifiedBadge === true}
+                    verificationStatus={user?.verificationStatus}
+                    rejectionReason={user?.rejectionReason}
                     onSendQuote={handleSendQuote}
                     onDecline={handleDeclineIncoming}
                   />

@@ -24,6 +24,8 @@ interface IncomingJobCardProps {
   job: JobRequest;
   hasActiveJob?: boolean;
   isVerified?: boolean;
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
   onSendQuote: (jobId: string, quote: Omit<Quotation, "id" | "workerId" | "workerName" | "avatarBg" | "submittedAt" | "status">) => void;
   onDecline: (jobId: string) => void;
 }
@@ -32,6 +34,8 @@ export function IncomingJobCard({
   job,
   hasActiveJob = false,
   isVerified = true,
+  verificationStatus = "PENDING",
+  rejectionReason,
   onSendQuote,
   onDecline,
 }: IncomingJobCardProps) {
@@ -314,9 +318,9 @@ export function IncomingJobCard({
           <div
             style={{
               padding: "12px 16px",
-              backgroundColor: "rgba(239, 68, 68, 0.08)",
-              border: "1.5px solid #ef4444",
-              color: isDark ? "#fca5a5" : "#b91c1c",
+              backgroundColor: verificationStatus === "REJECTED" ? "rgba(239, 68, 68, 0.12)" : "rgba(245, 158, 11, 0.12)",
+              border: verificationStatus === "REJECTED" ? "1.5px solid #ef4444" : "1.5px solid #f59e0b",
+              color: verificationStatus === "REJECTED" ? (isDark ? "#fca5a5" : "#b91c1c") : (isDark ? "#fde68a" : "#b45309"),
               display: "flex",
               alignItems: "center",
               gap: "10px",
@@ -324,11 +328,15 @@ export function IncomingJobCard({
               fontWeight: 700,
             }}
           >
-            <ShieldAlert size={20} color="#ef4444" style={{ flexShrink: 0 }} />
+            <ShieldAlert size={20} color={verificationStatus === "REJECTED" ? "#ef4444" : "#f59e0b"} style={{ flexShrink: 0 }} />
             <div>
-              <div style={{ fontWeight: 800 }}>Account Pending Admin Verification</div>
+              <div style={{ fontWeight: 800 }}>
+                {verificationStatus === "REJECTED" ? "Account Suspended by Admin" : "Account Pending Admin Verification"}
+              </div>
               <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px" }}>
-                Your National Identity Card (NIC) is currently under review by admin. You will be able to accept job requests once verified.
+                {verificationStatus === "REJECTED"
+                  ? (rejectionReason ? `Your service provider account has been suspended: ${rejectionReason}. Please contact admin to appeal and restore access.` : "Your service provider account has been suspended by administration. Contact admin to resolve and restore access.")
+                  : "Your National Identity Card (NIC) is currently under review by admin. You will be able to accept job requests once verified."}
               </div>
             </div>
           </div>
