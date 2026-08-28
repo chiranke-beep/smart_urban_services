@@ -104,6 +104,8 @@ export const jobService = {
               : undefined,
             ratingGiven: inc.rating,
             reviewGiven: inc.review_comment,
+            citizenName: inc.reporter_name || "Citizen",
+            citizenPhone: inc.reporter_phone || "+94 77 123 4567",
           };
         });
 
@@ -401,7 +403,7 @@ export const jobService = {
       jobId,
       `✅ Price accepted! Specialist is now en route to your location.`,
       "user",
-      "Homeowner"
+      job.citizenName || "Citizen"
     );
 
     return job;

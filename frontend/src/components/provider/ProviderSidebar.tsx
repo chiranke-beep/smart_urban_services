@@ -126,44 +126,8 @@ export function ProviderSidebar({
           </div>
         </Link>
 
-        {/* Online / Offline Availability Switch */}
-        <button
-          onClick={onToggleOnline}
-          style={{
-            width: "100%",
-            padding: "12px 14px",
-            borderRadius: "0px",
-            backgroundColor: isOnline ? "rgba(16,185,129,0.15)" : "rgba(100,116,139,0.15)",
-            border: isOnline ? "1.5px solid #10b981" : "1.5px solid var(--border)",
-            color: isOnline ? "#10b981" : "var(--text-secondary)",
-            cursor: "pointer",
-            fontWeight: 800,
-            fontSize: "13px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "24px",
-            transition: "all 0.2s ease",
-            fontFamily: "inherit",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span
-              style={{
-                width: "9px",
-                height: "9px",
-                borderRadius: "50%",
-                backgroundColor: isOnline ? "#10b981" : "#94a3b8",
-                boxShadow: isOnline ? "0 0 10px #10b981" : "none",
-              }}
-            />
-            <span>{isOnline ? "LIVE LOCATION ON" : "LIVE LOCATION OFF"}</span>
-          </div>
-          <Power size={15} />
-        </button>
-
         {/* Nav Items */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        <nav style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "16px" }}>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

@@ -316,7 +316,7 @@ export function Footer() {
             © {new Date().getFullYear()} <strong>Smart Urban Services</strong>. All rights reserved.
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
             <span>Sri Lanka National Community Service Network</span>
             <span style={{ opacity: 0.4 }}>·</span>
             <Link

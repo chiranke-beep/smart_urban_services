@@ -241,7 +241,7 @@ export function SterlingGateNav() {
               </Link>
 
               {/* Right controls */}
-              <div className="nav-row__right">
+              <div className="nav-row__right" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
 
                 {/* Theme toggle — bare icon, no pill/circle container */}
                 <button

@@ -386,27 +386,22 @@ export default function ProviderDashboardPage() {
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "feed" && (
             <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "12px",
+                }}
+              >
                 <div>
                   <h2 style={{ fontSize: "22px", fontWeight: 800, margin: 0 }}>
-                    Live Broadcast Feed ({incomingJobs.length} New)
+                    Incoming Requests Feed ({incomingJobs.length} New)
                   </h2>
                   <p style={{ fontSize: "13.5px", color: "var(--text-secondary)", margin: 0 }}>
-                    Nearby homeowner requests broadcasted within your 10 km service radius
+                    Direct citizen requests available within your service radius
                   </p>
-                </div>
-
-                <div
-                  style={{
-                    padding: "6px 14px",
-                    backgroundColor: isOnline ? "rgba(16,185,129,0.12)" : "rgba(100,116,139,0.1)",
-                    border: "1px solid var(--border)",
-                    fontSize: "12.5px",
-                    fontWeight: 800,
-                    color: isOnline ? "#10b981" : "var(--text-secondary)",
-                  }}
-                >
-                  {isOnline ? "● RADAR RECEIVING BROADCASTS" : "● RADAR OFF"}
                 </div>
               </div>
 
@@ -477,6 +472,13 @@ export default function ProviderDashboardPage() {
                 ) : (
                   acceptedJobs.map((job) => {
                     const isSelected = (activeChatJobId || acceptedJobs[0]?.id) === job.id;
+                    const citizenDisplayName = job.citizenName || "Citizen";
+                    const citizenInitials = citizenDisplayName
+                      .split(" ")
+                      .map((n: string) => n[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase();
 
                     return (
                       <button
@@ -513,11 +515,11 @@ export default function ProviderDashboardPage() {
                             flexShrink: 0,
                           }}
                         >
-                          HO
+                          {citizenInitials}
                         </div>
                         <div style={{ overflow: "hidden" }}>
                           <div style={{ fontSize: "13px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                            Homeowner ({job.locality})
+                            {citizenDisplayName} ({job.locality})
                           </div>
                           <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
                             {job.title}

@@ -80,7 +80,7 @@ export function AdminHeader({
       </div>
 
       {/* Right Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}

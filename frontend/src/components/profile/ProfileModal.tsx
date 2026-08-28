@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
+import { decodeNicToBirthdayAndGender } from "@/utils/nicDecoder";
 import { apiClient } from "@/services/api";
 
 interface ProfileModalProps {
@@ -186,7 +187,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
   const [homeAddress, setHomeAddress] = useState(user?.homeAddress || "Heerassagala, Kandy");
   const [savedLat, setSavedLat] = useState<number>(user?.savedLat || 7.264242);
   const [savedLng, setSavedLng] = useState<number>(user?.savedLng || 80.621701);
-  const [birthday, setBirthday] = useState<string>(user?.birthday || "1995-06-15");
+  const [birthday, setBirthday] = useState<string>(user?.birthday ? user.birthday.split("T")[0] : "1995-06-15");
   const [gender, setGender] = useState<string>(user?.gender || "Male");
   const [language, setLanguage] = useState<string>(user?.language || "English");
 
@@ -197,39 +198,11 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
 
   // Auto-decode Birthday & Gender from Sri Lankan NIC
   useEffect(() => {
-    const rawNic = (user?.nicNumber || "").trim().toUpperCase();
-    if (rawNic) {
-      let birthYear: number | null = null;
-      let dayOfYear: number | null = null;
-
-      if (rawNic.length === 10 && /^\d{9}[VvXx]$/.test(rawNic)) {
-        birthYear = 1900 + parseInt(rawNic.slice(0, 2), 10);
-        dayOfYear = parseInt(rawNic.slice(2, 5), 10);
-      } else if (rawNic.length === 12 && /^\d{12}$/.test(rawNic)) {
-        birthYear = parseInt(rawNic.slice(0, 4), 10);
-        dayOfYear = parseInt(rawNic.slice(4, 7), 10);
-      }
-
-      if (birthYear && dayOfYear) {
-        let isFemale = false;
-        let day = dayOfYear;
-        if (day > 500) {
-          isFemale = true;
-          day -= 500;
-        }
-        setGender(isFemale ? "Female" : "Male");
-
-        // Sri Lankan Department of Registration of Persons (DRP) standard calendar table
-        // DRP standardizes February to 29 days for all NIC sequences
-        const monthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        let month = 0;
-        while (month < 12 && day > monthDays[month]) {
-          day -= monthDays[month];
-          month++;
-        }
-        const mm = String(month + 1).padStart(2, "0");
-        const dd = String(day).padStart(2, "0");
-        setBirthday(`${birthYear}-${mm}-${dd}`);
+    if (user?.nicNumber) {
+      const decoded = decodeNicToBirthdayAndGender(user.nicNumber);
+      if (decoded) {
+        setBirthday(decoded.birthday);
+        setGender(decoded.gender);
       }
     }
   }, [user?.nicNumber]);
@@ -308,8 +281,20 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
             if (d.homeAddress) setHomeAddress(d.homeAddress);
             if (d.savedLat) setSavedLat(Number(d.savedLat));
             if (d.savedLng) setSavedLng(Number(d.savedLng));
-            if (d.birthday) setBirthday(d.birthday.split("T")[0]);
-            if (d.gender) setGender(d.gender);
+            if (d.birthday) {
+              setBirthday(d.birthday.split("T")[0]);
+            } else if (d.nicNumber || user?.nicNumber) {
+              const dec = decodeNicToBirthdayAndGender(d.nicNumber || user?.nicNumber);
+              if (dec) setBirthday(dec.birthday);
+            }
+
+            if (d.gender) {
+              setGender(d.gender);
+            } else if (d.nicNumber || user?.nicNumber) {
+              const dec = decodeNicToBirthdayAndGender(d.nicNumber || user?.nicNumber);
+              if (dec) setGender(dec.gender);
+            }
+
             if (d.language) setLanguage(d.language);
             if (d.trade) setTrade(d.trade);
             if (d.dailyRate) setDailyRate(Number(d.dailyRate));

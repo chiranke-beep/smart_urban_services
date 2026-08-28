@@ -260,6 +260,8 @@ export function QuickJobPostModal({
       urgency,
       photos: imagePreview ? [imagePreview] : [],
       costLKR: estimatedCostLkr || (aiResult?.estimated_base_cost_lkr) || 3500,
+      citizenName: user?.fullName || "Citizen",
+      citizenPhone: user?.phone || "+94 77 123 4567",
     });
 
     onClose();

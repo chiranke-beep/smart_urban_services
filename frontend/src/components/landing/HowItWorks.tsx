@@ -99,7 +99,7 @@ export function HowItWorks() {
     return () => ctx.revert();
   }, []);
 
-  const current = STEPS[activeStep];
+  const current = STEPS[activeStep] || STEPS[0];
 
   return (
     <section

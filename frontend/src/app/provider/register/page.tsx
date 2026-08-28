@@ -8,6 +8,7 @@ import { apiClient } from "@/services/api";
 import { useTheme } from "@/components/ThemeProvider";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { scanNicFromImage } from "@/utils/nicOcr";
+import { decodeNicToBirthdayAndGender } from "@/utils/nicDecoder";
 import {
   Wrench,
   Paintbrush,
@@ -692,6 +693,35 @@ export default function ProviderRegisterPage() {
                     <span>Auto-filled from uploaded NIC document</span>
                   </div>
                 )}
+
+                {(() => {
+                  const decoded = nicNumber ? decodeNicToBirthdayAndGender(nicNumber) : null;
+                  if (!decoded) return null;
+                  return (
+                    <div
+                      style={{
+                        marginTop: "8px",
+                        padding: "8px 12px",
+                        backgroundColor: isDark ? "rgba(6, 182, 212, 0.08)" : "rgba(8, 145, 178, 0.06)",
+                        border: "1px solid var(--accent)",
+                        fontSize: "12px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        flexWrap: "wrap",
+                        gap: "6px",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span style={{ fontWeight: 800, color: "var(--accent)" }}>✓ Auto-Extracted:</span>
+                        <span>Birthday: <strong>{decoded.birthday}</strong></span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        <span>Gender: <strong>{decoded.gender}</strong></span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* Working NIC Photo Upload */}

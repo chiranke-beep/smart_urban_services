@@ -415,7 +415,7 @@ export function Hero() {
                   onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                 >
-                  <span>Explore Services</span>
+                  <span>Browse Local Workers</span>
                   <ArrowRight size={16} />
                 </Link>
 

@@ -53,6 +53,21 @@ html.dark, :root.dark, .dark {
   --accent-text: #000000;
 }
 
+/* Google Translate Clean Styling */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+#goog-gt-tt,
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+body {
+  top: 0px !important;
+}
+.skiptranslate:not(.goog-te-gadget) {
+  display: none !important;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;

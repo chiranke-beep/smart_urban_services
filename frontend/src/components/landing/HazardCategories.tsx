@@ -857,8 +857,7 @@ export function HazardCategories() {
             }}
           >
             <Plus size={14} />
-            <span>Post a Custom Job Request</span>
-            <ArrowRight size={14} />
+            <span>Post a Custom Job Request →</span>
           </Link>
         </div>
 

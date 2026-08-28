@@ -99,12 +99,12 @@ export function ProviderHeader({
           </button>
         )}
         <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
-          Provider Desk
+          Provider Portal
         </div>
       </div>
 
       {/* Right: Worker Profile & Theme Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "18px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}

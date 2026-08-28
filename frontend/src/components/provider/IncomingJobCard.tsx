@@ -200,7 +200,7 @@ export function IncomingJobCard({
           }}
         >
           <FileText size={15} color="#10b981" />
-          <span>Homeowner attached hazard photo for pre-inspection</span>
+          <span>Citizen attached hazard photo for pre-inspection</span>
         </div>
       )}
 
@@ -218,7 +218,7 @@ export function IncomingJobCard({
           }}
         >
           <div style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--text-primary)" }}>
-            Send Official Quotation to Homeowner:
+            Send Official Quotation to Citizen:
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>

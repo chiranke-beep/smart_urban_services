@@ -271,7 +271,7 @@ export function ProviderActiveJobCard({
             }}
           >
             <MessageSquare size={16} />
-            <span>Chat Homeowner</span>
+            <span>Chat Citizen</span>
           </button>
 
           <a
@@ -291,7 +291,7 @@ export function ProviderActiveJobCard({
             }}
           >
             <PhoneCall size={15} />
-            <span>Call Homeowner</span>
+            <span>Call Citizen</span>
           </a>
         </div>
       </div>

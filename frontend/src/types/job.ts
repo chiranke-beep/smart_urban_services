@@ -64,4 +64,7 @@ export interface JobRequest {
   paymentMethod?: PaymentMethod;
   ratingGiven?: number;
   reviewGiven?: string;
+  citizenName?: string;
+  citizenPhone?: string;
+  citizenAvatar?: string;
 }

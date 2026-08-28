@@ -6,6 +6,7 @@ import {
   HomeownerRegistrationData,
   ProviderRegistrationData,
 } from "@/types/auth";
+import { decodeNicToBirthdayAndGender } from "@/utils/nicDecoder";
 import { apiClient } from "./api";
 
 const AUTH_STORAGE_KEY = "smart_urban_auth_session";
@@ -204,7 +205,12 @@ class AuthService {
     if (response?.success && response?.user) {
       const backendUser = response.user;
 
-      // Sync provider profile details & NIC document into PostgreSQL
+      // Auto-decode birthday and gender from NIC
+      const decoded = data.nicNumber ? decodeNicToBirthdayAndGender(data.nicNumber) : null;
+      const birthday = decoded?.birthday || "1995-06-15";
+      const gender = decoded?.gender || "Male";
+
+      // Sync provider profile details, NIC, birthday & gender into PostgreSQL
       await apiClient(`/users/profile/${backendUser.id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -218,6 +224,8 @@ class AuthService {
           nicDocumentUrl: data.nicFrontUrl || data.skillCertUrl,
           locality: data.locality,
           district: data.district,
+          birthday,
+          gender,
         }),
       }).catch(() => {});
 
@@ -235,6 +243,8 @@ class AuthService {
         experienceYears: data.experienceYears,
         dailyRate: data.dailyRate,
         hourlyRate: data.hourlyRate,
+        birthday,
+        gender,
         verifiedBadge: false,
         status: "AVAILABLE",
         createdAt: backendUser.created_at || new Date().toISOString(),

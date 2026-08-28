@@ -92,7 +92,7 @@ export function DashboardHeader({
           />
           <input
             type="text"
-            placeholder="Search workers, jobs, localities (e.g. Tree cutting, Maharagama)..."
+            placeholder="Search workers, trades, locations..."
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={{
@@ -114,7 +114,7 @@ export function DashboardHeader({
       </div>
 
       {/* Right Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -190,6 +190,9 @@ export function DashboardHeader({
               )}
             </div>
             <div>
+              <div style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
+                Provider Portal
+              </div>
               <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
                 {user?.fullName || "Homeowner"}
               </div>
