@@ -180,67 +180,51 @@ def extract_cv_features(img: Image.Image) -> List[float]:
 
 def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
     """
-    Online Google AI Vision API (Google Gemini 1.5 Flash Vision).
-    Supports both AIzaSy API key format and AQ. OAuth token format.
+    Google Gemini 1.5 Flash Vision via official google-generativeai SDK.
+    Supports the new AQ. auth key format from Google AI Studio.
     """
-    import json
-    import requests
-
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_VISION_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
     if not api_key:
         return None
 
-    b64_image = base64.b64encode(image_bytes).decode("utf-8")
-
-    prompt = (
-        "Analyze this service or repair image. "
-        "Choose EXACTLY ONE category from: 'pc_repair', 'yard_cleaning', 'potholes', 'wall_cracks', 'water_leaks', 'fallen_trees', 'house_cleaning'. "
-        "Return ONLY a raw JSON object with keys: category (string), confidence (number between 85 and 99), title (string)."
-    )
-
-    payload = {
-        "contents": [{
-            "parts": [
-                {"text": prompt},
-                {
-                    "inline_data": {
-                        "mime_type": "image/jpeg",
-                        "data": b64_image
-                    }
-                }
-            ]
-        }]
-    }
-
-    # AQ.Ab8... auth keys require Authorization: Bearer (not x-goog-api-key)
-    # Use no ?key= param - just pass as Bearer token
-    gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
     try:
-        res = requests.post(gemini_url, json=payload, headers=headers, timeout=6.0)
-        print(f"Gemini API status: {res.status_code}")
-        if res.status_code == 200:
-            data = res.json()
-            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
-            parsed = json.loads(raw_text)
-            cat = parsed.get("category", "").lower().replace("-", "_").strip()
-            if cat in HAZARD_METADATA:
-                return {
-                    "category": cat,
-                    "confidence": float(parsed.get("confidence", 94.0)),
-                    "title": parsed.get("title", HAZARD_METADATA[cat]["title"]),
-                    "source": "Google Gemini 1.5 Flash Vision AI"
-                }
-        else:
-            print(f"Gemini API error: {res.status_code} - {res.text[:200]}")
+        import google.generativeai as genai
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        prompt = (
+            "Analyze this service or repair image. "
+            "Choose EXACTLY ONE category from: pc_repair, yard_cleaning, potholes, wall_cracks, water_leaks, fallen_trees, house_cleaning. "
+            "Return ONLY a JSON object with keys: category (string), confidence (integer 85-99), title (string). "
+            "No markdown, no explanation — just the raw JSON."
+        )
+
+        import PIL.Image
+        import io as _io
+        pil_img = PIL.Image.open(_io.BytesIO(image_bytes)).convert("RGB")
+        pil_img.thumbnail((512, 512))
+
+        response = model.generate_content([prompt, pil_img])
+        raw = response.text.strip().strip("```json").strip("```").strip()
+
+        import json as _json
+        parsed = _json.loads(raw)
+        cat = parsed.get("category", "").lower().replace("-", "_").strip()
+        print(f"Gemini Vision result: {cat} ({parsed.get('confidence')}%)")
+
+        if cat in HAZARD_METADATA:
+            return {
+                "category": cat,
+                "confidence": float(parsed.get("confidence", 94.0)),
+                "title": parsed.get("title", HAZARD_METADATA[cat]["title"]),
+                "source": "Google Gemini 1.5 Flash Vision AI"
+            }
     except Exception as e:
-        print(f"Google Gemini Vision API Exception: {e}")
+        print(f"Google Gemini SDK Exception: {e}")
 
     return None
+
 
 
 
