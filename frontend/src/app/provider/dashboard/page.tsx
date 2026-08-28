@@ -114,11 +114,14 @@ export default function ProviderDashboardPage() {
       const rawId = String(user.id).replace(/\D/g, "");
       apiClient<{ success: boolean; data?: any }>(`/users/profile/${rawId}`)
         .then((res) => {
-          if (res?.data?.district) {
+          if (res?.data) {
             updateUser({
               locality: res.data.locality,
               district: res.data.district,
               trade: res.data.trade,
+              verifiedBadge: res.data.verified === true || res.data.verificationStatus === "APPROVED",
+              verificationStatus: res.data.verificationStatus || (res.data.verified ? "APPROVED" : "PENDING"),
+              rejectionReason: res.data.rejectionReason || undefined,
             });
           }
         })
