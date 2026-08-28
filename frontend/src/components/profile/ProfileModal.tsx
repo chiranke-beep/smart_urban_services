@@ -733,7 +733,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
                                 setHomeAddress(short);
                               }
                             })
-                            .catch(() => {});
+                            .catch(() => { });
                         },
                         (err) => {
                           alert("GPS fix notice: " + err.message);
