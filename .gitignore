@@ -26,9 +26,10 @@ ai/venv/
 ai/.venv/
 ai/env/
 *.egg-info/
-dist/
 *.pkl
 *.joblib
+!ai/models/
+!ai/models/*.pkl
 
 # Uploads 
 backend/uploads/
