@@ -27,6 +27,7 @@ import {
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/services/api";
+import { getCoordinatesForPlace } from "@/utils/geoDistance";
 
 interface QuickJobPostModalProps {
   isOpen: boolean;
@@ -53,12 +54,12 @@ export function QuickJobPostModal({
   const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [selectedCategory, setSelectedCategory] = useState<JobCategory>("tree-cutting");
   const [title, setTitle] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<JobCategory>("plumbing");
   const [description, setDescription] = useState("");
-  const [district, setDistrict] = useState(user?.district || "Colombo");
-  const [locality, setLocality] = useState(user?.locality || "Maharagama");
-  const [urgency, setUrgency] = useState<JobUrgency>("flexible");
+  const [district, setDistrict] = useState("Colombo");
+  const [locality, setLocality] = useState("Maharagama");
+  const [urgency, setUrgency] = useState<JobUrgency>("today");
 
   // Real Photo Upload & AI Scan State
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -66,8 +67,11 @@ export function QuickJobPostModal({
   const [aiResult, setAiResult] = useState<AIVisionResult | null>(null);
 
   // Dynamic Pricing State
-  const [estimatedCostLkr, setEstimatedCostLkr] = useState<number | null>(null);
-  const [priceRange, setPriceRange] = useState<{ min_lkr: number; max_lkr: number } | null>(null);
+  const [estimatedCostLkr, setEstimatedCostLkr] = useState<number>(3850);
+  const [priceRange, setPriceRange] = useState<{ min_lkr: number; max_lkr: number } | null>({
+    min_lkr: 2500,
+    max_lkr: 4500,
+  });
 
   // AI Geo-Dispatch Spatial Specialist Match
   const [matchedProvider, setMatchedProvider] = useState<{
@@ -83,8 +87,8 @@ export function QuickJobPostModal({
   const [isGeoMatching, setIsGeoMatching] = useState(false);
 
   const [gpsCoords, setGpsCoords] = useState<{ lat?: number; lng?: number }>({
-    lat: user?.savedLat || 6.848,
-    lng: user?.savedLng || 79.926,
+    lat: 6.848,
+    lng: 79.926,
   });
 
   const { theme } = useTheme();
@@ -92,14 +96,27 @@ export function QuickJobPostModal({
 
   useEffect(() => {
     if (isOpen && user) {
-      setDistrict(user.district || "Colombo");
-      setLocality(user.locality || "Maharagama");
-      setGpsCoords({
+      const userDist = user.district || "Colombo";
+      const userLoc = user.locality || "Maharagama";
+      setDistrict(userDist);
+      setLocality(userLoc);
+      const coords = getCoordinatesForPlace(userLoc, userDist);
+      setGpsCoords(coords || {
         lat: user.savedLat || 6.848,
         lng: user.savedLng || 79.926,
       });
     }
   }, [isOpen, user]);
+
+  // Dynamically update GPS coordinates whenever citizen changes District or Locality
+  useEffect(() => {
+    if (district || locality) {
+      const coords = getCoordinatesForPlace(locality, district);
+      if (coords?.lat && coords?.lng) {
+        setGpsCoords(coords);
+      }
+    }
+  }, [district, locality]);
 
   // Recalculate AI Dynamic Cost & Geo-Dispatch whenever district, category, or urgency changes
   useEffect(() => {
@@ -130,7 +147,6 @@ export function QuickJobPostModal({
           setPriceRange(data.price_range);
         }
       } catch (err) {
-        // Fallback calculation
         setEstimatedCostLkr(3850);
       }
     }
@@ -141,8 +157,8 @@ export function QuickJobPostModal({
         const res = await apiClient<{ success: boolean; recommendations?: any[] }>("/ai/geo-dispatch", {
           method: "POST",
           body: JSON.stringify({
-            incident_lat: gpsCoords.lat || 7.2906,
-            incident_lng: gpsCoords.lng || 80.6337,
+            incident_lat: gpsCoords.lat || 6.9271,
+            incident_lng: gpsCoords.lng || 79.8612,
             required_category: selectedCategory,
             max_radius_km: 35.0,
           }),
@@ -150,6 +166,8 @@ export function QuickJobPostModal({
 
         if (res?.recommendations && res.recommendations.length > 0) {
           setMatchedProvider(res.recommendations[0]);
+        } else {
+          setMatchedProvider(null);
         }
       } catch (err) {
         console.warn("[Geo Dispatch Match Error]:", err);
