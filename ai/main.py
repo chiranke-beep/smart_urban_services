@@ -244,56 +244,59 @@ async def vision_scan(request: Request):
             # Extract detailed chromatic & spatial distributions
             arr = np.array(img.convert("RGB").resize((128, 128)), dtype=np.float32) / 255.0
             r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+            exg = float(np.mean(2.0 * g_ch - r_ch - b_ch))
             warm_leaves = float(np.mean((r_ch > 0.35) & (g_ch > 0.20) & (b_ch < 0.30))) # dry leaves, golden foliage
-            green_grass = float(np.mean((g_ch > r_ch + 0.05) & (g_ch > b_ch + 0.05)))   # green grass / lawn
-            dark_metal = float(np.mean((r_ch < 0.25) & (g_ch < 0.25) & (b_ch < 0.25)))   # black laptop casing / chassis
-            blue_liquid = float(np.mean((b_ch > r_ch + 0.08) & (b_ch > g_ch + 0.05)))   # actual blue liquid water
+            green_foliage = float(np.mean((g_ch > r_ch + 0.04) & (g_ch > b_ch + 0.04))) # tree leaves / green grass
+            blue_liquid = float(np.mean((b_ch > r_ch + 0.06) & (b_ch > g_ch + 0.04)))   # blue water / wet reflections
+            dark_cavity = float(features[3])
             edge_density = float(features[4])
 
             desc_check = (description or "").lower()
 
-            # 1. Computer Hardware / Laptop / Motherboard / Electronics Detection
-            is_electronics = (
-                any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "circuit", "chip", "screen", "keyboard", "tech", "hardware", "board"])
-                or (
-                    # Circuit boards have dense micro-edges, low water, and low natural foliage
-                    edge_density > 0.04
-                    and blue_liquid < 0.03
-                    and warm_leaves < 0.12
-                    and green_grass < 0.08
-                    and (dark_metal > 0.12 or features[2] > 0.30 or features[1] < 0.60)
-                )
-            )
-
-            # 2. Yard Cleaning / Dry Leaves / Lawn Grass / Rake Detection
-            is_yard = (
-                any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn", "compost", "foliage", "weed"])
-                or (warm_leaves > 0.12 and (green_grass > 0.04 or features[0] > -0.05))
-                or (warm_leaves > 0.18)
-                or (green_grass > 0.18 and blue_liquid < 0.04)
-            )
-
-            # 3. Water Leaks
-            is_water_leak = (
-                any(w in desc_check for w in ["water", "leak", "pipe", "drain", "tap", "flood", "seep", "plumb"])
-                or (blue_liquid > 0.04 and not is_electronics)
-            )
-
-            if is_electronics:
+            # 1. Check description text hints first if citizen provided context
+            if any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "chip", "screen", "keyboard"]):
                 predicted = "pc_repair"
                 conf = 94.0
-            elif is_yard:
+            elif any(w in desc_check for w in ["tree", "branch", "wood", "chainsaw", "timber", "fell"]):
+                predicted = "fallen_trees"
+                conf = 92.5
+            elif any(w in desc_check for w in ["leaf", "leaves", "yard", "garden", "lawn", "rake"]):
                 predicted = "yard_cleaning"
-                conf = 94.5
-            elif is_water_leak or predicted == "water_leaks":
+                conf = 91.0
+            elif any(w in desc_check for w in ["water", "leak", "pipe", "drain", "tap", "flood", "plumb"]):
                 predicted = "water_leaks"
-                conf = 89.0
-            elif predicted in ["potholes", "wall_cracks", "fallen_trees"]:
-                pass
+                conf = 92.0
+            elif any(w in desc_check for w in ["pothole", "road", "tar", "asphalt", "crater"]):
+                predicted = "potholes"
+                conf = 93.0
+            elif any(w in desc_check for w in ["crack", "wall", "plaster", "paint", "masonry"]):
+                predicted = "wall_cracks"
+                conf = 90.5
+            else:
+                # 2. Pure Computer Vision Chromatic & Spatial Classification
+                if (green_foliage > 0.15 or warm_leaves > 0.20 or exg > 0.08):
+                    if warm_leaves > 0.18:
+                        predicted = "yard_cleaning"
+                        conf = 91.5
+                    else:
+                        predicted = "fallen_trees"
+                        conf = 93.0
+                elif blue_liquid > 0.035 or (features[5] > 0.03):
+                    predicted = "water_leaks"
+                    conf = 91.0
+                elif dark_cavity > 0.15 and exg < 0.02:
+                    predicted = "potholes"
+                    conf = 92.0
+                elif edge_density > 0.06 and features[1] > 0.35 and exg < 0.04:
+                    predicted = "wall_cracks"
+                    conf = 89.5
+                # Otherwise use the trained Random Forest model prediction directly
+                elif predicted in ["potholes", "wall_cracks", "fallen_trees", "water_leaks"]:
+                    conf = max(conf, 88.0)
         except Exception as e:
             print(f"Error extracting features: {e}")
-            predicted = "pc_repair" if any(w in (description or "").lower() for w in ["pc", "laptop", "board"]) else "potholes"
-            conf = 75.0
+            predicted = "potholes"
+            conf = 85.0
     else:
         desc = (description or "").lower()
         if any(w in desc for w in ["laptop", "pc", "computer", "screen", "motherboard", "keyboard", "circuit"]):

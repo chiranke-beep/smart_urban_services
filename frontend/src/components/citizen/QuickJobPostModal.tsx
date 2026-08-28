@@ -204,7 +204,6 @@ export function QuickJobPostModal({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             imageBase64: base64Data,
-            description: title || description,
           }),
         });
 
@@ -261,6 +260,8 @@ export function QuickJobPostModal({
   const removePhoto = () => {
     setImagePreview(null);
     setAiResult(null);
+    setTitle("");
+    setDescription("");
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
