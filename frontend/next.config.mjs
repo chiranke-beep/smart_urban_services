@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Required for Docker standalone deployment
+  output: "standalone",
+
   async redirects() {
     return [
       {
