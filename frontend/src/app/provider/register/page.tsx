@@ -134,10 +134,6 @@ export default function ProviderRegisterPage() {
           if (ocrRes?.nicNumber) {
             setNicNumber(ocrRes.nicNumber);
             setIsNicAutofilled(true);
-          } else if (!valid12 && !valid9 && !nicNumber) {
-            // Fallback to verified legal format
-            setNicNumber("200321513168");
-            setIsNicAutofilled(true);
           }
         } catch (ocrErr: any) {
           console.warn("[AI OCR Scan error]:", ocrErr.message);

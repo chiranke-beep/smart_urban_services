@@ -4,19 +4,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { Navigation, MapPin, Radio, ShieldCheck, CheckCircle2, LocateFixed, AlertCircle } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { socketService } from "@/services/socketService";
-
-const DEFAULT_LOCALITY_COORDS: Record<string, { home: [number, number]; worker: [number, number] }> = {
-  Heerassagala: { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
-  "Heerassagala, Kandy": { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
-  Kandy: { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
-  "Kandy Town": { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
-  "Colombo Town": { home: [6.9271, 79.8612], worker: [6.9050, 79.8780] },
-  Colombo: { home: [6.9271, 79.8612], worker: [6.9050, 79.8780] },
-  Maharagama: { home: [6.8485, 79.9265], worker: [6.8650, 79.9050] },
-  Nugegoda: { home: [6.8724, 79.8997], worker: [6.8900, 79.8800] },
-  Kelaniya: { home: [6.9553, 79.9192], worker: [6.9700, 79.9050] },
-  Galle: { home: [6.0535, 80.221], worker: [6.0350, 80.2150] },
-};
+import { getCoordinatesForPlace } from "@/utils/geoDistance";
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371;
@@ -60,39 +48,35 @@ export function LiveGpsRouteMap({
   const routePolylineRef = useRef<any>(null);
   const routePointsRef = useRef<[number, number][]>([]);
   const pointIndexRef = useRef<number>(0);
-  // Ref version of homeCoords to avoid stale closures in socket listeners
-  const homeCoordsRef = useRef<[number, number]>([7.2662, 80.6120]);
+  const homeCoordsRef = useRef<[number, number]>([6.9271, 79.8612]);
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  // Location Permission & Active GPS State
-  const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState<boolean>(false);
+  // Location Permission & Active GPS State (Active by default for seamless map viewing)
+  const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState<boolean>(true);
   const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
 
-  // Use provided home coords if available, else fall back to locality defaults
-  const matchedKey =
-    Object.keys(DEFAULT_LOCALITY_COORDS).find((k) =>
-      locality.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(locality.toLowerCase())
-    ) || "Heerassagala";
-
-  const defaultCoords = DEFAULT_LOCALITY_COORDS[matchedKey] || DEFAULT_LOCALITY_COORDS["Heerassagala"];
-  // Home pin = citizen's job location (from props or locality default)
+  // Dynamic coordinate resolution for any Sri Lankan locality
+  const resolvedCoords = getCoordinatesForPlace(locality);
   const initialHome: [number, number] =
     homeLat && homeLng && !isNaN(Number(homeLat)) && !isNaN(Number(homeLng))
       ? [Number(homeLat), Number(homeLng)]
-      : defaultCoords.home;
+      : [resolvedCoords.lat, resolvedCoords.lng];
+
   const initialWorker: [number, number] =
     stage === "IN_PROGRESS" || stage === "COMPLETED"
       ? initialHome
-      : defaultCoords.worker;
+      : [resolvedCoords.lat + 0.015, resolvedCoords.lng + 0.012];
+
   const [homeCoords, setHomeCoords] = useState<[number, number]>(initialHome);
   const [workerCoords, setWorkerCoords] = useState<[number, number]>(initialWorker);
 
   // Keep ref in sync with state so socket listeners get fresh value without re-subscribing
   homeCoordsRef.current = homeCoords;
 
-  const [currentDistanceKm, setCurrentDistanceKm] = useState<number>(0);
-  const [currentEta, setCurrentEta] = useState<number>(etaMinutes);
+  const initialDistance = calculateDistanceKm(initialWorker[0], initialWorker[1], initialHome[0], initialHome[1]);
+  const [currentDistanceKm, setCurrentDistanceKm] = useState<number>(initialDistance > 0.05 ? initialDistance : 0.01);
+  const [currentEta, setCurrentEta] = useState<number>(Math.max(2, Math.round((initialDistance / 25.0) * 60 + 3)));
   const [roadStreetName, setRoadStreetName] = useState<string>("Turn-by-Turn Road Route");
   const isGeofenced = stage === "IN_PROGRESS" || stage === "COMPLETED";
 
@@ -405,6 +389,11 @@ export function LiveGpsRouteMap({
 
       mapInstanceRef.current = map;
       updateRoadRoute(initialWorkerPos, homeCoords, map, L);
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 200);
     }
 
     initMap();

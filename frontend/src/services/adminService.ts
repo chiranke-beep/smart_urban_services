@@ -112,30 +112,10 @@ export const adminService = {
     } catch (err) {
       console.warn("[Admin Analytics fetch notice]:", err);
     }
-    return [
-      {
-        district: "Kandy",
-        province: "Central",
-        activeJobs: 2,
-        verifiedWorkers: 2,
-        hazardResolutionRate: 98.5,
-        avgResponseMins: 14,
-        totalSettledLKR: 6000,
-      },
-    ];
+    return [];
   },
 
   getDistrictMetrics(): DistrictMetric[] {
-    return [
-      {
-        district: "Kandy",
-        province: "Central",
-        activeJobs: 2,
-        verifiedWorkers: 2,
-        hazardResolutionRate: 98.5,
-        avgResponseMins: 14,
-        totalSettledLKR: 6000,
-      },
-    ];
+    return [];
   },
 };
