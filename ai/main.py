@@ -180,26 +180,24 @@ def extract_cv_features(img: Image.Image) -> List[float]:
 
 def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
     """
-    Online Google AI Vision API (Google Gemini 1.5 Flash Vision / Cloud Vision).
-    Performs real-time zero-shot visual reasoning on any domestic or civic image.
+    Online Google AI Vision API (Google Gemini 1.5 Flash Vision).
+    Supports both AIzaSy API key format and AQ. OAuth token format.
     """
     import json
     import requests
-    
+
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_VISION_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
     if not api_key:
         return None
 
     b64_image = base64.b64encode(image_bytes).decode("utf-8")
-    
-    # 1. Google Gemini 1.5 Flash Vision API
-    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+
     prompt = (
         "Analyze this service or repair image. "
         "Choose EXACTLY ONE category from: 'pc_repair', 'yard_cleaning', 'potholes', 'wall_cracks', 'water_leaks', 'fallen_trees', 'house_cleaning'. "
         "Return ONLY a raw JSON object with keys: category (string), confidence (number between 85 and 99), title (string)."
     )
-    
+
     payload = {
         "contents": [{
             "parts": [
@@ -213,15 +211,18 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
             ]
         }]
     }
-    
+
+    # Both AIzaSy... and AQ.Ab8... auth keys work the same way:
+    # Pass as x-goog-api-key header AND as ?key= URL param for maximum compatibility
+    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
     headers = {
         "x-goog-api-key": api_key,
-        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
-    
+
     try:
-        res = requests.post(gemini_url, json=payload, headers=headers, timeout=5.0)
+        res = requests.post(gemini_url, json=payload, headers=headers, timeout=6.0)
+        print(f"Gemini API status: {res.status_code}")
         if res.status_code == 200:
             data = res.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -234,10 +235,13 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
                     "title": parsed.get("title", HAZARD_METADATA[cat]["title"]),
                     "source": "Google Gemini 1.5 Flash Vision AI"
                 }
+        else:
+            print(f"Gemini API error: {res.status_code} - {res.text[:200]}")
     except Exception as e:
         print(f"Google Gemini Vision API Exception: {e}")
 
     return None
+
 
 
 def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
