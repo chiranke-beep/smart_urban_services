@@ -283,14 +283,14 @@ export function QuickJobPostModal({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: "20px",
+        padding: "clamp(8px, 2vw, 20px)",
       }}
     >
       <div
         style={{
           width: "100%",
           maxWidth: "700px",
-          maxHeight: "92vh",
+          maxHeight: "94vh",
           backgroundColor: isDark ? "#0f172a" : "#ffffff",
           border: isDark ? "1.5px solid var(--accent)" : "1.5px solid #0891b2",
           boxShadow: isDark
@@ -305,52 +305,41 @@ export function QuickJobPostModal({
         {/* Modal Header */}
         <div
           style={{
-            padding: "18px 24px",
-            borderBottom: isDark ? "1px solid var(--border)" : "1px solid #e2e8f0",
-            backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "#f8fafc",
+            padding: "16px 20px",
+            borderBottom: isDark ? "1px solid var(--border)" : "1.5px solid #e2e8f0",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
+            backgroundColor: isDark ? "#1e293b" : "#f8fafc",
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
             <div
               style={{
-                width: "32px",
-                height: "32px",
+                width: "28px",
+                height: "28px",
                 backgroundColor: "var(--accent)",
                 color: "var(--accent-text)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontWeight: 900,
-                fontSize: "16px",
               }}
             >
-              +
+              <Plus size={16} />
             </div>
             <div>
               <h2
                 style={{
-                  fontSize: "17px",
-                  fontWeight: 800,
-                  color: isDark ? "#f8fafc" : "#0f172a",
+                  fontSize: "15px",
+                  fontWeight: 900,
+                  color: isDark ? "#ffffff" : "#0f172a",
                   margin: 0,
                   letterSpacing: "-0.01em",
                 }}
               >
                 Publish New Service Request
               </h2>
-              <p
-                style={{
-                  fontSize: "12px",
-                  color: isDark ? "#94a3b8" : "#475569",
-                  margin: "2px 0 0 0",
-                  fontWeight: 500,
-                }}
-              >
-                AI-assisted dispatch with Sri Lankan living wage & computer vision verification
-              </p>
             </div>
           </div>
 
@@ -376,7 +365,7 @@ export function QuickJobPostModal({
         <form
           onSubmit={handleSubmit}
           style={{
-            padding: "22px",
+            padding: "clamp(14px, 2.5vw, 22px)",
             overflowY: "auto",
             display: "flex",
             flexDirection: "column",
@@ -399,7 +388,7 @@ export function QuickJobPostModal({
             >
               1. Select Service Category:
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: "8px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: "8px" }}>
               {CATEGORY_DEFINITIONS.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
                 const Icon = cat.icon;
@@ -423,19 +412,16 @@ export function QuickJobPostModal({
                         : isDark
                         ? "1px solid var(--border)"
                         : "1.5px solid #e2e8f0",
-                      boxShadow: isSelected
-                        ? `0 4px 12px ${cat.color}25`
-                        : "none",
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       gap: "6px",
                       cursor: "pointer",
-                      fontFamily: "inherit",
-                      transition: "all 0.2s ease",
+                      transition: "all 0.15s ease",
+                      textAlign: "center",
                     }}
                   >
-                    <Icon size={20} color={cat.color} strokeWidth={2.2} />
+                    <Icon size={20} color={cat.color} />
                     <span
                       style={{
                         fontSize: "12px",
@@ -482,40 +468,33 @@ export function QuickJobPostModal({
               onChange={(e) => setTitle(e.target.value)}
               style={{
                 width: "100%",
-                padding: "11px 14px",
+                padding: "10px 14px",
                 borderRadius: "0px",
                 backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#f8fafc",
                 border: isDark ? "1px solid var(--border)" : "1.5px solid #cbd5e1",
                 color: isDark ? "#f8fafc" : "#0f172a",
-                fontSize: "13.5px",
-                fontWeight: 600,
+                fontSize: "13px",
                 outline: "none",
-                fontFamily: "inherit",
+                fontWeight: 600,
               }}
             />
           </div>
 
           {/* 3. Detailed Description */}
           <div>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12.5px",
-                  fontWeight: 800,
-                  color: isDark ? "#f1f5f9" : "#0f172a",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.03em",
-                }}
-              >
-                3. Detailed Description & Work Requirements:
-              </label>
-              {aiResult && (
-                <span style={{ fontSize: "11px", fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: "4px" }}>
-                  <Sparkles size={12} /> AI Diagnostic Summary
-                </span>
-              )}
-            </div>
+            <label
+              style={{
+                display: "block",
+                fontSize: "12.5px",
+                fontWeight: 800,
+                color: isDark ? "#f1f5f9" : "#0f172a",
+                marginBottom: "6px",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              3. Detailed Description & Work Requirements:
+            </label>
             <textarea
               rows={3}
               placeholder="Describe work area, power line hazards, specific tools required, or property access instructions..."
@@ -537,7 +516,7 @@ export function QuickJobPostModal({
           </div>
 
           {/* 4. District & Locality */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "14px" }}>
             <div>
               <label
                 style={{
@@ -627,7 +606,7 @@ export function QuickJobPostModal({
             >
               5. Urgency Level:
             </label>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "10px" }}>
               {[
                 { id: "emergency", label: "Emergency / Hazard", desc: "Within 30-45 mins", color: "#ef4444" },
                 { id: "today", label: "Needed Today", desc: "Within 2-4 hours", color: "#f59e0b" },
