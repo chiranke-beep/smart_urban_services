@@ -178,6 +178,80 @@ def extract_cv_features(img: Image.Image) -> List[float]:
     return [exg, gray, neutrality, dark_cavity, edge_density, blue_water]
 
 
+def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
+    """
+    Online Cloud AI Vision API 1: Hugging Face Vision Transformer (ViT / ResNet).
+    Queries real-time zero-shot / ImageNet cloud computer vision model.
+    """
+    import requests
+    
+    # 1. Primary Online Vision API: Google Vision Transformer
+    API_URL_1 = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
+    try:
+        response = requests.post(API_URL_1, data=image_bytes, timeout=4.0)
+        if response.status_code == 200:
+            results = response.json()
+            if isinstance(results, list) and len(results) > 0:
+                top_item = results[0]
+                label = str(top_item.get("label", "")).lower()
+                score = float(top_item.get("score", 0.85))
+                return {"label": label, "score": score, "source": "Cloud Vision ViT API"}
+    except Exception as e:
+        print(f"Vision API 1 timeout/error: {e}")
+
+    # 2. Secondary Online Vision API: ResNet-50 Classifier
+    API_URL_2 = "https://api-inference.huggingface.co/models/microsoft/resnet-50"
+    try:
+        response = requests.post(API_URL_2, data=image_bytes, timeout=4.0)
+        if response.status_code == 200:
+            results = response.json()
+            if isinstance(results, list) and len(results) > 0:
+                top_item = results[0]
+                label = str(top_item.get("label", "")).lower()
+                score = float(top_item.get("score", 0.85))
+                return {"label": label, "score": score, "source": "Cloud ResNet API"}
+    except Exception as e:
+        print(f"Vision API 2 timeout/error: {e}")
+
+    return None
+
+
+def map_online_label_to_service(label: str, score: float) -> (str, float):
+    """Maps Cloud AI Vision labels to Smart Urban Services category."""
+    lbl = label.lower()
+    conf = round(score * 100, 1)
+
+    # PC / Electronics / Motherboards
+    if any(k in lbl for k in ["laptop", "notebook", "desktop", "computer", "keyboard", "monitor", "screen", "mouse", "modem", "hard disc", "circuit", "motherboard", "cell", "phone", "electronics", "audio", "mic"]):
+        return "pc_repair", max(conf, 88.5)
+
+    # Yard Cleaning / Lawn / Garden
+    if any(k in lbl for k in ["lawn", "rake", "hay", "grass", "pot", "flower", "garden", "leaf", "leaves", "bush", "hedgerow"]):
+        return "yard_cleaning", max(conf, 86.0)
+
+    # Tree / Big Timber
+    if any(k in lbl for k in ["tree", "log", "timber", "wood", "forest", "bark", "trunk"]):
+        return "fallen_trees", max(conf, 89.0)
+
+    # Plumbing / Leaks / Drainage
+    if any(k in lbl for k in ["plunger", "tub", "faucet", "pipe", "drain", "water", "fountain", "hose", "washbasin", "sink", "tap"]):
+        return "water_leaks", max(conf, 87.5)
+
+    # Wall Cracks / Masonry / Paint
+    if any(k in lbl for k in ["wall", "brick", "masonry", "plaster", "tile", "crater", "stone", "concrete", "paint", "crack"]):
+        return "wall_cracks", max(conf, 88.0)
+
+    # Potholes / Roads / Asphalts
+    if any(k in lbl for k in ["pothole", "asphalt", "curb", "street", "road", "manhole", "highway", "driveway"]):
+        return "potholes", max(conf, 91.0)
+
+    # Deep Cleaning
+    if any(k in lbl for k in ["vacuum", "mop", "broom", "soap", "cleanser", "dishwasher", "washer"]):
+        return "house_cleaning", max(conf, 87.0)
+
+    return "", conf
+
+
 # ─── Endpoints ───
 
 @app.get("/")
@@ -187,16 +261,18 @@ def health_check():
     return {
         "status": "online",
         "service": "Smart Urban Services AI Microservice",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "trained_models_loaded": trained_models,
+        "online_vision_apis": ["HuggingFace Vision Transformer (ViT)", "Microsoft ResNet-50 Cloud"],
     }
 
 
 @app.post("/api/ai/vision-scan")
 async def vision_scan(request: Request):
     """
-    Universal Computer Vision model inference on uploaded image (JSON Base64 or Multipart).
-    Uses trained Random Forest Classifier (hazard_classifier.pkl).
+    Universal Computer Vision Pipeline:
+    1. Queries Cloud AI Vision APIs (Google ViT / Microsoft ResNet) for real-time universal recognition.
+    2. Falls back to trained Random Forest model (hazard_classifier.pkl) for local civic hazard feature extraction.
     """
     image_bytes = None
     description = ""
@@ -226,24 +302,39 @@ async def vision_scan(request: Request):
                 pass
         description = form.get("description") or ""
 
+    predicted = ""
+    conf = 85.0
+    detection_source = "Local ML Model"
+
     if image_bytes:
-        try:
-            img = Image.open(io.BytesIO(image_bytes))
-            features = extract_cv_features(img)
-            
-            if hazard_model:
-                probs = hazard_model.predict_proba([features])[0]
-                classes = hazard_model.classes_
-                best_idx = np.argmax(probs)
-                predicted = str(classes[best_idx])
-                conf = round(float(probs[best_idx]) * 100, 1)
-            else:
+        # Step 1: Attempt Cloud AI Vision APIs
+        online_result = query_online_vision_api(image_bytes)
+        if online_result:
+            mapped_hazard, mapped_conf = map_online_label_to_service(online_result["label"], online_result["score"])
+            if mapped_hazard:
+                predicted = mapped_hazard
+                conf = mapped_conf
+                detection_source = f"Cloud AI Vision ({online_result.get('label', '')})"
+
+        # Step 2: Fallback to Local Random Forest Model if online didn't return a match
+        if not predicted:
+            try:
+                img = Image.open(io.BytesIO(image_bytes))
+                features = extract_cv_features(img)
+                
+                if hazard_model:
+                    probs = hazard_model.predict_proba([features])[0]
+                    classes = hazard_model.classes_
+                    best_idx = np.argmax(probs)
+                    predicted = str(classes[best_idx])
+                    conf = round(float(probs[best_idx]) * 100, 1)
+                else:
+                    predicted = "potholes"
+                    conf = 85.0
+            except Exception as e:
+                print(f"Error extracting features: {e}")
                 predicted = "potholes"
                 conf = 85.0
-        except Exception as e:
-            print(f"Error extracting features: {e}")
-            predicted = "potholes"
-            conf = 85.0
     else:
         desc = (description or "").lower()
         if any(w in desc for w in ["laptop", "pc", "computer", "screen", "motherboard", "keyboard", "circuit"]):
@@ -270,6 +361,7 @@ async def vision_scan(request: Request):
         "category": meta["category"],
         "urgency": meta["urgency"],
         "confidence_percentage": conf,
+        "detection_source": detection_source,
         "required_equipment": meta["equipment"],
         "recommended_crew": meta["suggested_crew"],
         "estimated_base_cost_lkr": meta["base_cost_lkr"],

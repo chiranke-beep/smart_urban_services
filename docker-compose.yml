@@ -50,6 +50,8 @@ services:
       dockerfile: Dockerfile
     container_name: sus_ai
     restart: unless-stopped
+    volumes:
+      - ./ai:/app
     ports:
       - "8000:8000"
 
