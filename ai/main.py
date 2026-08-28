@@ -212,14 +212,13 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
                 }
             ]
         }],
-        "generationConfig": {
-            "response_mime_type": "application/json",
-            "temperature": 0.1
-        }
+    headers = {
+        "x-goog-api-key": api_key,
+        "Content-Type": "application/json"
     }
     
     try:
-        res = requests.post(gemini_url, json=payload, timeout=5.0)
+        res = requests.post(gemini_url, json=payload, headers=headers, timeout=6.0)
         if res.status_code == 200:
             data = res.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
@@ -378,11 +377,16 @@ async def vision_scan(request: Request):
             # Step 2: If image shows distinct domestic electronics or leaf mulch, refine with Cloud Vision
             online_result = query_online_vision_api(image_bytes)
             if online_result:
-                mapped_hazard, mapped_conf = map_online_label_to_service(online_result["label"], online_result["score"])
-                if mapped_hazard in ["pc_repair", "yard_cleaning", "house_cleaning"]:
-                    predicted = mapped_hazard
-                    conf = mapped_conf
-                    detection_source = f"Cloud AI Vision ({online_result.get('label', '')})"
+                if online_result.get("category"):
+                    predicted = online_result["category"]
+                    conf = float(online_result.get("confidence", 94.0))
+                    detection_source = online_result.get("source", "Google Gemini 1.5 Flash Vision AI")
+                elif "label" in online_result:
+                    mapped_hazard, mapped_conf = map_online_label_to_service(online_result["label"], online_result.get("score", 0.85))
+                    if mapped_hazard in ["pc_repair", "yard_cleaning", "house_cleaning"]:
+                        predicted = mapped_hazard
+                        conf = mapped_conf
+                        detection_source = f"Cloud AI Vision ({online_result.get('label', '')})"
         except Exception as e:
             print(f"Error in vision pipeline: {e}")
             predicted = "potholes"
