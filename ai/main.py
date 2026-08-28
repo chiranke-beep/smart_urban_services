@@ -180,7 +180,7 @@ def extract_cv_features(img: Image.Image) -> List[float]:
 
 def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
     """
-    Google Gemini 1.5 Flash Vision via official google-generativeai SDK.
+    Google Gemini 1.5 Flash Vision via google-genai SDK (v1.x).
     Supports the new AQ. auth key format from Google AI Studio.
     """
     api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
@@ -188,10 +188,10 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        import google.generativeai as genai
+        from google import genai
+        from google.genai import types
 
-        genai.configure(api_key=api_key)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        client = genai.Client(api_key=api_key)
 
         prompt = (
             "Analyze this service or repair image. "
@@ -205,9 +205,12 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
         pil_img = PIL.Image.open(_io.BytesIO(image_bytes)).convert("RGB")
         pil_img.thumbnail((512, 512))
 
-        response = model.generate_content([prompt, pil_img])
-        raw = response.text.strip().strip("```json").strip("```").strip()
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents=[prompt, pil_img]
+        )
 
+        raw = response.text.strip().strip("```json").strip("```").strip()
         import json as _json
         parsed = _json.loads(raw)
         cat = parsed.get("category", "").lower().replace("-", "_").strip()
@@ -224,6 +227,7 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
         print(f"Google Gemini SDK Exception: {e}")
 
     return None
+
 
 
 
