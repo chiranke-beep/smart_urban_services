@@ -7,8 +7,8 @@ import { IncomingJobCard } from "@/components/provider/IncomingJobCard";
 import { ProviderActiveJobCard } from "@/components/provider/ProviderActiveJobCard";
 import { ProviderEarningsTable } from "@/components/provider/ProviderEarningsTable";
 import { LiveChatDock } from "@/components/citizen/LiveChatDock";
-import { JobRequest, Quotation } from "@/types/job";
 import { jobService } from "@/services/jobService";
+import { apiClient } from "@/services/api";
 import {
   Radio,
   Navigation,
@@ -23,7 +23,9 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
 
+import { JobRequest, Quotation } from "@/types/job";
 import { socketService } from "@/services/socketService";
+import { getAiDistanceAndEta } from "@/utils/geoDistance";
 
 function isJobMatchingProviderSkills(jobCategory: string, providerTradeText?: string): boolean {
   if (!providerTradeText || !providerTradeText.trim()) return true;
@@ -61,8 +63,41 @@ function isJobMatchingProviderSkills(jobCategory: string, providerTradeText?: st
   return false;
 }
 
+function isJobWithinProviderRadius(
+  job: JobRequest,
+  providerDistrict?: string,
+  providerLocality?: string,
+  providerLat?: number,
+  providerLng?: number
+): boolean {
+  const provDist = (providerDistrict || "Colombo").toLowerCase().trim();
+  const jobDist = (job.district || "Kandy").toLowerCase().trim();
+
+  // Direct strict cross-district isolation
+  if (provDist && jobDist && provDist !== jobDist) {
+    if (
+      (provDist.includes("colombo") && jobDist.includes("kandy")) ||
+      (provDist.includes("kandy") && jobDist.includes("colombo")) ||
+      (provDist.includes("galle") && jobDist.includes("kandy")) ||
+      (provDist.includes("jaffna") && jobDist.includes("colombo")) ||
+      (provDist.includes("matara") && jobDist.includes("kandy"))
+    ) {
+      return false;
+    }
+  }
+
+  // Check Haversine distance
+  const { distanceKm } = getAiDistanceAndEta(
+    { lat: job.latitude, lng: job.longitude, locality: job.locality, district: job.district },
+    { lat: providerLat, lng: providerLng, locality: providerLocality, district: providerDistrict }
+  );
+
+  // Maximum local dispatch radius: 35 km
+  return distanceKm <= 35.0;
+}
+
 export default function ProviderDashboardPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading, updateUser } = useAuth();
   const router = useRouter();
   const [jobs, setJobs] = useState<JobRequest[]>([]);
   const [incomingJobs, setIncomingJobs] = useState<JobRequest[]>([]);
@@ -72,6 +107,24 @@ export default function ProviderDashboardPage() {
   const [activeChatJobId, setActiveChatJobId] = useState<string | null>(null);
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Sync fresh profile from DB on mount to ensure true district/locality
+  useEffect(() => {
+    if (user?.id) {
+      const rawId = String(user.id).replace(/\D/g, "");
+      apiClient<{ success: boolean; data?: any }>(`/users/profile/${rawId}`)
+        .then((res) => {
+          if (res?.data?.district) {
+            updateUser({
+              locality: res.data.locality,
+              district: res.data.district,
+              trade: res.data.trade,
+            });
+          }
+        })
+        .catch(() => {});
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -84,13 +137,21 @@ export default function ProviderDashboardPage() {
       setJobs(allJobs);
       setIncomingJobs(
         allJobs.filter(
-          (j) => j.stage === "REQUESTED" && isJobMatchingProviderSkills(j.category, user?.trade)
+          (j) =>
+            j.stage === "REQUESTED" &&
+            isJobMatchingProviderSkills(j.category, user?.trade) &&
+            isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
         )
       );
     });
 
     const unsubIncoming = socketService.onIncomingJob((newJob: JobRequest) => {
-      if (!isJobMatchingProviderSkills(newJob.category, user?.trade)) return;
+      if (
+        !isJobMatchingProviderSkills(newJob.category, user?.trade) ||
+        !isJobWithinProviderRadius(newJob, user?.district, user?.locality, user?.savedLat, user?.savedLng)
+      ) {
+        return;
+      }
       setIncomingJobs((prev) => {
         if (prev.some((j) => j.id === newJob.id)) return prev;
         return [newJob, ...prev];
@@ -104,7 +165,10 @@ export default function ProviderDashboardPage() {
         setJobs(refreshed);
         setIncomingJobs(
           refreshed.filter(
-            (j) => j.stage === "REQUESTED" && isJobMatchingProviderSkills(j.category, user?.trade)
+            (j) =>
+              j.stage === "REQUESTED" &&
+              isJobMatchingProviderSkills(j.category, user?.trade) &&
+              isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
           )
         );
       });
@@ -114,7 +178,7 @@ export default function ProviderDashboardPage() {
       unsubIncoming();
       unsubStage();
     };
-  }, [user?.trade]);
+  }, [user?.trade, user?.district, user?.locality, user?.savedLat, user?.savedLng]);
 
   // HTML5 Live Geolocation Telemetry Streaming (when LIVE LOCATION is ON)
   useEffect(() => {
@@ -146,23 +210,31 @@ export default function ProviderDashboardPage() {
     };
   }, [isOnline]);
 
-  const activeJobs = jobs.filter(
-    (j) => j.stage !== "COMPLETED" && j.stage !== "CANCELLED" && j.stage !== "REQUESTED"
+  const rawUserId = user?.id ? String(user.id).replace(/\D/g, "") : "";
+  const acceptedJobs = jobs.filter(
+    (j) =>
+      j.stage !== "REQUESTED" &&
+      (
+        j.assignedWorker?.id === `W-${rawUserId}` ||
+        j.quotation?.workerId === `W-${rawUserId}` ||
+        j.quotation?.workerId === user?.id ||
+        j.assignedWorker?.id === user?.id
+      )
   );
-  const acceptedJobs = jobs.filter((j) => j.stage !== "REQUESTED");
+  const activeJobs = acceptedJobs.filter(
+    (j) => j.stage !== "COMPLETED" && j.stage !== "CANCELLED"
+  );
   const currentAssignedJob = activeJobs[0] || null;
-  const activeChatJob = acceptedJobs.find((j) => j.id === activeChatJobId) || acceptedJobs[0] || null;
-  const hasActiveJob = activeJobs.some(
-    (j) => j.stage === "QUOTED" || j.stage === "EN_ROUTE" || j.stage === "IN_PROGRESS"
-  );
+  const activeChatJob = activeChatJobId ? acceptedJobs.find((j) => j.id === activeChatJobId) : currentAssignedJob;
+  const hasActiveJob = activeJobs.length > 0;
 
   const handleSendQuote = (
     jobId: string,
     quoteData: Omit<Quotation, "id" | "workerId" | "workerName" | "avatarBg" | "submittedAt" | "status">
   ) => {
     if (!user) return;
-    if (user.verifiedBadge !== true) {
-      alert("Your account is pending admin verification. You will be able to accept jobs once your NIC is approved by admin.");
+    if (user.verificationStatus === "REJECTED") {
+      alert("Your account has been suspended by admin. Please contact support to resolve.");
       return;
     }
     if (hasActiveJob) {
@@ -274,7 +346,6 @@ export default function ProviderDashboardPage() {
                       border: "1px dashed var(--border)",
                     }}
                   >
-                    <Sparkles size={32} color="#10b981" style={{ marginBottom: "12px" }} />
                     <h3 style={{ fontSize: "16px", fontWeight: 800, marginBottom: "6px" }}>
                       No Active Jobs Right Now
                     </h3>
@@ -349,11 +420,12 @@ export default function ProviderDashboardPage() {
                     key={job.id}
                     job={job}
                     hasActiveJob={hasActiveJob}
-                    isVerified={user?.verifiedBadge === true}
+                    isVerified={user?.verifiedBadge === true || user?.verificationStatus === "APPROVED"}
                     verificationStatus={user?.verificationStatus}
                     rejectionReason={user?.rejectionReason}
                     onSendQuote={handleSendQuote}
                     onDecline={handleDeclineIncoming}
+                    onNavigateToActiveJob={() => setActiveTab("active")}
                   />
                 ))
               )}

@@ -190,11 +190,49 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
   const [gender, setGender] = useState<string>(user?.gender || "Male");
   const [language, setLanguage] = useState<string>(user?.language || "English");
 
-  // Provider specific
   const [trade, setTrade] = useState<string>(user?.trade || "Technician & Craftsman");
   const [dailyRate, setDailyRate] = useState<number>(user?.dailyRate || 3500);
-  const [vehicleType, setVehicleType] = useState<string>(user?.vehicleType || "Service Vehicle");
-  const [plateNumber, setPlateNumber] = useState<string>(user?.plateNumber || "WP-CAB-8821");
+  const [vehicleType, setVehicleType] = useState<string>(user?.vehicleType && user.vehicleType !== "Service Vehicle" ? user.vehicleType : "Professional Trade Kit & Hand Tools");
+  const [plateNumber, setPlateNumber] = useState<string>(user?.plateNumber || "");
+
+  // Auto-decode Birthday & Gender from Sri Lankan NIC
+  useEffect(() => {
+    const rawNic = (user?.nicNumber || "").trim().toUpperCase();
+    if (rawNic) {
+      let birthYear: number | null = null;
+      let dayOfYear: number | null = null;
+
+      if (rawNic.length === 10 && /^\d{9}[VvXx]$/.test(rawNic)) {
+        birthYear = 1900 + parseInt(rawNic.slice(0, 2), 10);
+        dayOfYear = parseInt(rawNic.slice(2, 5), 10);
+      } else if (rawNic.length === 12 && /^\d{12}$/.test(rawNic)) {
+        birthYear = parseInt(rawNic.slice(0, 4), 10);
+        dayOfYear = parseInt(rawNic.slice(4, 7), 10);
+      }
+
+      if (birthYear && dayOfYear) {
+        let isFemale = false;
+        let day = dayOfYear;
+        if (day > 500) {
+          isFemale = true;
+          day -= 500;
+        }
+        setGender(isFemale ? "Female" : "Male");
+
+        // Sri Lankan Department of Registration of Persons (DRP) standard calendar table
+        // DRP standardizes February to 29 days for all NIC sequences
+        const monthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        let month = 0;
+        while (month < 12 && day > monthDays[month]) {
+          day -= monthDays[month];
+          month++;
+        }
+        const mm = String(month + 1).padStart(2, "0");
+        const dd = String(day).padStart(2, "0");
+        setBirthday(`${birthYear}-${mm}-${dd}`);
+      }
+    }
+  }, [user?.nicNumber]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -436,7 +474,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
               My Profile {isCitizen ? "& Saved Home Pin" : "& Work Credentials"}
             </h2>
             <p style={{ fontSize: "12.5px", color: isDark ? "#94a3b8" : "#64748b", margin: 0 }}>
-              {isCitizen ? "Homeowner details & fixed property location pin on map" : "Service provider rates, trade specialty, and verified vehicle"}
+              {isCitizen ? "Homeowner details & fixed property location pin on map" : "Service provider trade skills, certified expertise & profile"}
             </p>
           </div>
         </div>
@@ -596,9 +634,14 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
           {/* Birthday, Gender & Language */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 800, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", marginBottom: "4px" }}>
-                Birthday:
-              </label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                <label style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase" }}>
+                  Birthday:
+                </label>
+                {user?.nicNumber && (
+                  <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 800 }}>From NIC</span>
+                )}
+              </div>
               <input
                 type="date"
                 value={birthday}
@@ -616,9 +659,14 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
             </div>
 
             <div>
-              <label style={{ display: "block", fontSize: "11.5px", fontWeight: 800, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase", marginBottom: "4px" }}>
-                Gender:
-              </label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                <label style={{ fontSize: "11.5px", fontWeight: 800, color: isDark ? "#cbd5e1" : "#475569", textTransform: "uppercase" }}>
+                  Gender:
+                </label>
+                {user?.nicNumber && (
+                  <span style={{ fontSize: "10px", color: "#10b981", fontWeight: 800 }}>From NIC</span>
+                )}
+              </div>
               <select
                 value={gender}
                 onChange={(e) => setGender(e.target.value)}
@@ -807,91 +855,102 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
             </div>
           )}
 
-          {/* PROVIDER ONLY: Trade, Rates, and Vehicle info */}
+          {/* PROVIDER ONLY: Certified Trades & Skills */}
           {!isCitizen && (
             <div
               style={{
                 padding: "16px",
                 backgroundColor: isDark ? "rgba(8,145,178,0.08)" : "rgba(8,145,178,0.05)",
-                border: "1px solid var(--border)",
+                border: "1.5px solid var(--border)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "12px",
               }}
             >
-              <div style={{ fontSize: "12.5px", fontWeight: 800, color: "var(--accent)" }}>
-                Worker Trade Specialty & Daily Rates:
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <div style={{ fontSize: "12px", fontWeight: 800, color: "var(--accent)", textTransform: "uppercase" }}>
+                  Selected Certified Trades (Broadcast Matching):
+                </div>
+                <span style={{ fontSize: "11px", color: isDark ? "#94a3b8" : "#64748b" }}>
+                  Toggle your active trades
+                </span>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700 }}>Specialty Trade:</label>
-                  <input
-                    type="text"
-                    value={trade}
-                    onChange={(e) => setTrade(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-primary)",
-                      fontSize: "12.5px",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700 }}>Standard Day Rate (Rs.):</label>
-                  <input
-                    type="number"
-                    value={dailyRate}
-                    onChange={(e) => setDailyRate(Number(e.target.value))}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-primary)",
-                      fontSize: "12.5px",
-                      fontWeight: 700,
-                    }}
-                  />
-                </div>
+              {/* Multi-Select Trade Pills (Identical to Registration) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                {[
+                  { id: "painting", label: "House Painter" },
+                  { id: "trees", label: "Tree Cutter & Yard Care" },
+                  { id: "plumbing", label: "Plumber & Pipes" },
+                  { id: "cleaning", label: "House Cleaner & Roof Wash" },
+                  { id: "tech", label: "Electric & PC Repair" },
+                  { id: "odd_jobs", label: "Handyman & Masonry" },
+                ].map((t) => {
+                  const isSelected =
+                    trade.toLowerCase().includes(t.id) ||
+                    trade.toLowerCase().includes(t.label.toLowerCase().slice(0, 5));
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        let currentList = trade
+                          .split(",")
+                          .map((s) => s.trim())
+                          .filter(Boolean);
+                        if (isSelected) {
+                          currentList = currentList.filter(
+                            (s) => !s.toLowerCase().includes(t.label.toLowerCase().slice(0, 5))
+                          );
+                          if (currentList.length === 0) currentList = [t.label];
+                        } else {
+                          currentList.push(t.label);
+                        }
+                        setTrade(currentList.join(", "));
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        textAlign: "left",
+                        backgroundColor: isSelected
+                          ? (isDark ? "rgba(8,145,178,0.25)" : "#e0f2fe")
+                          : (isDark ? "rgba(255,255,255,0.04)" : "#ffffff"),
+                        border: isSelected ? "1.5px solid var(--accent)" : "1px solid var(--border)",
+                        color: isSelected ? "var(--accent)" : "var(--text-primary)",
+                        fontSize: "12px",
+                        fontWeight: isSelected ? 800 : 600,
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span>{t.label}</span>
+                      {isSelected && <CheckCircle size={14} color="var(--accent)" />}
+                    </button>
+                  );
+                })}
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700 }}>Vehicle / Equipment:</label>
-                  <input
-                    type="text"
-                    value={vehicleType}
-                    onChange={(e) => setVehicleType(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-primary)",
-                      fontSize: "12.5px",
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700 }}>Vehicle Plate Number:</label>
-                  <input
-                    type="text"
-                    value={plateNumber}
-                    onChange={(e) => setPlateNumber(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                      backgroundColor: isDark ? "#0f172a" : "#ffffff",
-                      border: "1px solid var(--border)",
-                      color: "var(--text-primary)",
-                      fontSize: "12.5px",
-                    }}
-                  />
-                </div>
+              <div>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: isDark ? "#cbd5e1" : "#475569", display: "block", marginBottom: "4px" }}>
+                  Active Specialization Summary:
+                </label>
+                <input
+                  type="text"
+                  value={trade}
+                  onChange={(e) => setTrade(e.target.value)}
+                  placeholder="e.g. Master Painter, Tree Felling & Garden Landscaping"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    backgroundColor: isDark ? "#0f172a" : "#ffffff",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-primary)",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    outline: "none",
+                  }}
+                />
               </div>
             </div>
           )}
@@ -934,7 +993,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
               {saveSuccess ? (
                 <>
                   <CheckCircle size={15} />
-                  <span>Saved to Database!</span>
+                  <span>Changes Saved!</span>
                 </>
               ) : (
                 <span>{isSaving ? "Saving..." : "Save Profile"}</span>

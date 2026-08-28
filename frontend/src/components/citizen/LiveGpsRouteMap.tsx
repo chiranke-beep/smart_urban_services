@@ -6,14 +6,16 @@ import { useTheme } from "@/components/ThemeProvider";
 import { socketService } from "@/services/socketService";
 
 const DEFAULT_LOCALITY_COORDS: Record<string, { home: [number, number]; worker: [number, number] }> = {
-  Heerassagala: { home: [7.264242, 80.621701], worker: [7.264242, 80.621701] },
-  "Heerassagala, Kandy": { home: [7.264242, 80.621701], worker: [7.264242, 80.621701] },
-  Kandy: { home: [7.264242, 80.621701], worker: [7.264242, 80.621701] },
-  "Kandy Town": { home: [7.264242, 80.621701], worker: [7.264242, 80.621701] },
-  Maharagama: { home: [6.8485, 79.9265], worker: [6.8485, 79.9265] },
-  Nugegoda: { home: [6.8724, 79.8997], worker: [6.8724, 79.8997] },
-  Kelaniya: { home: [6.9553, 79.9192], worker: [6.9553, 79.9192] },
-  Galle: { home: [6.0535, 80.221], worker: [6.0535, 80.221] },
+  Heerassagala: { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
+  "Heerassagala, Kandy": { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
+  Kandy: { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
+  "Kandy Town": { home: [7.264242, 80.621701], worker: [7.2885, 80.6325] },
+  "Colombo Town": { home: [6.9271, 79.8612], worker: [6.9050, 79.8780] },
+  Colombo: { home: [6.9271, 79.8612], worker: [6.9050, 79.8780] },
+  Maharagama: { home: [6.8485, 79.9265], worker: [6.8650, 79.9050] },
+  Nugegoda: { home: [6.8724, 79.8997], worker: [6.8900, 79.8800] },
+  Kelaniya: { home: [6.9553, 79.9192], worker: [6.9700, 79.9050] },
+  Galle: { home: [6.0535, 80.221], worker: [6.0350, 80.2150] },
 };
 
 function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -79,9 +81,12 @@ export function LiveGpsRouteMap({
     homeLat && homeLng && !isNaN(Number(homeLat)) && !isNaN(Number(homeLng))
       ? [Number(homeLat), Number(homeLng)]
       : defaultCoords.home;
+  const initialWorker: [number, number] =
+    stage === "IN_PROGRESS" || stage === "COMPLETED"
+      ? initialHome
+      : defaultCoords.worker;
   const [homeCoords, setHomeCoords] = useState<[number, number]>(initialHome);
-  // Worker starts at exact device location in Heerassagala
-  const [workerCoords, setWorkerCoords] = useState<[number, number]>(initialHome);
+  const [workerCoords, setWorkerCoords] = useState<[number, number]>(initialWorker);
 
   // Keep ref in sync with state so socket listeners get fresh value without re-subscribing
   homeCoordsRef.current = homeCoords;
@@ -89,17 +94,19 @@ export function LiveGpsRouteMap({
   const [currentDistanceKm, setCurrentDistanceKm] = useState<number>(0);
   const [currentEta, setCurrentEta] = useState<number>(etaMinutes);
   const [roadStreetName, setRoadStreetName] = useState<string>("Turn-by-Turn Road Route");
-  const [isGeofenced, setIsGeofenced] = useState<boolean>(stage === "IN_PROGRESS" || stage === "COMPLETED");
+  const isGeofenced = stage === "IN_PROGRESS" || stage === "COMPLETED";
 
   // Fetch Real Turn-by-Turn Road Route from OpenStreetMap OSRM Routing Engine
   const updateRoadRoute = useCallback(async (start: [number, number], end: [number, number], map: any, L: any) => {
     try {
-      const distDirect = calculateDistanceKm(start[0], start[1], end[0], end[1]);
-      if (distDirect < 0.05) {
-        // Already at same location
+      let actualStart = start;
+      const distDirect = calculateDistanceKm(actualStart[0], actualStart[1], end[0], end[1]);
+      if (distDirect < 0.05 && stage === "EN_ROUTE") {
+        // If testing on same device, keep worker starting at dispatch depot ~2.5km away
+        actualStart = defaultCoords.worker;
+      } else if (distDirect < 0.05) {
         setCurrentDistanceKm(0.01);
         setCurrentEta(0);
-        setIsGeofenced(true);
         if (routePolylineRef.current) {
           map.removeLayer(routePolylineRef.current);
           routePolylineRef.current = null;
@@ -107,7 +114,7 @@ export function LiveGpsRouteMap({
         return;
       }
 
-      const url = `https://router.project-osrm.org/route/v1/driving/${start[1]},${start[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
+      const url = `https://router.project-osrm.org/route/v1/driving/${actualStart[1]},${actualStart[0]};${end[1]},${end[0]}?overview=full&geometries=geojson`;
       const res = await fetch(url);
       const data = await res.json();
 
@@ -421,13 +428,6 @@ export function LiveGpsRouteMap({
         setCurrentDistanceKm(dist);
         const computedEta = Math.max(1, Math.round((dist / 30) * 60));
         setCurrentEta(computedEta);
-
-        if (dist <= 0.05) {
-          setIsGeofenced(true);
-          if (onGeofenceArrival) {
-            onGeofenceArrival();
-          }
-        }
 
         if (mapInstanceRef.current) {
           const L = (await import("leaflet")).default || (await import("leaflet"));

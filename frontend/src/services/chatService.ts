@@ -21,15 +21,26 @@ export const chatService = {
   async fetchMessages(jobId: string): Promise<ChatMessage[]> {
     if (!jobId) return [];
     try {
-      const res = await apiClient<{ success: boolean; data?: ChatMessage[] }>(`/chat/${jobId}`);
+      const res = await apiClient<{ success: boolean; data?: any[] }>(`/chat/${jobId}`);
       if (res?.success && Array.isArray(res.data)) {
+        const mapped: ChatMessage[] = res.data.map((r) => ({
+          id: r.id,
+          jobId: r.jobId || r.job_id || jobId,
+          sender: r.sender,
+          senderName: r.senderName || r.sender_name || (r.sender === "user" ? "Homeowner" : "Technician"),
+          text: r.text || "",
+          attachmentUrl: r.photoUrl || r.photo_url || r.attachmentUrl,
+          attachmentType: (r.photoUrl || r.photo_url || r.attachmentUrl) ? "image" : undefined,
+          timestamp: r.timestamp || r.created_at || new Date().toISOString(),
+          read: true,
+        }));
         if (typeof window !== "undefined") {
           const stored = localStorage.getItem(STORAGE_KEY);
           const all = stored ? JSON.parse(stored) : {};
-          all[jobId] = res.data;
+          all[jobId] = mapped;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
         }
-        return res.data;
+        return mapped;
       }
     } catch (err: any) {
       console.warn("[Fetch chat API error]:", err.message);
@@ -41,7 +52,8 @@ export const chatService = {
     jobId: string,
     text: string,
     sender: "user" | "worker" = "user",
-    senderName?: string
+    senderName?: string,
+    attachmentUrl?: string
   ): ChatMessage {
     const sName = senderName || (sender === "user" ? "Homeowner" : "Technician");
     const stored = typeof window !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null;
@@ -53,6 +65,8 @@ export const chatService = {
       sender,
       senderName: sName,
       text,
+      attachmentUrl,
+      attachmentType: attachmentUrl ? "image" : undefined,
       timestamp: new Date().toISOString(),
       read: true,
     };
@@ -67,13 +81,14 @@ export const chatService = {
     // 1. Sync over WebSocket in real time
     socketService.sendMessage(newMsg);
 
-    // 2. Persist to PostgreSQL database
+    // 2. Persist to PostgreSQL database (lightweight static URL)
     apiClient(`/chat/${jobId}`, {
       method: "POST",
       body: JSON.stringify({
         sender,
         senderName: sName,
         text,
+        photoUrl: attachmentUrl || null,
       }),
     }).catch((err) => {
       console.warn("[Chat DB persist]:", err.message);

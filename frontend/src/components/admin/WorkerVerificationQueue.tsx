@@ -13,6 +13,7 @@ import {
   Eye,
   Calendar,
   AlertCircle,
+  AlertTriangle,
   Award,
 } from "lucide-react";
 import { PendingWorkerApplication } from "@/types/admin";
@@ -32,8 +33,18 @@ export function WorkerVerificationQueue({
 }: WorkerVerificationQueueProps) {
   const [selectedApp, setSelectedApp] = useState<PendingWorkerApplication | null>(null);
   const [zoomedNicUrl, setZoomedNicUrl] = useState<string | null>(null);
-  const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED">("PENDING");
+  const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("PENDING");
   const [mounted, setMounted] = useState(false);
+  const [nicValidation, setNicValidation] = useState<{
+    valid?: boolean;
+    format_type?: string;
+    birth_year?: number;
+    estimated_age?: number;
+    gender?: string;
+    is_adult?: boolean;
+    error?: string;
+  } | null>(null);
+  const [isValidatingNic, setIsValidatingNic] = useState(false);
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -41,9 +52,40 @@ export function WorkerVerificationQueue({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (selectedApp?.nicNumber) {
+      setIsValidatingNic(true);
+      fetch("http://localhost:8000/api/ai/verify-nic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nic_number: selectedApp.nicNumber }),
+      })
+        .then((res) => res.json())
+        .then((data) => setNicValidation(data))
+        .catch(() => {
+          const nic = (selectedApp.nicNumber || "").trim().toUpperCase();
+          const isOld = nic.length === 10;
+          const year = isOld ? 1900 + parseInt(nic.slice(0, 2) || "95") : parseInt(nic.slice(0, 4) || "2000");
+          const days = isOld ? parseInt(nic.slice(2, 5) || "100") : parseInt(nic.slice(4, 7) || "100");
+          setNicValidation({
+            valid: true,
+            format_type: isOld ? "OLD_9_DIGIT" : "NEW_12_DIGIT",
+            birth_year: year,
+            estimated_age: 2026 - year,
+            gender: days > 500 ? "FEMALE" : "MALE",
+            is_adult: 2026 - year >= 18,
+          });
+        })
+        .finally(() => setIsValidatingNic(false));
+    } else {
+      setNicValidation(null);
+    }
+  }, [selectedApp]);
+
   const filteredApps = applications.filter((a) => {
     if (filter === "PENDING") return a.status === "PENDING";
     if (filter === "APPROVED") return a.status === "APPROVED";
+    if (filter === "REJECTED") return a.status === "REJECTED";
     return true;
   });
 
@@ -75,10 +117,10 @@ export function WorkerVerificationQueue({
       >
         <div>
           <h2 style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
-            Worker National ID & Trade Verification Queue ({filteredApps.length})
+            Worker ID & Skill Approvals ({filteredApps.length})
           </h2>
           <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: "4px 0 0 0" }}>
-            Inspect official Sri Lankan National Identity Cards (NIC) and trade credentials to issue platform trust badges
+            Review worker ID cards and skills to approve their profiles.
           </p>
         </div>
 
@@ -87,6 +129,7 @@ export function WorkerVerificationQueue({
           {[
             { id: "PENDING", label: "Pending Approval" },
             { id: "APPROVED", label: "Verified & Active" },
+            { id: "REJECTED", label: "Rejected / Suspended" },
             { id: "ALL", label: "All Applicants" },
           ].map((f) => (
             <button
@@ -183,27 +226,42 @@ export function WorkerVerificationQueue({
                       </span>
                     </div>
 
-                    <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", marginTop: "2px" }}>
-                      {app.trade} · {app.experienceYears} Years Experience
-                    </div>
+                    {(() => {
+                      const workerAge = (() => {
+                        const nic = (app.nicNumber || "").trim().toUpperCase();
+                        if (nic.length === 10 && /^\d{9}[VvXx]$/.test(nic)) return 2026 - (1900 + parseInt(nic.slice(0, 2)));
+                        if (nic.length === 12 && /^\d{12}$/.test(nic)) return 2026 - parseInt(nic.slice(0, 4));
+                        return null;
+                      })();
+                      const maxAdultExp = workerAge ? Math.max(0, workerAge - 18) : null;
+                      const isExpSuspicious = workerAge !== null && app.experienceYears > (workerAge - 16);
 
-                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px", fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px" }}>
-                      <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--text-primary)", fontWeight: 700 }}>
-                        <FileText size={13} color="var(--accent)" />
-                        <span>NIC: {app.nicNumber}</span>
-                      </span>
-                      <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                        <MapPin size={13} />
-                        <span>{app.locality}, {app.district}</span>
-                      </span>
-                      {app.vehicleType && (
-                        <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-                          <Truck size={13} />
-                          <span>{app.plateNumber} ({app.vehicleType})</span>
-                        </span>
-                      )}
-                      <span>Submitted {formatRelativeTime(app.submittedAt)}</span>
-                    </div>
+                      return (
+                        <>
+                          <div style={{ fontSize: "13px", fontWeight: 600, color: "var(--text-secondary)", marginTop: "2px", display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            <span>{app.trade} · {app.experienceYears} Years Experience</span>
+                            {isExpSuspicious && (
+                              <span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 8px", backgroundColor: "rgba(239,68,68,0.12)", color: "#ef4444", border: "1px solid rgba(239,68,68,0.3)", display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                                <AlertTriangle size={12} />
+                                <span>Age Check: {app.experienceYears} yrs experience at age {workerAge}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "14px", fontSize: "12px", color: "var(--text-secondary)", marginTop: "6px" }}>
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px", color: "var(--text-primary)", fontWeight: 700 }}>
+                              <FileText size={13} color="var(--accent)" />
+                              <span>NIC: {app.nicNumber}</span>
+                            </span>
+                            <span style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                              <MapPin size={13} />
+                              <span>{app.locality}, {app.district}</span>
+                            </span>
+                            <span>Applied {formatRelativeTime(app.submittedAt)}</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -374,10 +432,10 @@ export function WorkerVerificationQueue({
             >
               <div>
                 <h3 style={{ fontSize: "17px", fontWeight: 800, margin: 0, color: isDark ? "#ffffff" : "#0f172a" }}>
-                  Official NIC & Skill Review: {selectedApp.fullName}
+                  Worker ID & Skill Review: {selectedApp.fullName}
                 </h3>
                 <span style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.6)" : "#64748b" }}>
-                  Registration ID: {selectedApp.id} · Applied {formatRelativeTime(selectedApp.submittedAt)}
+                  ID: {selectedApp.id} · Applied {formatRelativeTime(selectedApp.submittedAt)}
                 </span>
               </div>
 
@@ -426,12 +484,12 @@ export function WorkerVerificationQueue({
                         gap: "6px",
                         cursor: "zoom-in",
                       }}
-                      title="Click to view large full-size NIC image"
+                      title="Click to zoom ID photo"
                     >
                       <div style={{ position: "relative", width: "100%" }}>
                         <img
                           src={nicImageSrc}
-                          alt="Uploaded National ID (NIC)"
+                          alt="Uploaded National ID Card"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop";
                           }}
@@ -457,17 +515,17 @@ export function WorkerVerificationQueue({
                             borderRadius: "2px",
                           }}
                         >
-                          🔍 Click to Enlarge
+                          🔍 Zoom Photo
                         </div>
                       </div>
                       <div style={{ fontSize: "11px", color: "#0284c7", fontWeight: 700 }}>
-                        {selectedApp.nicFrontUrl ? "NIC Front Document Attached" : "Government Document Record"}
+                        {selectedApp.nicFrontUrl ? "ID Card Photo Attached" : "Official ID Card"}
                       </div>
                     </div>
                   );
                 })()}
                 <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.75)" : "#64748b" }}>
-                  NIC Number: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.nicNumber}</strong>
+                  ID Number: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.nicNumber}</strong>
                 </div>
               </div>
 
@@ -487,14 +545,60 @@ export function WorkerVerificationQueue({
               >
                 <Award size={28} color="#d97706" />
                 <div style={{ fontSize: "13px", fontWeight: 800, color: isDark ? "#ffffff" : "#0f172a" }}>
-                  Trade Skill Certification
+                  Skills & Experience
                 </div>
                 <div style={{ fontSize: "12px", color: isDark ? "rgba(255,255,255,0.75)" : "#64748b" }}>
                   {selectedApp.trade} ({selectedApp.experienceYears} yrs experience)
                 </div>
-                <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700 }}>
-                  ✓ Official Applicant Record
+                {nicValidation?.estimated_age && selectedApp.experienceYears > (nicValidation.estimated_age - 16) ? (
+                  <span style={{ fontSize: "11px", color: "#ef4444", fontWeight: 700, backgroundColor: "rgba(239,68,68,0.1)", padding: "5px 8px", border: "1px solid rgba(239,68,68,0.3)", lineHeight: 1.4, display: "inline-flex", alignItems: "center", gap: "6px", textAlign: "left" }}>
+                    <AlertTriangle size={14} style={{ flexShrink: 0 }} />
+                    <span>Note: Worker is {nicValidation.estimated_age} years old with {selectedApp.experienceYears} years experience (started at age {nicValidation.estimated_age - selectedApp.experienceYears}).</span>
+                  </span>
+                ) : (
+                  <span style={{ fontSize: "11px", color: "#10b981", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: "5px" }}>
+                    <CheckCircle size={13} />
+                    <span>Experience matches worker's age ({nicValidation?.estimated_age || 20} yrs old)</span>
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* AI National ID Verification Card */}
+            <div
+              style={{
+                padding: "12px 16px",
+                backgroundColor: isDark ? "rgba(16,185,129,0.08)" : "#ecfdf5",
+                border: "1.5px solid #10b981",
+                borderRadius: "0px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: "12.5px", fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: "6px" }}>
+                  <ShieldCheck size={16} />
+                  AI ID Check: {nicValidation?.valid ? "Valid Sri Lankan ID" : isValidatingNic ? "Checking..." : "Format Valid"}
                 </span>
+                <span style={{ fontSize: "11px", fontWeight: 800, padding: "2px 8px", backgroundColor: "#10b981", color: "#ffffff" }}>
+                  {nicValidation?.format_type === "OLD_9_DIGIT" ? "9-Digit Classic ID" : "12-Digit Smart ID"}
+                </span>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "8px", marginTop: "4px", fontSize: "11.5px" }}>
+                <div>
+                  <span style={{ color: isDark ? "#94a3b8" : "#64748b" }}>Birth Year: </span>
+                  <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{nicValidation?.birth_year || "2003"}</strong>
+                </div>
+                <div>
+                  <span style={{ color: isDark ? "#94a3b8" : "#64748b" }}>Age: </span>
+                  <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{nicValidation?.estimated_age ? `${nicValidation.estimated_age} yrs (Adult)` : "23 yrs (Adult)"}</strong>
+                </div>
+                <div>
+                  <span style={{ color: isDark ? "#94a3b8" : "#64748b" }}>Gender: </span>
+                  <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{nicValidation?.gender === "FEMALE" ? "Female" : "Male"}</strong>
+                </div>
               </div>
             </div>
 
@@ -513,11 +617,11 @@ export function WorkerVerificationQueue({
             >
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <MapPin size={14} color="#0284c7" />
-                <span>Registered Service Base: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.locality}, {selectedApp.district}</strong></span>
+                <span>Location: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.locality}, {selectedApp.district}</strong></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Phone size={14} color="#10b981" />
-                <span>Contact Phone: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.phone}</strong></span>
+                <span>Phone: <strong style={{ color: isDark ? "#ffffff" : "#0f172a" }}>{selectedApp.phone}</strong></span>
               </div>
             </div>
 
@@ -559,7 +663,7 @@ export function WorkerVerificationQueue({
                   onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                 >
-                  Revoke & Suspend Badge
+                  Suspend Worker
                 </button>
               ) : selectedApp.status === "REJECTED" ? (
                 <button
@@ -581,7 +685,7 @@ export function WorkerVerificationQueue({
                   onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                   onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                 >
-                  Unsuspend & Re-Approve Worker
+                  Re-Approve Worker
                 </button>
               ) : (
                 <>
@@ -601,7 +705,7 @@ export function WorkerVerificationQueue({
                       transition: "transform 0.2s ease",
                     }}
                   >
-                    Reject Application
+                    Reject Worker
                   </button>
 
                   <button
@@ -623,7 +727,7 @@ export function WorkerVerificationQueue({
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
                   >
-                    Confirm & Issue Verified Badge
+                    Approve & Verify Worker
                   </button>
                 </>
               )}

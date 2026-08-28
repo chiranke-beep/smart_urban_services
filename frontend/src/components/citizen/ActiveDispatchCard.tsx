@@ -216,11 +216,6 @@ export function ActiveDispatchCard({
           etaMinutes={job.etaMinutes || 15}
           stage={job.stage}
           isProviderView={false}
-          onGeofenceArrival={() => {
-            if (onAdvanceStage) {
-              onAdvanceStage(job.id, "IN_PROGRESS");
-            }
-          }}
         />
       )}
 
@@ -404,8 +399,8 @@ export function ActiveDispatchCard({
               </div>
             )}
 
-            {/* Locked Cancellation notice when En Route or In Progress */}
-            {(job.stage === "EN_ROUTE" || job.stage === "IN_PROGRESS") && (
+            {/* Stage Status Badge */}
+            {job.stage === "EN_ROUTE" && (
               <span
                 style={{
                   padding: "6px 10px",
@@ -416,7 +411,21 @@ export function ActiveDispatchCard({
                   border: "1px dashed var(--border)",
                 }}
               >
-                🔒 Worker on the way
+                🚗 Worker on the way
+              </span>
+            )}
+            {job.stage === "IN_PROGRESS" && (
+              <span
+                style={{
+                  padding: "6px 10px",
+                  backgroundColor: "rgba(8,145,178,0.12)",
+                  color: "var(--accent)",
+                  fontSize: "11px",
+                  fontWeight: 700,
+                  border: "1px solid var(--accent)",
+                }}
+              >
+                🛠️ Work in progress
               </span>
             )}
 

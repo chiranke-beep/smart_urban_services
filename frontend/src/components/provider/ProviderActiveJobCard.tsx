@@ -145,7 +145,6 @@ export function ProviderActiveJobCard({
         etaMinutes={job.etaMinutes || 15}
         stage={job.stage}
         isProviderView={true}
-        onGeofenceArrival={() => onAdvanceStage(job.id, "IN_PROGRESS")}
       />
 
       {/* Direct Settlement & Quotation Renegotiation Bar */}
@@ -209,29 +208,47 @@ export function ProviderActiveJobCard({
               <div style={{ fontSize: "24px", fontWeight: 900, color: "#10b981" }}>
                 {formatCurrency(displayPrice)}
               </div>
-              <button
-                onClick={() => setIsEditingPrice(true)}
-                style={{
-                  padding: "4px 8px",
-                  backgroundColor: "transparent",
-                  border: "1px solid var(--border)",
-                  color: "var(--text-secondary)",
-                  fontSize: "11.5px",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <Edit3 size={12} />
-                <span>Negotiate / Edit Price</span>
-              </button>
+              {(job.stage === "QUOTED" || job.stage === "REQUESTED") ? (
+                <button
+                  onClick={() => setIsEditingPrice(true)}
+                  style={{
+                    padding: "4px 8px",
+                    backgroundColor: "transparent",
+                    border: "1px solid var(--border)",
+                    color: "var(--text-secondary)",
+                    fontSize: "11.5px",
+                    fontWeight: 700,
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <Edit3 size={12} />
+                  <span>Negotiate / Edit Price</span>
+                </button>
+              ) : (
+                <span
+                  style={{
+                    padding: "3px 8px",
+                    backgroundColor: "rgba(16,185,129,0.12)",
+                    color: "#10b981",
+                    fontSize: "11.5px",
+                    fontWeight: 800,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "4px",
+                  }}
+                >
+                  <Check size={12} />
+                  <span>Price Agreed</span>
+                </span>
+              )}
             </div>
           )}
 
           <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "4px" }}>
-            Payment Mode: {job.paymentMethod} · Direct Cash on Hand or Bank Transfer
+            Payment Mode: Direct Payment
           </div>
         </div>
 

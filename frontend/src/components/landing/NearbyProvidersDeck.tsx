@@ -46,114 +46,9 @@ interface Provider {
   recentJob: string;
 }
 
-const PROVIDERS_DATA: Provider[] = [
-  {
-    id: "p1",
-    name: "Kamal Perera",
-    avatarBg: "#f97316",
-    trade: "Master Painter & Color Specialist",
-    tradeType: "painting",
-    rating: "4.9",
-    reviewCount: 184,
-    distance: "1.2 km away",
-    eta: "~15 min arrival",
-    rate: "Rs. 3,200 / day",
-    locality: "Maharagama, Colombo",
-    verified: true,
-    status: "available",
-    skills: ["Exterior Weathercoat", "Wood Varnish", "Waterproofing", "Plaster Smoothing"],
-    recentJob: "2-Storey House Painting (5.0 ★)",
-  },
-  {
-    id: "p2",
-    name: "Sunil Kumara",
-    avatarBg: "#10b981",
-    trade: "Tree Climber & Yard Specialist",
-    tradeType: "trees",
-    rating: "4.8",
-    reviewCount: 142,
-    distance: "2.1 km away",
-    eta: "~20 min arrival",
-    rate: "Rs. 3,500 / job",
-    locality: "Pannipitiya & Kottawa",
-    verified: true,
-    status: "available",
-    skills: ["High Branch Trimming", "Chain-Saw Cut", "Coconut Plucking", "Powerline Clearance"],
-    recentJob: "Dangerous Storm Branch Cut (4.9 ★)",
-  },
-  {
-    id: "p3",
-    name: "Nuwan Wickramasinghe",
-    avatarBg: "#06b6d4",
-    trade: "Emergency Plumber & Pipe Tech",
-    tradeType: "plumbing",
-    rating: "4.9",
-    reviewCount: 210,
-    distance: "0.8 km away",
-    eta: "~10 min arrival",
-    rate: "Rs. 1,800 / callout",
-    locality: "Nugegoda & Dehiwala",
-    verified: true,
-    status: "available",
-    skills: ["Burst Pipe Fix", "Water Pump Repair", "Bathroom Fittings", "Drain Unclogging"],
-    recentJob: "Underground Pipe Leak Repair (5.0 ★)",
-  },
-  {
-    id: "p4",
-    name: "Dinesh Weerasinghe",
-    avatarBg: "#8b5cf6",
-    trade: "PC, Laptop & Network Technician",
-    tradeType: "tech",
-    rating: "4.9",
-    reviewCount: 165,
-    distance: "1.6 km away",
-    eta: "~15 min arrival",
-    rate: "Rs. 2,000 / fix",
-    locality: "Boralesgamuwa, Colombo",
-    verified: true,
-    status: "available",
-    skills: ["Hardware Motherboard", "Blue Screen Fix", "Windows 11 / Mac", "SSD Upgrade"],
-    recentJob: "Gaming PC Power Supply Diagnostic (5.0 ★)",
-  },
-  {
-    id: "p5",
-    name: "Asanka Bandara",
-    avatarBg: "#3b82f6",
-    trade: "Roof Moss & Gutter Cleaner",
-    tradeType: "cleaning",
-    rating: "4.8",
-    reviewCount: 98,
-    distance: "3.4 km away",
-    eta: "~25 min arrival",
-    rate: "Rs. 3,500 / roof",
-    locality: "Homagama & Kottawa",
-    verified: true,
-    status: "available",
-    skills: ["Pressure Washer", "Tile Roof Moss Clear", "Gutter Debris Wash", "Water Tank Clean"],
-    recentJob: "Full Clay Roof Pressure Wash (4.9 ★)",
-  },
-  {
-    id: "p6",
-    name: "Kithsiri Liyanage",
-    avatarBg: "#10b981",
-    trade: "Community Volunteer & Yard Worker",
-    tradeType: "trees",
-    rating: "4.9",
-    reviewCount: 76,
-    distance: "2.8 km away",
-    eta: "~25 min arrival",
-    rate: "Volunteer / Flexible",
-    locality: "Maharagama East",
-    verified: true,
-    status: "available",
-    isVolunteer: true,
-    skills: ["Elderly Yard Help", "Canal Trash Clear", "Drain Unblocking", "Tree Trimming"],
-    recentJob: "Flood Gutter Community Clearing (5.0 ★)",
-  },
-];
-
 export function NearbyProvidersDeck() {
-  const [providers, setProviders] = useState<Provider[]>(PROVIDERS_DATA);
+  const [providers, setProviders] = useState<Provider[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedTrade, setSelectedTrade] = useState<string>("all");
   const [activeChatProvider, setActiveChatProvider] = useState<Provider | null>(null);
   const [chatMessages, setChatMessages] = useState<{ sender: "user" | "provider"; text: string; time: string }[]>([]);
@@ -164,13 +59,21 @@ export function NearbyProvidersDeck() {
   const isDark = theme === "dark";
 
   useEffect(() => {
-    // Fetch live service providers from PostgreSQL database
-    apiClient<{ success: boolean; data?: any[] }>("/providers")
+    // Fetch live service providers ranked by AI Geo-Dispatcher from PostgreSQL
+    apiClient<{ success: boolean; recommendations?: any[] }>("/ai/geo-dispatch", {
+      method: "POST",
+      body: JSON.stringify({
+        incident_lat: 6.9271,
+        incident_lng: 79.8612,
+        required_category: selectedTrade === "all" ? "general" : selectedTrade,
+        max_radius_km: 100.0,
+      }),
+    })
       .then((res) => {
-        if (res?.data && res.data.length > 0) {
-          const mapped: Provider[] = res.data.map((p, idx) => ({
+        if (res?.recommendations && Array.isArray(res.recommendations) && res.recommendations.length > 0) {
+          const mapped: Provider[] = res.recommendations.map((p, idx) => ({
             id: `p-${p.id}`,
-            name: p.fullName || "Verified Technician",
+            name: p.name || "Verified Technician",
             avatarBg: ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899"][idx % 5],
             trade: p.trade || "Master Craftsman",
             tradeType: (p.trade?.toLowerCase().includes("paint") ? "painting"
@@ -178,21 +81,28 @@ export function NearbyProvidersDeck() {
               : p.trade?.toLowerCase().includes("plumb") ? "plumbing"
               : p.trade?.toLowerCase().includes("tech") ? "tech"
               : "cleaning") as any,
-            rating: Number(p.rating || 4.9).toFixed(1),
-            reviewCount: Number(p.reviewCount || 1),
-            distance: "1.2 km away",
-            eta: "~15 min arrival",
+            rating: Number(p.rating || 5.0).toFixed(1),
+            reviewCount: 0,
+            distance: `${p.distance_km} km away`,
+            eta: `~${p.estimated_arrival_minutes} min arrival`,
             rate: `Rs. ${p.dailyRate || 3500} / day`,
-            locality: `${p.locality}, ${p.district}`,
-            verified: Boolean(p.verifiedBadge),
+            locality: `${p.locality || "Colombo"}, ${p.district || "Western Province"}`,
+            verified: Boolean(p.verified),
             status: "available",
+            isVolunteer: false,
             skills: ["Verified Work Standards", "Direct Cash/Bank Settlement", "Safety Equipped"],
-            recentJob: "Local Verified Service Completed (5.0 Rating)",
+            recentJob: p.recommended ? "⭐ #1 AI Recommended Match" : "Local Verified Specialist",
           }));
           setProviders(mapped);
+        } else {
+          setProviders([]);
         }
       })
-      .catch((err) => console.warn("[DB Providers load notice]:", err.message));
+      .catch((err) => {
+        console.warn("[DB Providers load notice]:", err.message);
+        setProviders([]);
+      })
+      .finally(() => setIsLoading(false));
 
     if (!containerRef.current) return;
     const ctx = gsap.context(() => {
@@ -412,14 +322,48 @@ export function NearbyProvidersDeck() {
         </div>
 
         {/* ── Nearby Providers Grid (3 Columns) ─────────────────── */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
-            gap: "20px",
-          }}
-        >
-          {filteredProviders.map((worker) => (
+        {filteredProviders.length === 0 ? (
+          <div
+            style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              border: "1px dashed var(--border)",
+              backgroundColor: "var(--card-bg)",
+              maxWidth: "600px",
+              margin: "0 auto",
+            }}
+          >
+            <Wrench size={40} color="var(--accent)" style={{ margin: "0 auto 16px" }} />
+            <h3 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "8px" }}>
+              No Service Providers Registered in this Zone Yet
+            </h3>
+            <p style={{ fontSize: "14px", color: "var(--text-secondary)", lineHeight: 1.6, marginBottom: "20px" }}>
+              All specialists shown here are verified and matched via AI Geo-Dispatch. Register your trade skills to start receiving dispatches from local homeowners.
+            </p>
+            <Link
+              href="/provider/register"
+              style={{
+                display: "inline-block",
+                padding: "10px 22px",
+                backgroundColor: "#10b981",
+                color: "#ffffff",
+                fontWeight: 700,
+                fontSize: "13px",
+                textDecoration: "none",
+              }}
+            >
+              Register as Service Provider →
+            </Link>
+          </div>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))",
+              gap: "20px",
+            }}
+          >
+            {filteredProviders.map((worker) => (
             <div
               key={worker.id}
               className="provider-card"
@@ -620,8 +564,9 @@ export function NearbyProvidersDeck() {
             </div>
           ))}
         </div>
+      )}
 
-        {/* ── Interactive In-App Chat Modal (Uber / PickMe In-App Style) ── */}
+      {/* ── Interactive In-App Chat Modal (Uber / PickMe In-App Style) ── */}
         {activeChatProvider && (
           <div
             style={{

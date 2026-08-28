@@ -194,7 +194,7 @@ export function DashboardHeader({
                 {user?.fullName || "Homeowner"}
               </div>
               <div className="desktop-only" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-                {user?.homeAddress ? user.homeAddress.split(",")[0] : (user?.locality || "Heerassagala, Kandy")}
+                {user?.homeAddress ? user.homeAddress.split(",")[0] : (user?.locality ? `${user.locality}, ${user.district || ""}` : selectedLocality || "Colombo")}
               </div>
             </div>
           </div>

@@ -136,9 +136,9 @@ class AuthService {
         homeAddress: backendUser.home_address || undefined,
         savedLat: backendUser.saved_lat ? Number(backendUser.saved_lat) : undefined,
         savedLng: backendUser.saved_lng ? Number(backendUser.saved_lng) : undefined,
-        locality: backendUser.role === "service_provider" ? "Heerassagala" : "Colombo Urban",
-        district: backendUser.role === "service_provider" ? "Kandy" : "Colombo",
-        trade: backendUser.role === "service_provider" ? "Master Technician & Craftsman" : undefined,
+        locality: backendUser.locality || (backendUser.role === "service_provider" ? "Colombo" : "Colombo Urban"),
+        district: backendUser.district || "Colombo",
+        trade: backendUser.trade || (backendUser.role === "service_provider" ? "Technician & Craftsman" : undefined),
         createdAt: backendUser.created_at || new Date().toISOString(),
       };
 
@@ -182,7 +182,7 @@ class AuthService {
       return newUser;
     }
 
-    throw new Error("Failed to register user in PostgreSQL database.");
+    throw new Error("Failed to create homeowner account. Please try again.");
   }
 
   public async registerProvider(data: ProviderRegistrationData): Promise<UserProfile> {
@@ -244,7 +244,7 @@ class AuthService {
       return newProvider;
     }
 
-    throw new Error("Failed to register provider in PostgreSQL database.");
+    throw new Error("Failed to create provider account. Please try again.");
   }
 
   public async adminLogin(identifier: string, securityPass: string): Promise<UserProfile> {

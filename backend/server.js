@@ -164,8 +164,8 @@ app.get('/api/users/profile/:id', async (req, res) => {
         COALESCE(u.saved_lng, 80.621701) AS "savedLng",
         u.birthday, u.gender,
         COALESCE(u.language, 'English') AS language,
-        COALESCE(u.locality, 'Heerassagala') AS locality,
-        COALESCE(u.district, 'Kandy') AS district,
+        COALESCE(u.locality, 'Colombo') AS locality,
+        COALESCE(u.district, 'Colombo') AS district,
         pp.trade, pp.daily_rate AS "dailyRate", pp.hourly_rate AS "hourlyRate",
         pp.experience_years AS "experienceYears", pp.vehicle_type AS "vehicleType",
         pp.plate_number AS "plateNumber",
@@ -377,13 +377,21 @@ app.patch('/api/admin/workers/:id/verify', async (req, res) => {
     const { status, rejectionReason } = req.body;
     const isApproved = status === 'APPROVED';
 
-    await pool.query(`
-      UPDATE provider_profiles SET
-        verified = $1,
-        verification_status = $2,
-        rejection_reason = $3
-      WHERE user_id = $4
-    `, [isApproved, status, rejectionReason || null, rawId]);
+    const { rows: existing } = await pool.query('SELECT id FROM provider_profiles WHERE user_id = $1', [rawId]);
+    if (existing.length > 0) {
+      await pool.query(`
+        UPDATE provider_profiles SET
+          verified = $1,
+          verification_status = $2,
+          rejection_reason = $3
+        WHERE user_id = $4
+      `, [isApproved, status, rejectionReason || null, rawId]);
+    } else {
+      await pool.query(`
+        INSERT INTO provider_profiles (user_id, verified, verification_status, rejection_reason, trade, experience_years, daily_rate, hourly_rate)
+        VALUES ($1, $2, $3, $4, 'Verified Specialist', 5, 3500, 583)
+      `, [rawId, isApproved, status, rejectionReason || null]);
+    }
 
     io.emit('worker_verification_updated', {
       userId: rawId,
@@ -392,7 +400,7 @@ app.patch('/api/admin/workers/:id/verify', async (req, res) => {
       rejectionReason: rejectionReason || null,
     });
 
-    res.json({ success: true, message: `Worker ${isApproved ? 'approved' : 'updated'} successfully.` });
+    res.json({ success: true, message: `Worker application ${status.toLowerCase()} successfully.` });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -545,6 +553,148 @@ app.get('/api/analytics/platform-stats', async (req, res) => {
   }
 });
 
+// ─── AI GEO-DISPATCH SPATIAL PROXIMITY & COMPOSITE RANKING API ────────────
+app.post('/api/ai/geo-dispatch', async (req, res) => {
+  try {
+    const { incident_lat = 7.2906, incident_lng = 80.6337, required_category = 'tree-cutting', max_radius_km = 35.0 } = req.body;
+
+    const { rows: providers } = await pool.query(`
+      SELECT 
+        u.id, 
+        u.name, 
+        u.phone,
+        u.locality, 
+        u.district,
+        pp.trade,
+        COALESCE(pp.daily_rate, 3500) AS "dailyRate",
+        COALESCE(pp.verified, true) AS verified,
+        COALESCE(
+          (SELECT ROUND(AVG(rating)::numeric, 1) FROM reviews r WHERE r.worker_id = u.id OR r.incident_id IN (SELECT id FROM incidents WHERE assigned_to = u.id)),
+          5.0
+        ) AS rating
+      FROM users u
+      LEFT JOIN provider_profiles pp ON u.id = pp.user_id
+      WHERE u.role = 'service_provider'
+    `);
+
+    // Coordinate mapping for Sri Lankan localities & districts
+    const SL_COORDS = {
+      'Heerassagala': { lat: 7.2715, lng: 80.6120 },
+      'Kandy': { lat: 7.2906, lng: 80.6337 },
+      'Kandy twown': { lat: 7.2906, lng: 80.6337 },
+      'Kandy Town': { lat: 7.2906, lng: 80.6337 },
+      'Kadugannawa': { lat: 7.2562, lng: 80.5218 },
+      'Peradeniya': { lat: 7.2600, lng: 80.5950 },
+      'Colombo': { lat: 6.9271, lng: 79.8612 },
+      'Maharagama': { lat: 6.8480, lng: 79.9260 },
+      'Nugegoda': { lat: 6.8649, lng: 79.8997 },
+      'Dehiwala': { lat: 6.8511, lng: 79.8659 },
+      'Gampaha': { lat: 7.0840, lng: 79.9943 },
+      'Galle': { lat: 6.0535, lng: 80.2210 },
+      'Kurunegala': { lat: 7.4863, lng: 80.3623 },
+    };
+
+    const providerPayload = providers.map((p) => {
+      const loc = (p.locality || p.district || 'Kandy').trim();
+      const coord = SL_COORDS[loc] || SL_COORDS[p.district] || { lat: 7.2906, lng: 80.6337 };
+      return {
+        id: String(p.id),
+        name: p.name,
+        trade: p.trade || 'General Maintenance Specialist',
+        phone: p.phone || 'N/A',
+        locality: p.locality || p.district || 'Sri Lanka',
+        district: p.district || 'Kandy',
+        dailyRate: Number(p.dailyRate || 3500),
+        lat: coord.lat + ((Math.random() - 0.5) * 0.005),
+        lng: coord.lng + ((Math.random() - 0.5) * 0.005),
+        rating: Number(p.rating || 5.0),
+        verified: Boolean(p.verified),
+      };
+    });
+
+    // 1. Try forwarding to FastAPI Python Engine (Port 8000)
+    try {
+      const aiRes = await fetch('http://localhost:8000/api/ai/recommend-dispatch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          incident_lat: Number(incident_lat),
+          incident_lng: Number(incident_lng),
+          required_category: String(required_category),
+          max_radius_km: Number(max_radius_km),
+          providers: providerPayload,
+        }),
+      });
+
+      if (aiRes.ok) {
+        const aiData = await aiRes.json();
+        return res.json(aiData);
+      }
+    } catch (aiErr) {
+      // Fall through to Node.js mathematical engine
+    }
+
+    // 2. High-performance Node.js Haversine & Multi-Criteria Ranking Fallback
+    const R = 6371.0;
+    const scored = [];
+
+    for (const p of providerPayload) {
+      const dlat = (p.lat - incident_lat) * (Math.PI / 180);
+      const dlng = (p.lng - incident_lng) * (Math.PI / 180);
+      const a =
+        Math.sin(dlat / 2) * Math.sin(dlat / 2) +
+        Math.cos(incident_lat * (Math.PI / 180)) *
+          Math.cos(p.lat * (Math.PI / 180)) *
+          Math.sin(dlng / 2) *
+          Math.sin(dlng / 2);
+      const dist_km = Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
+
+      if (dist_km <= max_radius_km) {
+        const catTokens = required_category.toLowerCase().split(/[-_ ]+/);
+        const hasTradeMatch = catTokens.some((t) => p.trade.toLowerCase().includes(t));
+        const trade_match = hasTradeMatch ? 1.0 : 0.4;
+        const prox_score = Math.max(0.0, 1.0 - dist_km / max_radius_km);
+        const rating_score = p.rating / 5.0;
+        const verif_score = p.verified ? 1.0 : 0.5;
+
+        const comp_score = trade_match * 0.35 + prox_score * 0.3 + rating_score * 0.2 + verif_score * 0.15;
+        const eta_mins = Math.max(5, Math.round((dist_km / 25.0) * 60 + 5));
+
+        scored.push({
+          id: p.id,
+          name: p.name,
+          trade: p.trade,
+          phone: p.phone,
+          locality: p.locality,
+          district: p.district,
+          dailyRate: p.dailyRate,
+          lat: p.lat,
+          lng: p.lng,
+          rating: p.rating,
+          verified: p.verified,
+          distance_km: dist_km,
+          composite_score: Number((comp_score * 100).toFixed(1)),
+          estimated_arrival_minutes: eta_mins,
+        });
+      }
+    }
+
+    scored.sort((a, b) => b.composite_score - a.composite_score);
+    if (scored.length > 0) {
+      scored[0].recommended = true;
+    }
+
+    res.json({
+      success: true,
+      total_evaluated: providerPayload.length,
+      total_matching: scored.length,
+      recommendations: scored,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // ─── ADMIN DETAILED ANALYTICS (REAL DB CATEGORIES, DISPATCHES & ACTIVITIES) ───
 app.get('/api/admin/detailed-analytics', async (req, res) => {
   try {
@@ -585,13 +735,15 @@ app.get('/api/admin/detailed-analytics', async (req, res) => {
       };
     });
 
-    // 2. Aggregate metrics
+    // 2. Aggregate metrics & Hazard vs Service breakdown
     const { rows: aggRows } = await pool.query(`
       SELECT
         COUNT(*) FILTER (WHERE stage != 'CANCELLED' AND status != 'rejected') AS "totalOrders",
         COUNT(*) FILTER (WHERE status != 'resolved' AND status != 'rejected' AND stage != 'CANCELLED') AS "activeOrders",
         COUNT(*) FILTER (WHERE status = 'resolved') AS "completedOrders",
-        COALESCE(SUM(cost_lkr) FILTER (WHERE status = 'resolved'), 0) AS "settledVolumeLKR"
+        COALESCE(SUM(cost_lkr) FILTER (WHERE status = 'resolved'), 0) AS "settledVolumeLKR",
+        COUNT(*) FILTER (WHERE stage != 'CANCELLED' AND status != 'rejected' AND category IN ('tree-cutting', 'trees', 'road', 'water', 'electricity', 'waste')) AS "hazardJobsCount",
+        COUNT(*) FILTER (WHERE stage != 'CANCELLED' AND status != 'rejected' AND (category NOT IN ('tree-cutting', 'trees', 'road', 'water', 'electricity', 'waste') OR category IS NULL)) AS "serviceJobsCount"
       FROM incidents
     `);
 
@@ -671,6 +823,8 @@ app.get('/api/admin/detailed-analytics', async (req, res) => {
     const totalOrders = Number(aggRows[0]?.totalOrders || 0);
     const activeOrders = Number(aggRows[0]?.activeOrders || 0);
     const settledVolumeLKR = Number(aggRows[0]?.settledVolumeLKR || 0);
+    const hazardJobsCount = Number(aggRows[0]?.hazardJobsCount || 0);
+    const serviceJobsCount = Number(aggRows[0]?.serviceJobsCount || 0);
     const verifiedWorkers = Number(workerRows[0]?.verifiedCount || 0);
     const avgTrust = ((Number(reviewRows[0]?.avgRating || 5.0) / 5) * 100).toFixed(1);
 
@@ -680,6 +834,8 @@ app.get('/api/admin/detailed-analytics', async (req, res) => {
         totalOrders,
         activeOrders,
         settledVolumeLKR,
+        hazardJobsCount,
+        serviceJobsCount,
         verifiedWorkers,
         avgTrustScore: `${avgTrust}%`,
         arrivalVelocity: '~12 mins',
@@ -737,7 +893,7 @@ app.post('/api/upload', upload.single('photo'), (req, res) => {
 app.get('/api/chat/:jobId', async (req, res) => {
   try {
     const { rows } = await pool.query(
-      `SELECT * FROM messages WHERE job_id = $1 ORDER BY created_at ASC`,
+      `SELECT id, job_id, sender, sender_name, text, photo_url, created_at FROM messages WHERE job_id = $1 ORDER BY created_at ASC`,
       [req.params.jobId]
     );
     res.json({
@@ -748,6 +904,7 @@ app.get('/api/chat/:jobId', async (req, res) => {
         sender: r.sender,
         senderName: r.sender_name,
         text: r.text,
+        photoUrl: r.photo_url,
         timestamp: r.created_at,
         read: true,
       })),
@@ -759,10 +916,10 @@ app.get('/api/chat/:jobId', async (req, res) => {
 
 app.post('/api/chat/:jobId', async (req, res) => {
   try {
-    const { sender, senderName, text } = req.body;
+    const { sender, senderName, text, photoUrl } = req.body;
     const { rows } = await pool.query(
-      `INSERT INTO messages (job_id, sender, sender_name, text) VALUES ($1, $2, $3, $4) RETURNING *`,
-      [req.params.jobId, sender || 'user', senderName || 'User', text]
+      `INSERT INTO messages (job_id, sender, sender_name, text, photo_url) VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+      [req.params.jobId, sender || 'user', senderName || 'User', text || '', photoUrl || null]
     );
     const r = rows[0];
     const msg = {
@@ -771,6 +928,7 @@ app.post('/api/chat/:jobId', async (req, res) => {
       sender: r.sender,
       senderName: r.sender_name,
       text: r.text,
+      photoUrl: r.photo_url,
       timestamp: r.created_at,
       read: true,
     };
@@ -787,7 +945,23 @@ app.post('/api/reviews', async (req, res) => {
     const rawId = String(jobId || '').replace(/\D/g, '');
     const numRating = Number(rating) || 5;
 
+    let finalReviewerId = reviewerId || null;
+    let finalWorkerId = workerId || null;
+
     if (rawId) {
+      const incRes = await pool.query(
+        'SELECT reported_by, assigned_to FROM incidents WHERE id = $1',
+        [Number(rawId)]
+      );
+      if (incRes.rows.length > 0) {
+        if (!finalReviewerId && incRes.rows[0].reported_by) {
+          finalReviewerId = incRes.rows[0].reported_by;
+        }
+        if (!finalWorkerId && incRes.rows[0].assigned_to) {
+          finalWorkerId = incRes.rows[0].assigned_to;
+        }
+      }
+
       await pool.query(
         `UPDATE incidents SET rating = $1, review_comment = $2, updated_at = NOW() WHERE id = $3`,
         [numRating, comment, rawId]
@@ -797,7 +971,7 @@ app.post('/api/reviews', async (req, res) => {
     const { rows } = await pool.query(
       `INSERT INTO reviews (job_id, incident_id, reviewer_id, worker_id, rating, comment)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [jobId, rawId ? Number(rawId) : null, reviewerId || null, workerId || null, numRating, comment]
+      [jobId, rawId ? Number(rawId) : null, finalReviewerId, finalWorkerId, numRating, comment]
     );
 
     res.status(201).json({ success: true, data: rows[0] });
@@ -808,10 +982,39 @@ app.post('/api/reviews', async (req, res) => {
 
 app.get('/api/reviews', async (req, res) => {
   try {
-    const { rows } = await pool.query(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 50`);
+    const { rows } = await pool.query(`
+      SELECT 
+        r.id,
+        r.job_id,
+        r.incident_id,
+        r.rating,
+        r.comment,
+        r.created_at,
+        COALESCE(u_rev.name, inc_reporter.name, 'Verified Resident') AS author,
+        COALESCE(u_rev.locality, inc.location_text, 'Colombo') AS location,
+        COALESCE(u_work.name, inc_worker.name, 'Verified Specialist') AS worker_name,
+        COALESCE(inc.category, pp.trade, 'Home Service') AS category,
+        COALESCE(inc.title, 'Community Urban Service') AS title,
+        COALESCE(inc.cost_lkr, pp.daily_rate, 2800) AS cost_lkr,
+        COALESCE(r.likes_count, 0) AS likes
+      FROM reviews r
+      LEFT JOIN incidents inc ON (r.incident_id = inc.id OR r.job_id = ('JOB-' || inc.id))
+      LEFT JOIN users u_rev ON r.reviewer_id = u_rev.id
+      LEFT JOIN users inc_reporter ON inc.reported_by = inc_reporter.id
+      LEFT JOIN users u_work ON r.worker_id = u_work.id
+      LEFT JOIN users inc_worker ON inc.assigned_to = inc_worker.id
+      LEFT JOIN provider_profiles pp ON (u_work.id = pp.user_id OR inc_worker.id = pp.user_id)
+      ORDER BY r.created_at DESC
+      LIMIT 50
+    `);
     res.json({ success: true, data: rows });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    try {
+      const fallback = await pool.query(`SELECT * FROM reviews ORDER BY created_at DESC LIMIT 50`);
+      res.json({ success: true, data: fallback.rows });
+    } catch (e2) {
+      res.status(500).json({ success: false, message: e2.message });
+    }
   }
 });
 
@@ -931,72 +1134,46 @@ app.get('/api/analytics/platform-stats', async (req, res) => {
   }
 });
 
-// Admin Workers Directory & Verification API
-app.get('/api/admin/workers', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT 
-        u.id, 
-        u.name AS "fullName", 
-        u.email, 
-        u.phone,
-        COALESCE(pp.trade, 'Master Craftsman') AS trade,
-        COALESCE(pp.daily_rate, 3500) AS "dailyRate",
-        COALESCE(pp.hourly_rate, 600) AS "hourlyRate",
-        COALESCE(pp.experience_years, 5) AS "experienceYears",
-        COALESCE(pp.verified, true) AS "verified",
-        COALESCE(u.locality, 'Heerassagala') AS locality,
-        COALESCE(u.district, 'Kandy') AS district,
-        u.created_at AS "createdAt",
-        COALESCE(
-          (SELECT ROUND(AVG(rating)::numeric, 1) FROM reviews r WHERE r.worker_id = u.id OR r.incident_id IN (SELECT id FROM incidents WHERE assigned_to = u.id)),
-          5.0
-        ) AS rating,
-        COALESCE(
-          (SELECT COUNT(*) FROM reviews r WHERE r.worker_id = u.id OR r.incident_id IN (SELECT id FROM incidents WHERE assigned_to = u.id)),
-          0
-        ) AS "reviewCount"
-      FROM users u
-      LEFT JOIN provider_profiles pp ON u.id = pp.user_id
-      WHERE u.role = 'service_provider'
-      ORDER BY u.id ASC
-    `);
-
-    // Map to admin application format
-    const mapped = rows.map((w) => ({
-      id: `APP-${w.id}`,
-      workerId: `W-${w.id}`,
-      fullName: w.fullName,
-      nicNumber: "198824109281",
-      trade: w.trade,
-      phone: w.phone,
-      locality: w.locality,
-      district: w.district,
-      experienceYears: w.experienceYears,
-      status: w.verified ? "APPROVED" : "PENDING",
-      appliedAt: w.createdAt,
-      documents: {
-        nicFrontUrl: "https://images.unsplash.com/photo-1589829545856-d10d557cf95f?w=600&auto=format&fit=crop",
-        tradeCertificateUrl: "https://images.unsplash.com/photo-1544717305-2782549b5136?w=600&auto=format&fit=crop",
-      },
-    }));
-
-    res.json({ success: true, data: mapped });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 
 
 
 
-
-// Review Likes API
+// Review Likes API (Real Database Toggle)
 app.post('/api/reviews/:id/like', async (req, res) => {
   try {
     const rawId = String(req.params.id || '').replace(/\D/g, '');
-    res.json({ success: true, message: 'Review liked' });
+    const { userId } = req.body || {};
+    const parsedUserId = userId ? Number(String(userId).replace(/\D/g, '')) : null;
+
+    if (!rawId) {
+      return res.status(400).json({ success: false, message: 'Invalid review ID' });
+    }
+
+    let isLiked = true;
+    if (parsedUserId) {
+      const existing = await pool.query(
+        'SELECT id FROM review_likes WHERE review_id = $1 AND user_id = $2',
+        [Number(rawId), parsedUserId]
+      );
+      if (existing.rows.length > 0) {
+        await pool.query('DELETE FROM review_likes WHERE review_id = $1 AND user_id = $2', [Number(rawId), parsedUserId]);
+        await pool.query('UPDATE reviews SET likes_count = GREATEST(0, COALESCE(likes_count, 1) - 1) WHERE id = $1', [Number(rawId)]);
+        isLiked = false;
+      } else {
+        await pool.query('INSERT INTO review_likes (review_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [Number(rawId), parsedUserId]);
+        await pool.query('UPDATE reviews SET likes_count = COALESCE(likes_count, 0) + 1 WHERE id = $1', [Number(rawId)]);
+        isLiked = true;
+      }
+    } else {
+      await pool.query('UPDATE reviews SET likes_count = COALESCE(likes_count, 0) + 1 WHERE id = $1', [Number(rawId)]);
+    }
+
+    const { rows } = await pool.query('SELECT COALESCE(likes_count, 0) AS likes FROM reviews WHERE id = $1', [Number(rawId)]);
+    const currentLikes = rows.length > 0 ? Number(rows[0].likes) : 1;
+
+    res.json({ success: true, likes: currentLikes, isLiked });
   } catch (err) {
+    console.error('Like error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });

@@ -25,13 +25,15 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
 import { socketService } from "@/services/socketService";
 
-export default function DashboardPage() {
+function DashboardContent() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [selectedLocality, setSelectedLocality] = useState("Maharagama");
@@ -41,6 +43,12 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "en_route" | "in_progress" | "requested">("all");
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  useEffect(() => {
+    if (searchParams?.get("openPost") === "true") {
+      setIsPostModalOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -134,7 +142,7 @@ export default function DashboardPage() {
   };
 
   const handleReviewSubmit = (jobId: string, rating: number, review: string) => {
-    jobService.submitReview(jobId, rating, review);
+    jobService.submitReview(jobId, rating, review, user?.id);
     setJobs(jobService.getJobs());
   };
 
@@ -335,7 +343,6 @@ export default function DashboardPage() {
                         border: "1px dashed var(--border)",
                       }}
                     >
-                      <Sparkles size={32} color="var(--accent)" style={{ marginBottom: "12px" }} />
                       <h3 style={{ fontSize: "16px", fontWeight: 800, marginBottom: "6px" }}>
                         No Active Job Requests
                       </h3>
@@ -506,7 +513,7 @@ export default function DashboardPage() {
                   Payments & Job History
                 </h2>
                 <p style={{ fontSize: "13.5px", color: "var(--text-secondary)", margin: 0 }}>
-                  Direct settlements (Cash on Hand & Bank Transfer), completed job logs, and verified reviews
+                  Direct settlements, completed job logs, and verified reviews
                 </p>
               </div>
 
@@ -523,5 +530,13 @@ export default function DashboardPage() {
         onSubmitJob={handleCreateJob}
       />
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "var(--bg-base)" }}>Loading dashboard...</div>}>
+      <DashboardContent />
+    </Suspense>
   );
 }

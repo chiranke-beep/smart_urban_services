@@ -18,8 +18,8 @@ async function runMigrations() {
       ALTER TABLE users ADD COLUMN IF NOT EXISTS birthday DATE;
       ALTER TABLE users ADD COLUMN IF NOT EXISTS gender VARCHAR(20);
       ALTER TABLE users ADD COLUMN IF NOT EXISTS language VARCHAR(50) DEFAULT 'English';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS locality VARCHAR(100) DEFAULT 'Heerassagala';
-      ALTER TABLE users ADD COLUMN IF NOT EXISTS district VARCHAR(100) DEFAULT 'Kandy';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS locality TEXT DEFAULT 'Colombo';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS district TEXT DEFAULT 'Colombo';
     `);
 
     // 2. Ensure provider_profiles table has NIC and document columns
@@ -27,13 +27,13 @@ async function runMigrations() {
       CREATE TABLE IF NOT EXISTS provider_profiles (
         id SERIAL PRIMARY KEY,
         user_id INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-        trade VARCHAR(100) DEFAULT 'Technician & Craftsman',
+        trade TEXT DEFAULT 'Technician & Craftsman',
         daily_rate NUMERIC DEFAULT 3500,
         hourly_rate NUMERIC DEFAULT 600,
         experience_years INTEGER DEFAULT 5,
         nic_number VARCHAR(30),
         nic_document_url TEXT,
-        vehicle_type VARCHAR(100) DEFAULT 'Service Vehicle',
+        vehicle_type TEXT DEFAULT 'Professional Tools',
         plate_number VARCHAR(50) DEFAULT 'WP-CAB-8821',
         verified BOOLEAN DEFAULT FALSE,
         rating NUMERIC DEFAULT 5.0,

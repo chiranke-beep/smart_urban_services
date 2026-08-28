@@ -44,13 +44,6 @@ export function AdminSidebar({
       label: "Platform Analytics & Stats",
       icon: BarChart3,
     },
-    {
-      id: "hazards",
-      label: "Emergency Alerts",
-      icon: AlertTriangle,
-      badge: openHazardsCount,
-      badgeColor: "#f59e0b",
-    },
   ];
 
   return (
