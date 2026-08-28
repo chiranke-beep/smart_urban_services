@@ -56,10 +56,21 @@ const User = {
     return rows[0] || null;
   },
 
-  // ── Find by id (used for JWT validation) ────────────────────────────────
+  // ── Find by id (used for JWT validation & auth/me) ──────────────────────
   async findById(id) {
     const { rows } = await pool.query(
-      'SELECT id, name, email, role, phone, is_active, created_at FROM users WHERE id = $1 LIMIT 1',
+      `SELECT 
+        u.id, u.name, u.email, u.role, u.phone, u.is_active, u.created_at,
+        u.locality, u.district, u.saved_lat, u.saved_lng, u.profile_picture,
+        u.birthday, u.gender, u.language, u.home_address,
+        pp.trade, pp.experience_years, pp.daily_rate, pp.hourly_rate,
+        pp.vehicle_type, pp.plate_number, COALESCE(pp.verified, false) AS verified,
+        COALESCE(pp.verification_status, 'PENDING') AS verification_status,
+        pp.nic_number, pp.rejection_reason, COALESCE(pp.rating, 5.0) AS rating,
+        COALESCE(pp.review_count, 0) AS review_count
+       FROM users u
+       LEFT JOIN provider_profiles pp ON u.id = pp.user_id
+       WHERE u.id = $1 LIMIT 1`,
       [id]
     );
     return rows[0] || null;
