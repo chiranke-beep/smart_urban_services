@@ -335,7 +335,7 @@ export default function LoginPage() {
               <div>
                 Are you a skilled technician or tree cutter?{" "}
                 <Link href="/provider/register" style={{ color: "var(--accent)", fontWeight: 800, textDecoration: "underline" }}>
-                  Register as Verified Worker (4 Steps)
+                  Register as Verified Worker (3 Steps)
                 </Link>
               </div>
             )}

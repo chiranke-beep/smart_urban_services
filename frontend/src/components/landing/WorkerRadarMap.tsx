@@ -822,14 +822,14 @@ export function WorkerRadarMap() {
               }}
             >
               <Link
-                href={`#services?district=${selectedDistrict.id}`}
+                href={`/citizen/dashboard?district=${encodeURIComponent(selectedDistrict.name.replace(" District", ""))}`}
                 style={{
                   flex: 1,
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
                   gap: "8px",
-                  padding: "14px 20px",
+                  padding: "13px 20px",
                   borderRadius: "0px",
                   backgroundColor: "var(--accent)",
                   color: "var(--accent-text)",
@@ -847,7 +847,7 @@ export function WorkerRadarMap() {
               </Link>
 
               <Link
-                href={`/request?district=${selectedDistrict.id}`}
+                href={`/citizen/dashboard?openPost=true&district=${encodeURIComponent(selectedDistrict.name.replace(" District", ""))}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

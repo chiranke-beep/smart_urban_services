@@ -186,15 +186,33 @@ export function ProviderHeader({
                   {displayName}
                 </span>
                 <span title="National ID & Trade Verified">
-                  <ShieldCheck size={16} color="#10b981" />
+                  <ShieldCheck size={15} color="#10b981" />
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "11.5px", color: "var(--text-secondary)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: "var(--text-secondary)", marginTop: "1px" }}>
                 <span style={{ color: "#eab308", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
                   <Star size={11} fill="#eab308" />
-                  {liveRating.toFixed(1)} ({liveReviews})
+                  {liveRating.toFixed(1)}
                 </span>
-                <span className="desktop-only">· {displayTrade}</span>
+                <span>·</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "3px", color: "var(--text-primary)", fontWeight: 600 }}>
+                  <MapPin size={11} color="#10b981" />
+                  <span>{user?.locality || selectedLocality || "Kandy"}</span>
+                </span>
+                <span>·</span>
+                <span
+                  title={displayTrade}
+                  style={{
+                    maxWidth: "200px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {displayTrade.includes(",")
+                    ? `${displayTrade.split(",")[0].trim()} (+${displayTrade.split(",").length - 1} trades)`
+                    : displayTrade}
+                </span>
               </div>
             </div>
           </div>

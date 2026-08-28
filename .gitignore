@@ -33,6 +33,28 @@ dist/
 # Uploads 
 backend/uploads/
 
+# Datasets & ML Training Data
+ai/data/
+ai/data/**
+data/
+datasets/
+dataset/
+**/raw/
+**/processed/
+raw/
+processed/
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.tar.gz
+*.zip
+*.traineddata
+
 # Logs
 *.log
 logs/

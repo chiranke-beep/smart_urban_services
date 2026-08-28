@@ -22,6 +22,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { apiClient } from "@/services/api";
 
 interface ServiceItem {
   id: string;
@@ -50,15 +51,15 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Interior, exterior wall painting, waterproofing & roof coatings.",
     description:
       "Connect with skilled village painters and color-wash specialists with verified past work photos, quality paint recommendations, and transparent sq.ft quotes.",
-    providersAvailable: "142 Active Painters",
-    avgRating: "4.9",
-    reviewCount: 320,
+    providersAvailable: "3 Verified Specialists",
+    avgRating: "5.0",
+    reviewCount: 2,
     rateRange: "Rs. 2,800 – 4,500 / day",
     color: "#f97316",
     accentGlow: "rgba(249, 115, 22, 0.25)",
     icon: Paintbrush,
     subtypes: ["Interior Wall Painting", "Exterior Weathercoat", "Roof Waterproofing", "Wood Polish & Varnish"],
-    sampleLocation: "Maharagama, Gampaha & Negombo",
+    sampleLocation: "Heerassagala · Kandy & Colombo",
   },
   {
     id: "tree-cutting",
@@ -68,15 +69,15 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Hazardous branch trimming, coconut plucking & compound cleanup.",
     description:
       "Hire experienced local climbers and yard maintenance workers equipped with chain-saws and safety gear to remove high branches before monsoon storms.",
-    providersAvailable: "88 Active Tree Cutters",
-    avgRating: "4.8",
-    reviewCount: 215,
+    providersAvailable: "3 Verified Specialists",
+    avgRating: "5.0",
+    reviewCount: 2,
     rateRange: "Rs. 2,500 – 5,000 / job",
     color: "#10b981",
     accentGlow: "rgba(16, 185, 129, 0.25)",
     icon: Trees,
     subtypes: ["Overgrown Tree Trimming", "Coconut Plucking", "Storm Hazard Removal", "Jungle / Grass Clearing"],
-    sampleLocation: "Homagama, Piliyandala & Kandy",
+    sampleLocation: "Heerassagala · Kandy & Colombo",
   },
   {
     id: "plumbing",
@@ -86,15 +87,15 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Leaking pipe fixes, bathroom tile leaks, water pumps & drainage.",
     description:
       "Fast response local plumbers for urgent leaks, broken bathroom fixtures, submersible pump troubleshooting, and overhead tank cleaning.",
-    providersAvailable: "116 Active Plumbers",
-    avgRating: "4.9",
-    reviewCount: 410,
+    providersAvailable: "1 Verified Specialist",
+    avgRating: "5.0",
+    reviewCount: 1,
     rateRange: "Rs. 1,500 – 3,500 / callout",
     color: "#06b6d4",
     accentGlow: "rgba(6, 182, 212, 0.25)",
     icon: Wrench,
     subtypes: ["Burst Pipe Emergency", "Bathroom Fixtures", "Water Pump Repair", "Gutter & Drain Unclogging"],
-    sampleLocation: "Dehiwala, Moratuwa & Kelaniya",
+    sampleLocation: "Kandy & Colombo Main",
   },
   {
     id: "cleaning",
@@ -104,15 +105,15 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Roof moss clearing, ceiling cleaning, post-construction cleanup.",
     description:
       "Reliable neighborhood cleaners and volunteer groups with high-pressure washers to restore roofs, gutters, solar panels, and full house interiors.",
-    providersAvailable: "95 Active Cleaners",
-    avgRating: "4.7",
-    reviewCount: 180,
+    providersAvailable: "2 Verified Specialists",
+    avgRating: "5.0",
+    reviewCount: 1,
     rateRange: "Rs. 3,000 – 6,000 / team",
     color: "#3b82f6",
     accentGlow: "rgba(59, 130, 246, 0.25)",
     icon: Home,
     subtypes: ["Roof Moss & Gutter Wash", "Deep Floor Scrubbing", "Water Tank Disinfection", "Post-Construction Clean"],
-    sampleLocation: "Kiribathgoda, Kadawatha & Panadura",
+    sampleLocation: "Heerassagala & Kandy",
   },
   {
     id: "tech-repair",
@@ -122,15 +123,15 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Hardware troubleshooting, OS reinstallation, virus removal & upgrades.",
     description:
       "Find skilled neighborhood computer technicians for on-site laptop repair, desktop building, SSD/RAM upgrades, software debugging, and home WiFi setups.",
-    providersAvailable: "74 Local Tech Experts",
-    avgRating: "4.9",
-    reviewCount: 290,
+    providersAvailable: "Open for Registration",
+    avgRating: "5.0",
+    reviewCount: 0,
     rateRange: "Rs. 1,500 – 4,000 / fix",
     color: "#8b5cf6",
     accentGlow: "rgba(139, 92, 246, 0.25)",
     icon: Laptop,
     subtypes: ["No Power / Blue Screen Fix", "Windows / Mac Reinstall", "SSD / RAM Upgrade", "Virus Removal & Backup"],
-    sampleLocation: "Nugegoda, Colombo & Kurunegala",
+    sampleLocation: "Island-wide · Accepting Specialists",
   },
   {
     id: "custom-odd-jobs",
@@ -140,25 +141,79 @@ const SERVICE_CATEGORIES: ServiceItem[] = [
     tagline: "Wiring, masonry, gate welding, appliance repair & any custom household job.",
     description:
       "Have a unique household task not listed? From ceiling fan installation, masonry plastering, gate welding to furniture moving, post your custom task and let multi-skilled local handymen respond.",
-    providersAvailable: "128 Multi-Skilled Handymen",
-    avgRating: "4.8",
-    reviewCount: 340,
-    rateRange: "Rs. 1,500 – 5,000 / custom",
+    providersAvailable: "3 Verified Specialists",
+    avgRating: "5.0",
+    reviewCount: 2,
+    rateRange: "Rs. 2,000 – 4,500 / job",
     color: "#eab308",
     accentGlow: "rgba(234, 179, 8, 0.25)",
     icon: Hammer,
     subtypes: ["Electrical Wiring & Fans", "Masonry & Plastering", "Welding & Gate Fix", "Appliance & Motor Repair", "Moving & Heavy Lifting", "Post Custom Task"],
-    sampleLocation: "Island-wide · All Districts",
+    sampleLocation: "Heerassagala · Kandy & Colombo",
   },
 ];
 
 export function HazardCategories() {
+  const [categories, setCategories] = useState<ServiceItem[]>(SERVICE_CATEGORIES);
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
-  const activeCategory = SERVICE_CATEGORIES[activeIndex];
+  const activeCategory = categories[activeIndex] || categories[0];
+
+  useEffect(() => {
+    Promise.all([
+      apiClient<{ success: boolean; data?: any[] }>("/providers").catch(() => null),
+      apiClient<{ success: boolean; data?: any[] }>("/reviews").catch(() => null),
+    ]).then(([provRes, revRes]) => {
+      const liveWorkers = provRes?.data || [];
+      const liveReviews = revRes?.data || [];
+
+      setCategories((prev) =>
+        prev.map((cat) => {
+          let matchedWorkers: any[] = [];
+          let matchedReviews: any[] = [];
+
+          if (cat.id === "painting") {
+            matchedWorkers = liveWorkers.filter((w) => (w.trade || "").toLowerCase().includes("paint"));
+            matchedReviews = liveReviews.filter((r) => (r.category || "").toLowerCase().includes("paint"));
+          } else if (cat.id === "tree-cutting") {
+            matchedWorkers = liveWorkers.filter((w) => (w.trade || "").toLowerCase().includes("tree"));
+            matchedReviews = liveReviews.filter((r) => (r.category || "").toLowerCase().includes("tree") || (r.category || "").toLowerCase().includes("waste"));
+          } else if (cat.id === "plumbing") {
+            matchedWorkers = liveWorkers.filter((w) => (w.trade || "").toLowerCase().includes("plumb"));
+            matchedReviews = liveReviews.filter((r) => (r.category || "").toLowerCase().includes("plumb") || (r.category || "").toLowerCase().includes("water"));
+          } else if (cat.id === "cleaning") {
+            matchedWorkers = liveWorkers.filter((w) => (w.trade || "").toLowerCase().includes("clean"));
+            matchedReviews = liveReviews.filter((r) => (r.category || "").toLowerCase().includes("clean"));
+          } else if (cat.id === "tech-repair") {
+            matchedWorkers = liveWorkers.filter((w) => (w.trade || "").toLowerCase().includes("pc") || (w.trade || "").toLowerCase().includes("tech"));
+            matchedReviews = liveReviews.filter((r) => (r.category || "").toLowerCase().includes("pc") || (r.category || "").toLowerCase().includes("tech"));
+          } else {
+            matchedWorkers = liveWorkers;
+            matchedReviews = liveReviews;
+          }
+
+          const activeCount = matchedWorkers.length;
+          const reviewCount = matchedReviews.length;
+          const avgRating = reviewCount > 0
+            ? (matchedReviews.reduce((sum, r) => sum + (Number(r.rating) || 5), 0) / reviewCount).toFixed(1)
+            : "5.0";
+
+          const zones = Array.from(new Set(matchedWorkers.map((w) => `${w.locality || "Town"}, ${w.district || "District"}`))).slice(0, 3).join(" · ");
+
+          return {
+            ...cat,
+            providersAvailable: activeCount > 0 ? `${activeCount} Verified Specialists` : `Open for Registration`,
+            reviewCount: reviewCount,
+            avgRating: avgRating,
+            sampleLocation: zones || "Island-wide · Accepting Specialists",
+          };
+        })
+      );
+    });
+  }, []);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -300,7 +355,7 @@ export function HazardCategories() {
           }}
           className="service-accordion-container"
         >
-          {SERVICE_CATEGORIES.map((item, index) => {
+          {categories.map((item, index) => {
             const isExpanded = activeIndex === index;
             const Icon = item.icon;
 
@@ -678,7 +733,7 @@ export function HazardCategories() {
 
                         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                           <Link
-                            href={`/messages?category=${item.id}`}
+                            href={`/citizen/dashboard?openPost=true&category=${item.id}`}
                             style={{
                               display: "inline-flex",
                               alignItems: "center",

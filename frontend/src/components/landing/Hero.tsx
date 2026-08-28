@@ -392,41 +392,6 @@ export function Hero() {
                   </span>
                   <ArrowRight size={16} />
                 </Link>
-
-                <Link
-                  href={
-                    user.role === "ADMIN"
-                      ? "/admin/dashboard"
-                      : user.role === "PROVIDER"
-                      ? "/provider/dashboard"
-                      : "#workers"
-                  }
-                  className="hero-cta"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    padding: "14px 28px",
-                    borderRadius: "0px",
-                    border: "1.5px solid var(--border)",
-                    backgroundColor: "var(--card-bg)",
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
-                    color: "var(--text-primary)",
-                    fontSize: "15px",
-                    fontWeight: 700,
-                    textDecoration: "none",
-                    transition: "transform 0.2s ease",
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.04)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-                >
-                  {user.role === "ADMIN"
-                    ? "Review Verification Queue"
-                    : user.role === "PROVIDER"
-                    ? "View Live Job Feed"
-                    : "Find Nearby Technicians"}
-                </Link>
               </>
             ) : (
               <>

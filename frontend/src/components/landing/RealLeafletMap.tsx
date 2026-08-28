@@ -41,20 +41,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Western Province",
     lat: 6.885,
     lng: 79.905,
-    activeTotal: 184,
-    avgResponse: "< 15 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Painters", count: 52, icon: Paintbrush, color: "#f97316" },
-      { name: "Plumbers", count: 44, icon: Wrench, color: "#06b6d4" },
-      { name: "PC Techs", count: 38, icon: Laptop, color: "#8b5cf6" },
-      { name: "Tree Cutters", count: 26, icon: Trees, color: "#10b981" },
-      { name: "Cleaners", count: 24, icon: Home, color: "#3b82f6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
     ],
     recentJob: {
-      title: "2-Storey Wall Color-Wash & Plastering",
-      worker: "Kamal Perera (4.9 ★)",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
       rating: "5.0",
-      locality: "Maharagama Town",
+      locality: "Colombo Main",
     },
   },
   {
@@ -63,20 +63,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Western Province",
     lat: 7.084,
     lng: 79.994,
-    activeTotal: 142,
-    avgResponse: "< 20 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Tree Cutters", count: 41, icon: Trees, color: "#10b981" },
-      { name: "Painters", count: 36, icon: Paintbrush, color: "#f97316" },
-      { name: "Plumbers", count: 29, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 21, icon: Home, color: "#3b82f6" },
-      { name: "PC Techs", count: 15, icon: Laptop, color: "#8b5cf6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Dangerous Coconut Tree High-Branch Cut",
-      worker: "Sunil Kumara (4.8 ★)",
-      rating: "4.9",
-      locality: "Kadawatha & Kiribathgoda",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
+      rating: "5.0",
+      locality: "Gampaha & Kadawatha",
     },
   },
   {
@@ -85,20 +85,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Central Province",
     lat: 7.2906,
     lng: 80.6337,
-    activeTotal: 118,
-    avgResponse: "< 25 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Roof Cleaners", count: 34, icon: Home, color: "#3b82f6" },
-      { name: "Painters", count: 31, icon: Paintbrush, color: "#f97316" },
-      { name: "Tree Climbers", count: 24, icon: Trees, color: "#10b981" },
-      { name: "Plumbers", count: 18, icon: Wrench, color: "#06b6d4" },
-      { name: "PC Techs", count: 11, icon: Laptop, color: "#8b5cf6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Roof Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Tile Roof Moss Removal & High-Pressure Wash",
-      worker: "Asanka Bandara (4.9 ★)",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
       rating: "5.0",
-      locality: "Peradeniya & Katugastota",
+      locality: "Heerassagala & Kandy",
     },
   },
   {
@@ -107,19 +107,19 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Western Province",
     lat: 6.5854,
     lng: 79.9607,
-    activeTotal: 86,
-    avgResponse: "< 20 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Plumbers", count: 28, icon: Wrench, color: "#06b6d4" },
-      { name: "Tree Cutters", count: 22, icon: Trees, color: "#10b981" },
-      { name: "Painters", count: 19, icon: Paintbrush, color: "#f97316" },
-      { name: "Cleaners", count: 11, icon: Home, color: "#3b82f6" },
-      { name: "PC Techs", count: 6, icon: Laptop, color: "#8b5cf6" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Main Line Bathroom Water Pump Replacement",
-      worker: "Nuwan Wickrama (4.9 ★)",
-      rating: "4.8",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
+      rating: "5.0",
       locality: "Panadura & Wadduwa",
     },
   },
@@ -129,20 +129,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Southern Province",
     lat: 6.0535,
     lng: 80.221,
-    activeTotal: 94,
-    avgResponse: "< 25 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Painters", count: 29, icon: Paintbrush, color: "#f97316" },
-      { name: "Cleaners", count: 25, icon: Home, color: "#3b82f6" },
-      { name: "Tree Cutters", count: 18, icon: Trees, color: "#10b981" },
-      { name: "Plumbers", count: 14, icon: Wrench, color: "#06b6d4" },
-      { name: "PC Techs", count: 8, icon: Laptop, color: "#8b5cf6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Villa Exterior Painting & Waterproofing",
-      worker: "Ruwan Sanjeewa (4.9 ★)",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
       rating: "5.0",
-      locality: "Hikkaduwa & Karapitiya",
+      locality: "Hikkaduwa & Galle Fort",
     },
   },
   {
@@ -151,20 +151,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "North Western Province",
     lat: 7.4863,
     lng: 80.3623,
-    activeTotal: 78,
-    avgResponse: "< 30 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Tree Climbers", count: 27, icon: Trees, color: "#10b981" },
-      { name: "Painters", count: 21, icon: Paintbrush, color: "#f97316" },
-      { name: "PC Techs", count: 13, icon: Laptop, color: "#8b5cf6" },
-      { name: "Plumbers", count: 11, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 6, icon: Home, color: "#3b82f6" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Desktop PC Motherboard Repair & Re-Install",
-      worker: "Dinesh Weerasinghe (4.9 ★)",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
       rating: "5.0",
-      locality: "Kuliyapitiya Town",
+      locality: "Kurunegala Town",
     },
   },
   {
@@ -173,20 +173,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Southern Province",
     lat: 5.9549,
     lng: 80.555,
-    activeTotal: 62,
-    avgResponse: "< 25 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Tree Cutters", count: 19, icon: Trees, color: "#10b981" },
-      { name: "Painters", count: 16, icon: Paintbrush, color: "#f97316" },
-      { name: "Plumbers", count: 14, icon: Wrench, color: "#06b6d4" },
-      { name: "Cleaners", count: 9, icon: Home, color: "#3b82f6" },
-      { name: "PC Techs", count: 4, icon: Laptop, color: "#8b5cf6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
     ],
     recentJob: {
-      title: "Storm Drain Clearing & Water Tank Wash",
-      worker: "Kithsiri Liyanage (4.8 ★)",
-      rating: "4.9",
-      locality: "Weligama & Mirissa",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
+      rating: "5.0",
+      locality: "Matara & Weligama",
     },
   },
   {
@@ -195,20 +195,20 @@ const DISTRICT_LOCATIONS: DistrictLocation[] = [
     province: "Northern Province",
     lat: 9.6615,
     lng: 80.0255,
-    activeTotal: 58,
-    avgResponse: "< 30 mins",
+    activeTotal: 0,
+    avgResponse: "Accepting",
     topTrades: [
-      { name: "Painters", count: 20, icon: Paintbrush, color: "#f97316" },
-      { name: "Tree Cutters", count: 15, icon: Trees, color: "#10b981" },
-      { name: "Plumbers", count: 12, icon: Wrench, color: "#06b6d4" },
-      { name: "PC Techs", count: 7, icon: Laptop, color: "#8b5cf6" },
-      { name: "Cleaners", count: 4, icon: Home, color: "#3b82f6" },
+      { name: "Painters", count: 0, icon: Paintbrush, color: "#f97316" },
+      { name: "Tree Cutters", count: 0, icon: Trees, color: "#10b981" },
+      { name: "Plumbers", count: 0, icon: Wrench, color: "#06b6d4" },
+      { name: "PC Techs", count: 0, icon: Laptop, color: "#8b5cf6" },
+      { name: "Cleaners", count: 0, icon: Home, color: "#3b82f6" },
     ],
     recentJob: {
-      title: "Residential House Color-Wash & Roof Prep",
-      worker: "K. Thavanesan (4.9 ★)",
+      title: "Accepting Specialist Registrations",
+      worker: "Register as First Specialist",
       rating: "5.0",
-      locality: "Nallur & Chavakachcheri",
+      locality: "Nallur & Jaffna Town",
     },
   },
 ];
@@ -242,29 +242,51 @@ export function RealLeafletMap() {
       apiClient<{ success: boolean; data?: any[] }>("/providers").catch(() => null),
       apiClient<{ success: boolean; data?: any[] }>("/reviews").catch(() => null),
     ]).then(([providersRes, reviewsRes]) => {
-      if (providersRes?.data && providersRes.data.length > 0) {
+      if (providersRes?.data && Array.isArray(providersRes.data)) {
         const liveWorkers = providersRes.data;
-        setDistricts((prev) =>
-          prev.map((d) => {
+        setDistricts((prev) => {
+          const updated = prev.map((d) => {
             const districtShort = d.name.toLowerCase().replace(" district", "").trim();
             const matched = liveWorkers.filter(
               (w) => (w.district || "").toLowerCase().includes(districtShort)
             );
-            if (matched.length > 0) {
-              return {
-                ...d,
-                activeTotal: matched.length,
-                recentJob: {
-                  title: matched[0].trade || "Verified Specialist",
-                  worker: `${matched[0].fullName || "Specialist"} (${Number(matched[0].rating || 5).toFixed(1)} Rating)`,
-                  rating: Number(matched[0].rating || 5).toFixed(1),
-                  locality: `${matched[0].locality || "Town"}, ${d.name}`,
-                },
-              };
-            }
-            return d;
-          })
-        );
+
+            const countPainter = matched.filter((w) => (w.trade || "").toLowerCase().includes("paint")).length;
+            const countPlumber = matched.filter((w) => (w.trade || "").toLowerCase().includes("plumb")).length;
+            const countTree = matched.filter((w) => (w.trade || "").toLowerCase().includes("tree")).length;
+            const countCleaner = matched.filter((w) => (w.trade || "").toLowerCase().includes("clean")).length;
+            const countTech = matched.filter((w) => (w.trade || "").toLowerCase().includes("pc") || (w.trade || "").toLowerCase().includes("tech")).length;
+
+            return {
+              ...d,
+              activeTotal: matched.length,
+              topTrades: [
+                { name: "Painters", count: countPainter, icon: Paintbrush, color: "#f97316" },
+                { name: "Plumbers", count: countPlumber, icon: Wrench, color: "#06b6d4" },
+                { name: "PC Techs", count: countTech, icon: Laptop, color: "#8b5cf6" },
+                { name: "Tree Cutters", count: countTree, icon: Trees, color: "#10b981" },
+                { name: "Cleaners", count: countCleaner, icon: Home, color: "#3b82f6" },
+              ],
+              recentJob: matched.length > 0 ? {
+                title: matched[0].trade || "Verified Specialist",
+                worker: `${matched[0].fullName || "Specialist"} (${Number(matched[0].rating || 5).toFixed(1)} Rating)`,
+                rating: Number(matched[0].rating || 5).toFixed(1),
+                locality: `${matched[0].locality || "Town"}, ${d.name}`,
+              } : {
+                title: "Accepting Specialist Registrations",
+                worker: "Register as First Local Specialist",
+                rating: "5.0",
+                locality: d.name,
+              },
+            };
+          });
+
+          // Also synchronize selectedDistrict state
+          const currentSelected = updated.find((d) => d.id === selectedDistrict.id) || updated[0];
+          setSelectedDistrict(currentSelected);
+
+          return updated;
+        });
       }
     });
   }, []);
@@ -325,7 +347,7 @@ export function RealLeafletMap() {
     };
   }, []);
 
-  // Update markers when theme toggles
+  // Update markers when theme, selected district, or active filter changes
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -333,7 +355,7 @@ export function RealLeafletMap() {
       if (!mapInstanceRef.current) return;
       renderMarkers(L, mapInstanceRef.current);
     });
-  }, [isDark, selectedDistrict]);
+  }, [isDark, selectedDistrict, districts, activeFilter]);
 
   // Render Custom Sharp Square HTML Markers
   const renderMarkers = (L: typeof import("leaflet"), map: LeafletType.Map) => {
@@ -341,7 +363,7 @@ export function RealLeafletMap() {
     markersRef.current.forEach((m) => map.removeLayer(m));
     markersRef.current = [];
 
-    DISTRICT_LOCATIONS.forEach((loc) => {
+    districts.forEach((loc) => {
       const isSelected = selectedDistrict.id === loc.id;
 
       // Custom Sharp Square HTML Marker Icon
@@ -761,7 +783,17 @@ export function RealLeafletMap() {
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 180px), 1fr))", gap: "10px" }}>
-                  {selectedDistrict.topTrades.map((trade) => {
+                  {selectedDistrict.topTrades
+                    .filter((trade) => {
+                      if (activeFilter === "all") return true;
+                      if (activeFilter === "painting") return trade.name.toLowerCase().includes("paint");
+                      if (activeFilter === "trees") return trade.name.toLowerCase().includes("tree");
+                      if (activeFilter === "plumbing") return trade.name.toLowerCase().includes("plumb");
+                      if (activeFilter === "cleaning") return trade.name.toLowerCase().includes("clean");
+                      if (activeFilter === "tech") return trade.name.toLowerCase().includes("pc") || trade.name.toLowerCase().includes("tech");
+                      return true;
+                    })
+                    .map((trade) => {
                     const Icon = trade.icon;
                     return (
                       <div
@@ -775,7 +807,7 @@ export function RealLeafletMap() {
                           padding: "10px 14px",
                           borderRadius: "0px",
                           backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.03)",
-                          border: "1px solid var(--border)",
+                          border: activeFilter !== "all" ? `1.5px solid ${trade.color}` : "1px solid var(--border)",
                         }}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
@@ -851,7 +883,7 @@ export function RealLeafletMap() {
               }}
             >
               <Link
-                href={`/dashboard?district=${selectedDistrict.id}`}
+                href={`/citizen/dashboard?district=${encodeURIComponent(selectedDistrict.name.replace(" District", ""))}`}
                 style={{
                   flex: 1,
                   display: "inline-flex",
@@ -876,7 +908,7 @@ export function RealLeafletMap() {
               </Link>
 
               <Link
-                href={`/request?district=${selectedDistrict.id}`}
+                href={`/citizen/dashboard?openPost=true&district=${encodeURIComponent(selectedDistrict.name.replace(" District", ""))}`}
                 style={{
                   display: "inline-flex",
                   alignItems: "center",

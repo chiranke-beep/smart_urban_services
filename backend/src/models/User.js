@@ -66,12 +66,12 @@ const User = {
   },
 
   // ── Create a new user ────────────────────────────────────────────────────
-  async create({ name, email, password, role = 'citizen', phone = null }) {
+  async create({ name, email, password, role = 'citizen', phone = null, locality = 'Colombo', district = 'Colombo' }) {
     const { rows } = await pool.query(
-      `INSERT INTO users (name, email, password, role, phone)
-       VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, name, email, role, phone, is_active, created_at`,
-      [name, email, password, role, phone]
+      `INSERT INTO users (name, email, password, role, phone, locality, district)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, name, email, role, phone, locality, district, is_active, created_at`,
+      [name, email, password, role, phone, locality, district]
     );
     return rows[0];
   },

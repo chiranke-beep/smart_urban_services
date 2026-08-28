@@ -71,7 +71,7 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
           </div>
         </div>
 
-        {/* Cash vs Bank Transfer Split */}
+        {/* Payment Direct Settlements */}
         <div
           style={{
             padding: "20px",
@@ -84,15 +84,15 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text-secondary)", textTransform: "uppercase" }}>
-              Payment Methods Breakdown
+              Settlement Mode
             </span>
             <Banknote size={18} color="var(--accent)" />
           </div>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
-            Cash on Hand: <strong>{formatCurrency(cashTotal)}</strong>
+          <div style={{ fontSize: "24px", fontWeight: 900, color: "var(--text-primary)" }}>
+            Direct Payment
           </div>
-          <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)" }}>
-            Bank Transfer: <strong>{formatCurrency(bankTotal)}</strong>
+          <div style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>
+            100% direct customer handover upon completion
           </div>
         </div>
 
@@ -170,7 +170,7 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
                       {formatCurrency(job.costLKR || 3000)}
                     </div>
                     <div style={{ fontSize: "11.5px", color: "var(--text-secondary)" }}>
-                      Collected via {job.paymentMethod || "Cash on Hand"}
+                      Direct Payment
                     </div>
                   </div>
                 </div>

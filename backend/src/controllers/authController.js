@@ -41,7 +41,7 @@ const register = async (req, res) => {
     return res.status(400).json({ success: false, errors: errors.array() });
   }
 
-  const { name, email, password, role, phone } = req.body;
+  const { name, email, password, role, phone, locality, district } = req.body;
 
   try {
     // Prevent duplicate emails
@@ -67,6 +67,8 @@ const register = async (req, res) => {
       password: hashedPassword,
       role: assignedRole,
       phone: phone || null,
+      locality: locality || (assignedRole === 'service_provider' ? 'Colombo' : 'Colombo Urban'),
+      district: district || 'Colombo',
     });
 
     sendTokenResponse(user, 201, res);

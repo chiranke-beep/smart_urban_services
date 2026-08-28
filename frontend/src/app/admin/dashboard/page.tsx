@@ -50,13 +50,19 @@ export default function AdminDashboardPage() {
   const openHazardsCount = hazards.filter((h) => h.status !== "RESOLVED").length;
 
   const handleApprove = async (appId: string) => {
+    setApplications((prev) =>
+      prev.map((a) => (a.id === appId ? { ...a, status: "APPROVED" } : a))
+    );
     await adminService.updateApplicationStatus(appId, "APPROVED");
-    loadAdminData();
+    await loadAdminData();
   };
 
   const handleReject = async (appId: string, reason?: string) => {
+    setApplications((prev) =>
+      prev.map((a) => (a.id === appId ? { ...a, status: "REJECTED", rejectionReason: reason } : a))
+    );
     await adminService.updateApplicationStatus(appId, "REJECTED", reason);
-    loadAdminData();
+    await loadAdminData();
   };
 
   const handleDispatchHazard = (hazardId: string, crewName: string) => {
@@ -113,16 +119,6 @@ export default function AdminDashboardPage() {
              ═══════════════════════════════════════════════════════════════ */}
           {activeTab === "analytics" && (
             <AdminDistrictAnalytics metrics={metrics} />
-          )}
-
-          {/* ═══════════════════════════════════════════════════════════════
-              TAB 3: CIVIC HAZARDS & EMERGENCY TRIAGE
-             ═══════════════════════════════════════════════════════════════ */}
-          {activeTab === "hazards" && (
-            <CivicHazardMonitor
-              hazards={hazards}
-              onDispatchCrew={handleDispatchHazard}
-            />
           )}
         </main>
       </div>

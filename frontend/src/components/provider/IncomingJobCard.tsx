@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MapPin,
   Clock,
@@ -14,11 +14,14 @@ import {
   ArrowRight,
   Sparkles,
   ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import { JobRequest, Quotation } from "@/types/job";
 import { formatCurrency, formatRelativeTime } from "@/utils/formatters";
 import { CATEGORY_DEFINITIONS } from "@/utils/constants";
 import { useTheme } from "@/components/ThemeProvider";
+import { useAuth } from "@/context/AuthContext";
+import { getAiDistanceAndEta } from "@/utils/geoDistance";
 
 interface IncomingJobCardProps {
   job: JobRequest;
@@ -28,6 +31,7 @@ interface IncomingJobCardProps {
   rejectionReason?: string;
   onSendQuote: (jobId: string, quote: Omit<Quotation, "id" | "workerId" | "workerName" | "avatarBg" | "submittedAt" | "status">) => void;
   onDecline: (jobId: string) => void;
+  onNavigateToActiveJob?: () => void;
 }
 
 export function IncomingJobCard({
@@ -38,13 +42,28 @@ export function IncomingJobCard({
   rejectionReason,
   onSendQuote,
   onDecline,
+  onNavigateToActiveJob,
 }: IncomingJobCardProps) {
+  const { user } = useAuth();
   const [isQuoting, setIsQuoting] = useState(false);
-  const [amount, setAmount] = useState<number>(3500);
+  const aiRecommendedPrice = Number(job.costLKR || 3500);
+  const [amount, setAmount] = useState<number>(aiRecommendedPrice);
   const [rateType, setRateType] = useState<"fixed" | "daily" | "per_unit">("fixed");
   const [notes, setNotes] = useState("");
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // Calculate live accurate AI Haversine distance from worker location
+  const { distanceLabel, etaMinutes } = getAiDistanceAndEta(
+    { lat: job.latitude, lng: job.longitude, locality: job.locality, district: job.district },
+    { lat: user?.savedLat, lng: user?.savedLng, locality: user?.locality, district: user?.district }
+  );
+
+  useEffect(() => {
+    if (job.costLKR) {
+      setAmount(Number(job.costLKR));
+    }
+  }, [job.costLKR]);
 
   const categoryInfo = CATEGORY_DEFINITIONS.find((c) => c.id === job.category) || CATEGORY_DEFINITIONS[1];
   const CategoryIcon = categoryInfo.icon;
@@ -142,7 +161,7 @@ export function IncomingJobCard({
             }}
           >
             <MapPin size={12} color="var(--accent)" />
-            <span>{job.locality} (~2.8 km away)</span>
+            <span>{job.locality} ({distanceLabel} · ~{etaMinutes} min arrival)</span>
           </span>
         </div>
       </div>
@@ -204,14 +223,19 @@ export function IncomingJobCard({
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
             <div>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, marginBottom: "4px" }}>
-                Amount (LKR):
-              </label>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "4px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700 }}>
+                  Amount (LKR):
+                </label>
+                <span style={{ fontSize: "11px", fontWeight: 800, color: "#10b981", display: "flex", alignItems: "center", gap: "3px" }}>
+                  <Sparkles size={12} /> AI Recommended: Rs. {aiRecommendedPrice.toLocaleString()}
+                </span>
+              </div>
               <input
                 type="number"
                 required
-                min={500}
-                step={100}
+                min={100}
+                step="any"
                 value={amount}
                 onChange={(e) => setAmount(Number(e.target.value))}
                 style={{
@@ -314,39 +338,62 @@ export function IncomingJobCard({
           </div>
         </form>
       ) : (
-        !isVerified ? (
+        hasActiveJob ? (
           <div
             style={{
-              padding: "12px 16px",
-              backgroundColor: verificationStatus === "REJECTED" ? "rgba(239, 68, 68, 0.12)" : "rgba(245, 158, 11, 0.12)",
-              border: verificationStatus === "REJECTED" ? "1.5px solid #ef4444" : "1.5px solid #f59e0b",
-              color: verificationStatus === "REJECTED" ? (isDark ? "#fca5a5" : "#b91c1c") : (isDark ? "#fde68a" : "#b45309"),
+              padding: "14px 18px",
+              backgroundColor: isDark ? "rgba(234, 179, 8, 0.12)" : "#fefce8",
+              border: isDark ? "1.5px solid #eab308" : "1.5px solid #facc15",
+              color: isDark ? "#fef08a" : "#854d0e",
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              fontSize: "13px",
-              fontWeight: 700,
+              justifyContent: "space-between",
+              gap: "14px",
+              flexWrap: "wrap",
             }}
           >
-            <ShieldAlert size={20} color={verificationStatus === "REJECTED" ? "#ef4444" : "#f59e0b"} style={{ flexShrink: 0 }} />
-            <div>
-              <div style={{ fontWeight: 800 }}>
-                {verificationStatus === "REJECTED" ? "Account Suspended by Admin" : "Account Pending Admin Verification"}
-              </div>
-              <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px" }}>
-                {verificationStatus === "REJECTED"
-                  ? (rejectionReason ? `Your service provider account has been suspended: ${rejectionReason}. Please contact admin to appeal and restore access.` : "Your service provider account has been suspended by administration. Contact admin to resolve and restore access.")
-                  : "Your National Identity Card (NIC) is currently under review by admin. You will be able to accept job requests once verified."}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <AlertTriangle size={20} color="#eab308" style={{ flexShrink: 0 }} />
+              <div>
+                <div style={{ fontWeight: 800, fontSize: "13px", color: isDark ? "#fef08a" : "#854d0e" }}>
+                  Active Job In Progress (1 Simultaneous Job Limit)
+                </div>
+                <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px", color: isDark ? "#fef9c3" : "#a16207" }}>
+                  You are currently handling an active dispatch. You cannot accept or quote on other jobs until your current task is completed.
+                </div>
               </div>
             </div>
+
+            {onNavigateToActiveJob && (
+              <button
+                type="button"
+                onClick={onNavigateToActiveJob}
+                style={{
+                  padding: "8px 14px",
+                  backgroundColor: "#eab308",
+                  color: "#000000",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "12px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  flexShrink: 0,
+                }}
+              >
+                <span>Go to Active Job</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
           </div>
-        ) : hasActiveJob ? (
+        ) : verificationStatus === "REJECTED" ? (
           <div
             style={{
               padding: "12px 16px",
-              backgroundColor: "rgba(234, 179, 8, 0.12)",
-              border: "1.5px solid #eab308",
-              color: isDark ? "#fde047" : "#b45309",
+              backgroundColor: "rgba(239, 68, 68, 0.12)",
+              border: "1.5px solid #ef4444",
+              color: isDark ? "#fca5a5" : "#b91c1c",
               display: "flex",
               alignItems: "center",
               gap: "10px",
@@ -354,60 +401,77 @@ export function IncomingJobCard({
               fontWeight: 700,
             }}
           >
-            <AlertTriangle size={18} color="#eab308" />
+            <ShieldAlert size={20} color="#ef4444" style={{ flexShrink: 0 }} />
             <div>
-              <div>Active Job In Progress (1 Job Limit)</div>
+              <div style={{ fontWeight: 800 }}>Account Suspended by Admin</div>
               <div style={{ fontSize: "11.5px", fontWeight: 500, opacity: 0.9, marginTop: "2px" }}>
-                You already have an active job in your Active Job tab. Please complete your current task before accepting new requests.
+                {rejectionReason ? `Your service provider account has been suspended: ${rejectionReason}. Please contact admin to appeal and restore access.` : "Your service provider account has been suspended by administration. Contact admin to resolve and restore access."}
               </div>
             </div>
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button
-              onClick={() => setIsQuoting(true)}
-              style={{
-                flex: 1,
-                padding: "12px 18px",
-                borderRadius: "0px",
-                backgroundColor: "#10b981",
-                color: "#ffffff",
-                border: "none",
-                cursor: "pointer",
-                fontWeight: 800,
-                fontSize: "13.5px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                transition: "transform 0.2s ease",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-            >
-              <DollarSign size={16} />
-              <span>Send Quotation & Accept Request</span>
-            </button>
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {!isVerified && (
+              <div
+                style={{
+                  padding: "8px 12px",
+                  backgroundColor: "rgba(245, 158, 11, 0.1)",
+                  border: "1px solid rgba(245, 158, 11, 0.3)",
+                  color: isDark ? "#fde68a" : "#b45309",
+                  fontSize: "12px",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <ShieldCheck size={15} color="#f59e0b" />
+                <span>Verification in Progress — You can preview, quote, and accept local dispatches.</span>
+              </div>
+            )}
 
-            <button
-              onClick={() => onDecline(job.id)}
-              style={{
-                padding: "12px 18px",
-                borderRadius: "0px",
-                backgroundColor: "transparent",
-                border: "1px solid var(--border)",
-                color: "var(--text-secondary)",
-                cursor: "pointer",
-                fontWeight: 700,
-                fontSize: "13px",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-              }}
-            >
-              <X size={15} />
-              <span>Pass / Next</span>
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <button
+                onClick={() => setIsQuoting(true)}
+                style={{
+                  flex: 1,
+                  padding: "12px 18px",
+                  borderRadius: "0px",
+                  backgroundColor: "#10b981",
+                  color: "#ffffff",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 800,
+                  fontSize: "13.5px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  transition: "transform 0.2s ease",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+                onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+              >
+                <DollarSign size={16} />
+                <span>Send Quotation & Accept Request</span>
+              </button>
+
+              <button
+                onClick={() => onDecline(job.id)}
+                style={{
+                  padding: "12px 18px",
+                  borderRadius: "0px",
+                  backgroundColor: "transparent",
+                  border: "1px solid var(--border)",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: "13.5px",
+                }}
+              >
+                Decline
+              </button>
+            </div>
           </div>
         )
       )}

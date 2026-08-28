@@ -11,7 +11,7 @@ const createIncident = async (req, res) => {
   }
 
   try {
-    const { title, description, category, priority, location_text, latitude, longitude } = req.body;
+    const { title, description, category, priority, location_text, latitude, longitude, cost_lkr } = req.body;
 
     // If image was uploaded, build the URL
     const image_url = req.file
@@ -30,6 +30,7 @@ const createIncident = async (req, res) => {
       longitude: longitude || null,
       image_url,
       reported_by,
+      cost_lkr: cost_lkr ? Math.round(Number(cost_lkr)) : 3500,
     });
 
     // Emit real-time event to admins

@@ -62,13 +62,13 @@ const Incident = {
   },
 
   // ── Create a new incident ────────────────────────────────────────────────
-  async create({ title, description, category, priority = 'medium', location_text, latitude, longitude, image_url, reported_by }) {
+  async create({ title, description, category, priority = 'medium', location_text, latitude, longitude, image_url, reported_by, cost_lkr = 3500 }) {
     const { rows } = await pool.query(
       `INSERT INTO incidents
-         (title, description, category, priority, location_text, latitude, longitude, image_url, reported_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+         (title, description, category, priority, location_text, latitude, longitude, image_url, reported_by, cost_lkr)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
-      [title, description, category, priority, location_text, latitude, longitude, image_url, reported_by]
+      [title, description, category, priority, location_text, latitude, longitude, image_url, reported_by, cost_lkr]
     );
     return rows[0];
   },

@@ -29,6 +29,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [currentQuotePrice, setCurrentQuotePrice] = useState<number>(job.quotation?.amountLKR || job.costLKR || 3500);
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
   const { user } = useAuth();
@@ -94,6 +95,45 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
     setInput("");
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append("photo", file);
+
+      const API_HOST = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const res = await fetch(`${API_HOST}/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        const senderRole = user?.role === "PROVIDER" ? "worker" : "user";
+        const senderName = user?.fullName || (senderRole === "user" ? "Homeowner" : "Technician");
+        const msg = chatService.sendMessage(
+          job.id,
+          input.trim() || "Shared a photo",
+          senderRole,
+          senderName,
+          data.url
+        );
+        setMessages((prev) => [...prev, msg]);
+        setInput("");
+      }
+    } catch (err: any) {
+      console.warn("[Upload error]:", err.message);
+    } finally {
+      setIsUploading(false);
+      if (e.target) e.target.value = "";
+    }
+  };
+
   return (
     <div
       style={{
@@ -109,6 +149,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         overflow: "hidden",
+        position: "relative",
       }}
     >
       {/* Chat Header */}
@@ -200,46 +241,15 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ color: "#10b981", fontWeight: 800 }}>
-            🏷️ Price: {formatCurrency(currentQuotePrice)}
-          </span>
-          <span style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
-            {job.stage === "QUOTED"
-              ? "Price sent (Waiting for your approval)"
-              : job.stage === "EN_ROUTE"
-              ? "Accepted · Worker on the way"
-              : job.stage === "IN_PROGRESS"
-              ? "Worker is working"
-              : job.stage === "COMPLETED"
-              ? "Finished & Paid"
-              : "Waiting for worker price"}
+          <ShieldCheck size={16} color="#10b981" />
+          <span style={{ fontWeight: 700, color: isDark ? "#ffffff" : "#0f172a" }}>
+            Agreed Fee: <span style={{ color: "#10b981", fontWeight: 800 }}>{formatCurrency(currentQuotePrice)}</span>
           </span>
         </div>
 
-        {job.stage === "QUOTED" && job.quotation && user?.role !== "PROVIDER" && (
-          <button
-            onClick={() => {
-              jobService.acceptQuote(job.id);
-              socketService.updateStage(job.id, "EN_ROUTE");
-            }}
-            style={{
-              padding: "5px 12px",
-              backgroundColor: "#10b981",
-              color: "#ffffff",
-              border: "none",
-              fontWeight: 800,
-              fontSize: "11.5px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              boxShadow: "0 2px 8px rgba(16,185,129,0.3)",
-            }}
-          >
-            <CheckCircle size={13} />
-            <span>Accept Price & Start</span>
-          </button>
-        )}
+        <div style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+          Direct Payment
+        </div>
       </div>
 
       {/* Chat Messages Scroll Feed */}
@@ -254,7 +264,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         }}
       >
         {messages.map((msg) => {
-          const isUser = msg.sender === "user";
+          const isUser = msg.sender === (user?.role === "PROVIDER" ? "worker" : "user");
           const isSys = msg.sender === "system";
 
           if (isSys) {
@@ -288,7 +298,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
             >
               <div
                 style={{
-                  padding: "10px 14px",
+                  padding: msg.attachmentUrl ? "8px" : "10px 14px",
                   borderRadius: "0px",
                   backgroundColor: isUser
                     ? "var(--accent)"
@@ -302,7 +312,41 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
                   boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
                 }}
               >
-                {msg.text}
+                {msg.attachmentUrl && (
+                  <div
+                    onClick={() => setPreviewPhotoUrl(msg.attachmentUrl || null)}
+                    style={{
+                      cursor: "pointer",
+                      display: "block",
+                      marginBottom: msg.text ? "8px" : "0",
+                      position: "relative",
+                    }}
+                    title="Click to view full photo"
+                  >
+                    <img
+                      src={msg.attachmentUrl}
+                      alt="Shared photo"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "220px",
+                        objectFit: "cover",
+                        display: "block",
+                        borderRadius: "2px",
+                        border: "1px solid rgba(0,0,0,0.1)",
+                        transition: "opacity 0.2s ease, transform 0.2s ease",
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = "0.92";
+                        e.currentTarget.style.transform = "scale(1.01)";
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = "1";
+                        e.currentTarget.style.transform = "scale(1)";
+                      }}
+                    />
+                  </div>
+                )}
+                {msg.text && <div>{msg.text}</div>}
               </div>
               <div
                 style={{
@@ -332,25 +376,38 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
           backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.01)",
         }}
       >
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+
         <button
           type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
           style={{
             background: "none",
             border: "none",
-            color: "var(--text-secondary)",
-            cursor: "pointer",
+            color: isUploading ? "var(--accent)" : "var(--text-secondary)",
+            cursor: isUploading ? "wait" : "pointer",
             padding: "4px",
+            display: "flex",
+            alignItems: "center",
           }}
-          title="Attach Photo"
+          title={isUploading ? "Uploading photo..." : "Attach Photo"}
         >
           <Camera size={18} />
         </button>
 
         <input
           type="text"
-          placeholder="Message worker (e.g., Gate code, location landmark)..."
+          placeholder={isUploading ? "Uploading attached photo..." : "Message (e.g., Gate code, location landmark)..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          disabled={isUploading}
           style={{
             flex: 1,
             backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#ffffff",
@@ -366,6 +423,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
 
         <button
           type="submit"
+          disabled={isUploading}
           style={{
             padding: "10px 18px",
             backgroundColor: "var(--accent)",
@@ -379,10 +437,131 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
             gap: "6px",
           }}
         >
-          <span>Send</span>
+          <span>{isUploading ? "..." : "Send"}</span>
           <Send size={14} />
         </button>
       </form>
+
+      {/* Compact In-App Photo Popup Modal */}
+      {previewPhotoUrl && (
+        <div
+          onClick={() => setPreviewPhotoUrl(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 99999,
+            backgroundColor: "rgba(0, 0, 0, 0.65)",
+            backdropFilter: "blur(6px)",
+            WebkitBackdropFilter: "blur(6px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
+          {/* Centered Compact Card Box */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%",
+              maxWidth: "460px",
+              backgroundColor: isDark ? "#0f172a" : "#ffffff",
+              border: isDark ? "1.5px solid var(--accent)" : "1.5px solid #0891b2",
+              boxShadow: "0 20px 45px -10px rgba(0, 0, 0, 0.6)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              borderRadius: "0px",
+            }}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: "12px 16px",
+                backgroundColor: isDark ? "rgba(255,255,255,0.04)" : "#f8fafc",
+                borderBottom: "1px solid var(--border)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--text-primary)" }}>
+                Shared Photo Attachment
+              </div>
+              <button
+                onClick={() => setPreviewPhotoUrl(null)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "var(--text-secondary)",
+                  cursor: "pointer",
+                  padding: "4px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+                title="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Photo Container */}
+            <div
+              style={{
+                padding: "16px",
+                backgroundColor: isDark ? "#080c14" : "#f1f5f9",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <img
+                src={previewPhotoUrl}
+                alt="Shared photo"
+                style={{
+                  maxWidth: "100%",
+                  maxHeight: "360px",
+                  objectFit: "contain",
+                  display: "block",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                }}
+              />
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                padding: "10px 16px",
+                borderTop: "1px solid var(--border)",
+                backgroundColor: isDark ? "rgba(255,255,255,0.02)" : "#ffffff",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                onClick={() => setPreviewPhotoUrl(null)}
+                style={{
+                  padding: "8px 18px",
+                  backgroundColor: "var(--accent)",
+                  color: "var(--accent-text)",
+                  border: "none",
+                  fontWeight: 800,
+                  fontSize: "12.5px",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}
+              >
+                <X size={15} />
+                <span>Close</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -48,29 +48,26 @@ export const jobService = {
 
         const mapped: JobRequest[] = res.data.map((inc: any) => {
           const jobId = `JOB-${inc.id}`;
-          const localJob = localById[jobId];
 
           const dbStage = (inc.stage as JobRequest["stage"]) || stageMap[inc.status] || "REQUESTED";
           const finalStage: JobRequest["stage"] = (() => {
             if (inc.status === "resolved") return "COMPLETED";
             if (inc.status === "rejected") return "CANCELLED";
-            if (inc.stage && inc.stage !== "REQUESTED") return inc.stage as JobRequest["stage"];
-            if (localJob?.stage && localJob.stage !== "REQUESTED") return localJob.stage;
+            if (inc.stage) return inc.stage as JobRequest["stage"];
             return dbStage;
           })();
 
-          const dbCost = inc.cost_lkr ? Number(inc.cost_lkr) : undefined;
-          const finalCost = (localJob?.quotation?.amountLKR && finalStage === "QUOTED") ? localJob.quotation.amountLKR : (dbCost || localJob?.costLKR || 3500);
-          const hasQuote = finalStage !== "REQUESTED" && Boolean(dbCost || localJob?.quotation || inc.quotation_notes || finalStage === "QUOTED");
+          const dbCost = inc.cost_lkr ? Number(inc.cost_lkr) : 3500;
+          const hasQuote = finalStage !== "REQUESTED" && Boolean(inc.assigned_to || inc.quotation_notes || finalStage === "QUOTED");
           const finalQuotation = hasQuote
             ? {
-                id: localJob?.quotation?.id || `Q-${inc.id}`,
-                workerId: inc.assigned_to ? `W-${inc.assigned_to}` : (localJob?.quotation?.workerId || "w-1"),
-                workerName: inc.assignee_name || localJob?.quotation?.workerName || "Verified Technician",
+                id: `Q-${inc.id}`,
+                workerId: inc.assigned_to ? `W-${inc.assigned_to}` : "w-1",
+                workerName: inc.assignee_name || "Verified Technician",
                 avatarBg: "#10b981",
-                amountLKR: finalCost,
+                amountLKR: dbCost,
                 rateType: "fixed" as const,
-                notes: inc.quotation_notes || localJob?.quotation?.notes || "Official Specialist Quotation",
+                notes: inc.quotation_notes || "Official Specialist Quotation",
                 submittedAt: inc.updated_at || new Date().toISOString(),
                 status: (finalStage === "EN_ROUTE" || finalStage === "IN_PROGRESS" || finalStage === "COMPLETED") ? ("accepted" as const) : ("pending" as const),
               }
@@ -81,17 +78,17 @@ export const jobService = {
             title: inc.title,
             category: (categoryReverseMap[inc.category] || inc.category || "odd_jobs") as any,
             description: inc.description,
-            locality: inc.location_text?.split(",")?.[0]?.trim() || "Heerassagala",
-            district: inc.location_text?.split(",")?.[1]?.trim() || "Kandy",
+            locality: inc.location_text?.split(",")?.[0]?.trim() || "Colombo",
+            district: inc.location_text?.split(",")?.[1]?.trim() || "Colombo",
             urgency: inc.priority === "critical" ? "emergency" : inc.priority === "high" ? "today" : "flexible",
             createdAt: inc.created_at || new Date().toISOString(),
             stage: finalStage,
             stageUpdatedAt: inc.updated_at || inc.created_at || new Date().toISOString(),
-            costLKR: hasQuote ? finalCost : undefined,
+            costLKR: dbCost,
             paymentMethod: "Cash on Hand",
-            // Map real GPS coordinates from DB (if saved during job creation)
-            latitude: inc.latitude ? Number(inc.latitude) : (localJob?.latitude || 7.264242),
-            longitude: inc.longitude ? Number(inc.longitude) : (localJob?.longitude || 80.621701),
+            // Map real GPS coordinates from DB
+            latitude: inc.latitude ? Number(inc.latitude) : 6.9271,
+            longitude: inc.longitude ? Number(inc.longitude) : 79.8612,
             quotation: finalQuotation,
             assignedWorker: (finalStage !== "REQUESTED" && inc.assignee_name)
               ? {
@@ -104,9 +101,9 @@ export const jobService = {
                   avatarBg: "#10b981",
                   verified: true,
                 }
-              : (finalStage !== "REQUESTED" ? localJob?.assignedWorker : undefined),
-            ratingGiven: inc.rating || localJob?.ratingGiven,
-            reviewGiven: inc.review_comment || localJob?.reviewGiven,
+              : undefined,
+            ratingGiven: inc.rating,
+            reviewGiven: inc.review_comment,
           };
         });
 
@@ -126,7 +123,7 @@ export const jobService = {
     let generatedId = `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
     
     try {
-      const res = await apiClient<{ success: boolean; data?: { id: number } }>("/incidents", {
+      const res = await apiClient<{ success: boolean; data?: { id: number; cost_lkr?: number } }>("/incidents", {
         method: "POST",
         body: JSON.stringify({
           title: jobData.title,
@@ -136,6 +133,7 @@ export const jobService = {
           location_text: `${jobData.locality}, ${jobData.district}`,
           latitude: jobData.latitude,
           longitude: jobData.longitude,
+          cost_lkr: jobData.costLKR ? Math.round(jobData.costLKR) : 3500,
         }),
       });
 
@@ -167,15 +165,17 @@ export const jobService = {
     return newJob;
   },
 
-  acceptJob(jobId: string, provider: UserProfile, quoteLKR: number = 3500): JobRequest | null {
+  acceptJob(jobId: string, provider: UserProfile, quoteLKR?: number): JobRequest | null {
     const jobs = this.getJobs();
     const job = jobs.find((j) => j.id === jobId);
     if (!job) return null;
 
+    const actualQuote = quoteLKR || provider.dailyRate || job.costLKR || 2800;
+
     // SP accepts and quotes → set QUOTED so citizen must accept the price before dispatch
     job.stage = "QUOTED";
     job.stageUpdatedAt = new Date().toISOString();
-    job.costLKR = quoteLKR;
+    job.costLKR = actualQuote;
     job.assignedWorker = {
       id: provider.id,
       name: provider.fullName,
@@ -185,15 +185,15 @@ export const jobService = {
       phone: provider.phone,
       avatarBg: "#10b981",
       verified: true,
-      vehicleType: provider.vehicleType || "Service Vehicle",
-      plateNumber: provider.plateNumber || "WP-ABX-8821",
+      vehicleType: provider.vehicleType || "Standard Work Toolset",
+      plateNumber: provider.plateNumber || "",
     };
     job.quotation = {
       id: `Q-${Date.now().toString().slice(-4)}`,
       workerId: provider.id,
       workerName: provider.fullName,
       avatarBg: "#10b981",
-      amountLKR: quoteLKR,
+      amountLKR: actualQuote,
       rateType: "fixed",
       notes: "Specialist quoted price. Awaiting citizen confirmation.",
       submittedAt: new Date().toISOString(),
@@ -407,7 +407,13 @@ export const jobService = {
     return job;
   },
 
-  submitReview(jobId: string, rating: number, review: string): JobRequest | null {
+  submitReview(
+    jobId: string,
+    rating: number,
+    review: string,
+    reviewerId?: string | number,
+    workerId?: string | number
+  ): JobRequest | null {
     const jobs = this.getJobs();
     const job = jobs.find((j) => j.id === jobId);
     if (!job) return null;
@@ -419,14 +425,18 @@ export const jobService = {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
     }
 
+    const rawReviewerId = reviewerId ? Number(String(reviewerId).replace(/\D/g, "")) : null;
+    const rawWorkerId = workerId ? Number(String(workerId).replace(/\D/g, "")) : (job.assignedWorker?.id ? Number(String(job.assignedWorker.id).replace(/\D/g, "")) : null);
+
     // Persist review to PostgreSQL database
-    const rawId = jobId.replace("JOB-", "");
     apiClient("/reviews", {
       method: "POST",
       body: JSON.stringify({
         jobId,
         rating,
         comment: review,
+        reviewerId: rawReviewerId,
+        workerId: rawWorkerId,
       }),
     }).catch((err) => console.warn("[Review DB sync notice]:", err.message));
 

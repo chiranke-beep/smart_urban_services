@@ -67,7 +67,7 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
             Payment & Job History ({completedJobs.length})
           </h3>
           <p style={{ fontSize: "12.5px", color: "var(--text-secondary)", margin: 0 }}>
-            Direct settlements paid upon job completion (Cash on Hand & Bank Transfer)
+            Direct settlements paid upon job completion
           </p>
         </div>
 
@@ -182,15 +182,15 @@ export function JobHistoryTable({ jobs, onSubmitReview }: JobHistoryTableProps) 
                         alignItems: "center",
                         gap: "6px",
                         padding: "6px 12px",
-                        backgroundColor: isCash ? "rgba(16,185,129,0.12)" : "rgba(66,214,255,0.12)",
-                        color: isCash ? "#10b981" : "var(--accent)",
+                        backgroundColor: "rgba(16,185,129,0.12)",
+                        color: "#10b981",
                         fontSize: "12px",
                         fontWeight: 700,
                         border: "1px solid var(--border)",
                       }}
                     >
-                      {isCash ? <Banknote size={14} /> : <Landmark size={14} />}
-                      <span>{job.paymentMethod || "Cash on Hand"}</span>
+                      <Banknote size={14} />
+                      <span>Direct Payment</span>
                     </div>
                   </div>
                 </div>
