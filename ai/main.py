@@ -178,40 +178,96 @@ def extract_cv_features(img: Image.Image) -> List[float]:
     return [exg, gray, neutrality, dark_cavity, edge_density, blue_water]
 
 
-def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
+def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
     """
-    Online Cloud AI Vision API 1: Hugging Face Vision Transformer (ViT / ResNet).
-    Queries real-time zero-shot / ImageNet cloud computer vision model.
+    Online Google AI Vision API (Google Gemini 1.5 Flash Vision / Cloud Vision).
+    Performs real-time zero-shot visual reasoning on any domestic or civic image.
     """
+    import json
     import requests
     
-    # 1. Primary Online Vision API: Google Vision Transformer
+    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_VISION_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
+    if not api_key:
+        return None
+
+    b64_image = base64.b64encode(image_bytes).decode("utf-8")
+    
+    # 1. Google Gemini 1.5 Flash Vision API
+    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    prompt = (
+        "Analyze this service or repair image. "
+        "Choose EXACTLY ONE category from: 'pc_repair', 'yard_cleaning', 'potholes', 'wall_cracks', 'water_leaks', 'fallen_trees', 'house_cleaning'. "
+        "Return ONLY a raw JSON object with keys: category (string), confidence (number between 85 and 99), title (string)."
+    )
+    
+    payload = {
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {
+                    "inline_data": {
+                        "mime_type": "image/jpeg",
+                        "data": b64_image
+                    }
+                }
+            ]
+        }],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "temperature": 0.1
+        }
+    }
+    
+    try:
+        res = requests.post(gemini_url, json=payload, timeout=5.0)
+        if res.status_code == 200:
+            data = res.json()
+            raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
+            parsed = json.loads(raw_text)
+            cat = parsed.get("category", "").lower().replace("-", "_").strip()
+            if cat in HAZARD_METADATA:
+                return {
+                    "category": cat,
+                    "confidence": float(parsed.get("confidence", 94.0)),
+                    "title": parsed.get("title", HAZARD_METADATA[cat]["title"]),
+                    "source": "Google Gemini 1.5 Flash Vision AI"
+                }
+    except Exception as e:
+        print(f"Google Gemini Vision API Exception: {e}")
+
+    return None
+
+
+def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
+    """
+    Multi-Provider Online Vision API (Google Gemini 1.5 Flash + HuggingFace Vision ViT).
+    """
+    # 1. Google Gemini Vision API
+    google_res = query_google_vision_api(image_bytes)
+    if google_res:
+        return google_res
+
+    # 2. Hugging Face Vision Transformer
+    import requests
     API_URL_1 = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
     try:
-        response = requests.post(API_URL_1, data=image_bytes, timeout=4.0)
+        response = requests.post(API_URL_1, data=image_bytes, timeout=3.5)
         if response.status_code == 200:
             results = response.json()
             if isinstance(results, list) and len(results) > 0:
                 top_item = results[0]
                 label = str(top_item.get("label", "")).lower()
                 score = float(top_item.get("score", 0.85))
-                return {"label": label, "score": score, "source": "Cloud Vision ViT API"}
+                mapped_cat, mapped_conf = map_online_label_to_service(label, score)
+                if mapped_cat:
+                    return {
+                        "category": mapped_cat,
+                        "confidence": mapped_conf,
+                        "label": label,
+                        "source": "Google Vision Transformer (ViT)"
+                    }
     except Exception as e:
-        print(f"Vision API 1 timeout/error: {e}")
-
-    # 2. Secondary Online Vision API: ResNet-50 Classifier
-    API_URL_2 = "https://api-inference.huggingface.co/models/microsoft/resnet-50"
-    try:
-        response = requests.post(API_URL_2, data=image_bytes, timeout=4.0)
-        if response.status_code == 200:
-            results = response.json()
-            if isinstance(results, list) and len(results) > 0:
-                top_item = results[0]
-                label = str(top_item.get("label", "")).lower()
-                score = float(top_item.get("score", 0.85))
-                return {"label": label, "score": score, "source": "Cloud ResNet API"}
-    except Exception as e:
-        print(f"Vision API 2 timeout/error: {e}")
+        print(f"Vision ViT timeout/error: {e}")
 
     return None
 
