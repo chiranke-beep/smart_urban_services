@@ -61,4 +61,13 @@ export async function apiClient<T>(
   }
 }
 
+export function getMediaUrl(url?: string | null): string {
+  if (!url) return '';
+  if (url.startsWith('data:') || url.startsWith('http://') || url.startsWith('https://')) {
+    return url;
+  }
+  return url;
+}
+
 export { API_BASE };
+

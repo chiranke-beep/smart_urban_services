@@ -1,5 +1,46 @@
-﻿const { validationResult } = require('express-validator');
+const fs = require('fs');
+const path = require('path');
+const { validationResult } = require('express-validator');
 const Incident = require('../models/Incident');
+
+const uploadsDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+function saveImageToDisk(fileOrBase64, prefix = 'incident') {
+  if (!fileOrBase64) return null;
+  if (fileOrBase64.buffer) {
+    const ext = path.extname(fileOrBase64.originalname) || (fileOrBase64.mimetype?.includes('png') ? '.png' : '.jpg');
+    const filename = `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    fs.writeFileSync(path.join(uploadsDir, filename), fileOrBase64.buffer);
+    return `/uploads/${filename}`;
+  }
+  if (typeof fileOrBase64 === 'string') {
+    if (!fileOrBase64.startsWith('data:image/')) return fileOrBase64;
+    try {
+      const matches = fileOrBase64.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+      let ext = '.jpg';
+      let base64Content = fileOrBase64;
+      if (matches && matches.length === 3) {
+        const sub = matches[1].toLowerCase();
+        if (sub.includes('png')) ext = '.png';
+        else if (sub.includes('webp')) ext = '.webp';
+        else if (sub.includes('gif')) ext = '.gif';
+        base64Content = matches[2];
+      } else {
+        base64Content = fileOrBase64.split(',').pop();
+      }
+      const filename = `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      fs.writeFileSync(path.join(uploadsDir, filename), Buffer.from(base64Content, 'base64'));
+      return `/uploads/${filename}`;
+    } catch (e) {
+      console.warn('Failed saving base64 incident image:', e.message);
+      return fileOrBase64;
+    }
+  }
+  return null;
+}
 
 // @desc    Create a new incident report
 // @route   POST /api/incidents
@@ -13,10 +54,12 @@ const createIncident = async (req, res) => {
   try {
     const { title, description, category, priority, location_text, latitude, longitude, cost_lkr } = req.body;
 
-    // If image was uploaded as multipart file, convert to Base64 Data URL, else use JSON body image_url
-    const image_url = req.file
-      ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
-      : (req.body.image_url || null);
+    let image_url = null;
+    if (req.file) {
+      image_url = saveImageToDisk(req.file, 'incident');
+    } else if (req.body.image_url) {
+      image_url = saveImageToDisk(req.body.image_url, 'incident');
+    }
 
     const reported_by = req.user ? req.user.id : 1;
 
@@ -135,9 +178,12 @@ const updateIncident = async (req, res) => {
       });
     }
 
-    const image_url = req.file
-      ? `/uploads/incidents/${req.file.filename}`
-      : undefined;
+    let image_url = undefined;
+    if (req.file) {
+      image_url = saveImageToDisk(req.file, 'incident');
+    } else if (req.body.image_url) {
+      image_url = saveImageToDisk(req.body.image_url, 'incident');
+    }
 
     const updated = await Incident.update(req.params.id, { ...req.body, image_url });
     res.status(200).json({ success: true, data: updated });

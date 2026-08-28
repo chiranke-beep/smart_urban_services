@@ -30,6 +30,16 @@ const nextConfig = {
       },
     ];
   },
+
+  async rewrites() {
+    const backendHost = process.env.INTERNAL_BACKEND_URL || (process.env.NODE_ENV === 'production' ? 'http://backend:5000' : 'http://localhost:5000');
+    return [
+      {
+        source: '/uploads/:path*',
+        destination: `${backendHost}/uploads/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;

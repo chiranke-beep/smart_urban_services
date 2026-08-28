@@ -1,5 +1,6 @@
 require('dotenv').config();
 const path = require('path');
+const fs = require('fs');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -11,6 +12,42 @@ const pool = require('./src/config/database');
 const User = require('./src/models/User');
 const Incident = require('./src/models/Incident');
 const Notification = require('./src/models/Notification');
+
+// Uploads directory for persistent static file storage
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Helper: Save Base64 image data URL to disk as a real file and return static URL path
+function saveBase64Image(dataString, prefix = 'upload') {
+  if (!dataString || typeof dataString !== 'string') return null;
+  if (!dataString.startsWith('data:image/')) return dataString; // already a URL
+
+  try {
+    const matches = dataString.match(/^data:image\/([a-zA-Z0-9+.-]+);base64,(.+)$/);
+    let ext = '.jpg';
+    let base64Content = dataString;
+
+    if (matches && matches.length === 3) {
+      const sub = matches[1].toLowerCase();
+      if (sub.includes('png')) ext = '.png';
+      else if (sub.includes('webp')) ext = '.webp';
+      else if (sub.includes('gif')) ext = '.gif';
+      base64Content = matches[2];
+    } else {
+      base64Content = dataString.split(',').pop();
+    }
+
+    const filename = `${prefix}-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+    const filePath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filePath, Buffer.from(base64Content, 'base64'));
+    return `/uploads/${filename}`;
+  } catch (err) {
+    console.warn('Failed to save base64 image to disk:', err.message);
+    return dataString;
+  }
+}
 
 // Routes
 const authRoutes = require('./src/routes/auth');
@@ -124,6 +161,11 @@ app.use(helmet({
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+// Serve static uploaded media files
+app.use('/uploads', express.static(uploadsDir));
+app.use('/api/uploads', express.static(uploadsDir));
+
 if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
@@ -182,7 +224,9 @@ app.patch('/api/users/profile/:id', async (req, res) => {
 
     if (profilePicture !== undefined) {
       shouldUpdatePhoto = true;
-      finalProfilePic = profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '' ? profilePicture.trim() : null;
+      finalProfilePic = profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== ''
+        ? saveBase64Image(profilePicture.trim(), 'avatar')
+        : null;
     }
 
     await pool.query(`
@@ -206,7 +250,9 @@ app.patch('/api/users/profile/:id', async (req, res) => {
       language || null, locality || null, district || null, rawId, shouldUpdatePhoto
     ]);
 
-    let finalNicDoc = nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.trim() !== '' ? nicDocumentUrl.trim() : null;
+    let finalNicDoc = nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.trim() !== ''
+      ? saveBase64Image(nicDocumentUrl.trim(), 'nic')
+      : null;
 
     if (trade || dailyRate || hourlyRate || nicNumber || finalNicDoc) {
       await pool.query(`
@@ -755,16 +801,19 @@ app.use('/api/analytics', analyticsRoutes);
 
 
 
-// Photo Upload API (returns Base64 Data URL directly from in-memory buffer)
+// Photo Upload API (saves file to disk and returns static URL)
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   try {
     if (req.file) {
-      const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-      return res.json({ success: true, url: dataUrl });
+      const ext = path.extname(req.file.originalname) || (req.file.mimetype.includes('png') ? '.png' : '.jpg');
+      const filename = `photo-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
+      fs.writeFileSync(path.join(uploadsDir, filename), req.file.buffer);
+      return res.json({ success: true, url: `/uploads/${filename}` });
     }
 
     if (req.body?.imageBase64) {
-      return res.json({ success: true, url: req.body.imageBase64 });
+      const savedUrl = saveBase64Image(req.body.imageBase64, 'photo');
+      return res.json({ success: true, url: savedUrl });
     }
 
     return res.status(400).json({ success: false, message: 'No file or valid base64 provided.' });
