@@ -151,6 +151,25 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// ── API Route Mounts ───────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // fallback alias
+
+app.use('/api/users', usersRoutes);
+app.use('/users', usersRoutes);
+
+app.use('/api/incidents', incidentsRoutes);
+app.use('/incidents', incidentsRoutes);
+
+app.use('/api/notifications', notificationsRoutes);
+app.use('/notifications', notificationsRoutes);
+
+app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
+app.use('/api/analytics', analyticsRoutes);
+app.use('/analytics', analyticsRoutes);
+
 // User Profile Retrieval API (Public/Direct by user ID)
 app.get('/api/users/profile/:id', async (req, res) => {
   try {
