@@ -55,7 +55,8 @@ export function WorkerVerificationQueue({
   useEffect(() => {
     if (selectedApp?.nicNumber) {
       setIsValidatingNic(true);
-      fetch("http://localhost:8000/api/ai/verify-nic", {
+      const aiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000";
+      fetch(`${aiBase}/api/ai/verify-nic`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nic_number: selectedApp.nicNumber }),

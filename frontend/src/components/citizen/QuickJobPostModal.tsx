@@ -111,7 +111,8 @@ export function QuickJobPostModal({
           flexible: "MEDIUM",
         };
 
-        const res = await fetch("http://localhost:8000/api/ai/estimate-cost", {
+        const aiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000";
+        const res = await fetch(`${aiBase}/api/ai/predict-cost`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -161,7 +162,7 @@ export function QuickJobPostModal({
       fetchAICostEstimate();
       fetchGeoDispatchMatch();
     }
-  }, [isOpen, selectedCategory, district, urgency, gpsCoords.lat, gpsCoords.lng]);
+  }, [isOpen, selectedCategory, district, urgency, gpsCoords]);
 
   if (!isOpen) return null;
 
@@ -178,7 +179,8 @@ export function QuickJobPostModal({
       setAiResult(null);
 
       try {
-        const res = await fetch("http://localhost:8000/api/ai/vision-scan", {
+        const aiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000";
+        const res = await fetch(`${aiBase}/api/ai/vision-scan`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
