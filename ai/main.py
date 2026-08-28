@@ -212,11 +212,11 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
         }]
     }
 
-    # Both AIzaSy... and AQ.Ab8... auth keys work the same way:
-    # Pass as x-goog-api-key header AND as ?key= URL param for maximum compatibility
-    gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    # AQ.Ab8... auth keys require Authorization: Bearer (not x-goog-api-key)
+    # Use no ?key= param - just pass as Bearer token
+    gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     headers = {
-        "x-goog-api-key": api_key,
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
 
@@ -246,36 +246,10 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
 
 def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
     """
-    Multi-Provider Online Vision API (Google Gemini 1.5 Flash + HuggingFace Vision ViT).
+    Online Vision API router — Google Gemini 1.5 Flash Vision.
+    HuggingFace removed: EC2 Docker containers cannot resolve external DNS.
     """
-    # 1. Google Gemini Vision API
-    google_res = query_google_vision_api(image_bytes)
-    if google_res:
-        return google_res
-
-    # 2. Hugging Face Vision Transformer
-    import requests
-    API_URL_1 = "https://api-inference.huggingface.co/models/google/vit-base-patch16-224"
-    try:
-        response = requests.post(API_URL_1, data=image_bytes, timeout=3.5)
-        if response.status_code == 200:
-            results = response.json()
-            if isinstance(results, list) and len(results) > 0:
-                top_item = results[0]
-                label = str(top_item.get("label", "")).lower()
-                score = float(top_item.get("score", 0.85))
-                mapped_cat, mapped_conf = map_online_label_to_service(label, score)
-                if mapped_cat:
-                    return {
-                        "category": mapped_cat,
-                        "confidence": mapped_conf,
-                        "label": label,
-                        "source": "Google Vision Transformer (ViT)"
-                    }
-    except Exception as e:
-        print(f"Vision ViT timeout/error: {e}")
-
-    return None
+    return query_google_vision_api(image_bytes)
 
 
 def map_online_label_to_service(label: str, score: float) -> (str, float):
