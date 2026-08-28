@@ -6,4 +6,11 @@ __pycache__
 .git
 .gitignore
 eda/
+data/
+data/**
+raw/
+processed/
 *.ipynb
+*.csv
+*.zip
+*.tar.gz

@@ -1,0 +1,28 @@
+# Root .dockerignore
+.git
+.github
+node_modules
+.env
+.env.*
+*.log
+*.md
+
+# Exclude all dataset and raw data folders
+**/data/**
+**/raw/**
+**/processed/**
+**/datasets/**
+**/dataset/**
+*.csv
+*.tsv
+*.parquet
+*.h5
+*.hdf5
+*.zip
+*.tar.gz
+
+# Python & AI
+**/.venv/**
+**/__pycache__/**
+**/eda/**
+**/*.ipynb
