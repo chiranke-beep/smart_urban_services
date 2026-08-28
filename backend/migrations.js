@@ -1,9 +1,5 @@
-const { Pool } = require('pg');
-require('dotenv').config();
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:chiran123@localhost:5432/smart_urban_services',
-});
+const pool = require('./src/config/database');
+const bcrypt = require('bcryptjs');
 
 async function runMigrations() {
   try {
@@ -44,23 +40,50 @@ async function runMigrations() {
       ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS nic_document_url TEXT;
     `);
 
-    // 2. Ensure admin user exists with proper password
-    const bcrypt = require('bcryptjs');
-    const hashedPassword = await bcrypt.hash('Admin@123', 10);
+    // 3. Ensure admin user exists with proper password
+    const adminPassword = await bcrypt.hash('Admin@123', 10);
     await pool.query(`
       INSERT INTO users (name, email, password, role, is_active)
       VALUES ('System Admin', 'admin@smarturban.lk', $1, 'admin', true)
       ON CONFLICT (email) DO UPDATE SET password = $1, role = 'admin';
-    `, [hashedPassword]);
-    console.log('✅ Admin user verified with password Admin@123');
+    `, [adminPassword]);
+    console.log('✅ Admin user verified: admin@smarturban.lk / Admin@123');
 
-    await pool.end();
-    console.log('All migrations executed successfully!');
+    // 4. Ensure demo citizen user exists
+    const citizenPassword = await bcrypt.hash('Citizen@123', 10);
+    await pool.query(`
+      INSERT INTO users (name, email, password, role, is_active, phone, locality, district)
+      VALUES ('Chiran Weerasekara', 'chiran@gmail.com', $1, 'citizen', true, '0771234567', 'Heerassagala', 'Kandy')
+      ON CONFLICT (email) DO UPDATE SET password = $1, role = 'citizen';
+    `, [citizenPassword]);
+    console.log('✅ Citizen user verified: chiran@gmail.com / Citizen@123');
+
+    // 5. Ensure demo provider exists
+    const providerPassword = await bcrypt.hash('Provider@123', 10);
+    const providerResult = await pool.query(`
+      INSERT INTO users (name, email, password, role, is_active, phone, locality, district)
+      VALUES ('Kasun Perera', 'kasun@worker.lk', $1, 'service_provider', true, '0719876543', 'Kandy Central', 'Kandy')
+      ON CONFLICT (email) DO UPDATE SET password = $1, role = 'service_provider'
+      RETURNING id;
+    `, [providerPassword]);
+
+    if (providerResult.rows[0]) {
+      await pool.query(`
+        INSERT INTO provider_profiles (user_id, trade, daily_rate, hourly_rate, experience_years, verified, rating, review_count)
+        VALUES ($1, 'Tree Cutting & Landscaping', 4500, 750, 8, true, 4.9, 24)
+        ON CONFLICT (user_id) DO NOTHING;
+      `, [providerResult.rows[0].id]);
+    }
+    console.log('✅ Provider user verified: kasun@worker.lk / Provider@123');
+
+    console.log('All migrations and seeds executed successfully!');
   } catch (err) {
     console.error('Migration error:', err.message);
-    await pool.end();
-    process.exit(1);
   }
 }
 
-runMigrations();
+if (require.main === module) {
+  runMigrations().then(() => pool.end());
+}
+
+module.exports = runMigrations;

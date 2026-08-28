@@ -151,25 +151,6 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// ── API Route Mounts ───────────────────────────────────────────
-app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes); // fallback alias
-
-app.use('/api/users', usersRoutes);
-app.use('/users', usersRoutes);
-
-app.use('/api/incidents', incidentsRoutes);
-app.use('/incidents', incidentsRoutes);
-
-app.use('/api/notifications', notificationsRoutes);
-app.use('/notifications', notificationsRoutes);
-
-app.use('/api/admin', adminRoutes);
-app.use('/admin', adminRoutes);
-
-app.use('/api/analytics', analyticsRoutes);
-app.use('/analytics', analyticsRoutes);
-
 // User Profile Retrieval API (Public/Direct by user ID)
 app.get('/api/users/profile/:id', async (req, res) => {
   try {
@@ -663,9 +644,9 @@ app.post('/api/ai/geo-dispatch', async (req, res) => {
       const a =
         Math.sin(dlat / 2) * Math.sin(dlat / 2) +
         Math.cos(incident_lat * (Math.PI / 180)) *
-          Math.cos(p.lat * (Math.PI / 180)) *
-          Math.sin(dlng / 2) *
-          Math.sin(dlng / 2);
+        Math.cos(p.lat * (Math.PI / 180)) *
+        Math.sin(dlng / 2) *
+        Math.sin(dlng / 2);
       const dist_km = Number((R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(2));
 
       if (dist_km <= max_radius_km) {
@@ -1226,13 +1207,16 @@ const startServer = async () => {
     client.release();
     console.log(`Database connected: ${process.env.DB_NAME}`);
 
-    // Run table migrations
+    // Run table migrations & seed default roles
     await User.createTable();
     console.log('Users table ready');
     await Incident.createTable();
     console.log('Incidents table ready');
     await Notification.createTable();
     console.log('Notifications table ready');
+
+    const runMigrations = require('./migrations');
+    await runMigrations();
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS messages (
