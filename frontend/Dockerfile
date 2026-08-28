@@ -23,13 +23,13 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+# Create directories
+RUN mkdir -p public
+
 # Copy built output from builder
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-
-# Copy the Tesseract trained data if needed
-COPY --from=builder /app/eng.traineddata ./eng.traineddata
 
 EXPOSE 3000
 
