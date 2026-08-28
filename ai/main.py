@@ -211,14 +211,17 @@ def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
                     }
                 }
             ]
-        }],
+        }]
+    }
+    
     headers = {
         "x-goog-api-key": api_key,
+        "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json"
     }
     
     try:
-        res = requests.post(gemini_url, json=payload, headers=headers, timeout=6.0)
+        res = requests.post(gemini_url, json=payload, headers=headers, timeout=5.0)
         if res.status_code == 200:
             data = res.json()
             raw_text = data["candidates"][0]["content"]["parts"][0]["text"]
