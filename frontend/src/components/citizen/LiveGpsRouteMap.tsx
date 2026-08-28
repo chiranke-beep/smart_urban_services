@@ -87,7 +87,7 @@ export function LiveGpsRouteMap({
       const distDirect = calculateDistanceKm(actualStart[0], actualStart[1], end[0], end[1]);
       if (distDirect < 0.05 && stage === "EN_ROUTE") {
         // If testing on same device, keep worker starting at dispatch depot ~2.5km away
-        actualStart = defaultCoords.worker;
+        actualStart = [end[0] + 0.015, end[1] + 0.012];
       } else if (distDirect < 0.05) {
         setCurrentDistanceKm(0.01);
         setCurrentEta(0);
