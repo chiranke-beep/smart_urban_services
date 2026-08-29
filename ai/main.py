@@ -178,66 +178,63 @@ def extract_cv_features(img: Image.Image) -> List[float]:
     return [exg, gray, neutrality, dark_cavity, edge_density, blue_water]
 
 
-def query_google_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
+def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
     """
-    Google Gemini 1.5 Flash Vision via google-genai SDK (v1.x).
-    Supports the new AQ. auth key format from Google AI Studio.
+    Smart pixel-level color analysis for domestic categories.
+    Detects yard/garden (green/autumn colors) and electronics (circuit board patterns).
+    No API key required — works 100% offline.
     """
-    api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY") or ""
-    if not api_key:
-        return None
+    img_res = img.convert("RGB").resize((128, 128))
+    arr = np.array(img_res, dtype=np.float32) / 255.0
+    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    gray = 0.299 * r + 0.587 * g + 0.114 * b
 
-    try:
-        from google import genai
-        from google.genai import types
+    # --- Yard / Garden / Leaf Detection ---
+    # Fresh green: grass, leaves, plants
+    green_mask = (g > r + 0.04) & (g > b + 0.03) & (g > 0.22)
+    green_ratio = float(np.mean(green_mask))
 
-        client = genai.Client(api_key=api_key)
+    # Autumn/dry leaves: orange-brown (raked leaf piles)
+    autumn_mask = (r > 0.45) & (r > g * 1.15) & (r > b * 1.4) & (g > 0.25) & (b < 0.35)
+    autumn_ratio = float(np.mean(autumn_mask))
 
-        prompt = (
-            "Analyze this service or repair image. "
-            "Choose EXACTLY ONE category from: pc_repair, yard_cleaning, potholes, wall_cracks, water_leaks, fallen_trees, house_cleaning. "
-            "Return ONLY a JSON object with keys: category (string), confidence (integer 85-99), title (string). "
-            "No markdown, no explanation — just the raw JSON."
-        )
+    # --- Electronics / PC / Circuit Board Detection ---
+    # PCBs: high color variance with green tones on dark background
+    color_variance = float(np.std(arr, axis=2).mean())
+    circuit_green = (g > 0.28) & (g > r * 1.08) & (g < 0.78) & (gray < 0.62)
+    circuit_ratio = float(np.mean(circuit_green))
 
-        import PIL.Image
-        import io as _io
-        pil_img = PIL.Image.open(_io.BytesIO(image_bytes)).convert("RGB")
-        pil_img.thumbnail((512, 512))
+    # Metallic/silver chip components on circuit boards
+    metallic = (gray > 0.55) & (np.std(arr, axis=2) < 0.08)
+    metallic_ratio = float(np.mean(metallic))
 
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=[prompt, pil_img]
-        )
+    print(f"Color analysis — green:{green_ratio:.2f} autumn:{autumn_ratio:.2f} circuit:{circuit_ratio:.2f} variance:{color_variance:.3f}")
 
-        raw = response.text.strip().strip("```json").strip("```").strip()
-        import json as _json
-        parsed = _json.loads(raw)
-        cat = parsed.get("category", "").lower().replace("-", "_").strip()
-        print(f"Gemini Vision result: {cat} ({parsed.get('confidence')}%)")
+    # --- Decision Logic ---
+    # Yard/Garden: strong green OR autumn brown tones
+    if green_ratio > 0.18 or autumn_ratio > 0.12:
+        conf = min(88 + green_ratio * 40 + autumn_ratio * 30, 95)
+        print(f"Classified as yard_cleaning (green:{green_ratio:.2f}, autumn:{autumn_ratio:.2f})")
+        return {
+            "category": "yard_cleaning",
+            "confidence": round(conf, 1),
+            "title": HAZARD_METADATA["yard_cleaning"]["title"],
+            "source": "Smart Color Vision Analysis (Vegetation Detector)"
+        }
 
-        if cat in HAZARD_METADATA:
-            return {
-                "category": cat,
-                "confidence": float(parsed.get("confidence", 94.0)),
-                "title": parsed.get("title", HAZARD_METADATA[cat]["title"]),
-                "source": "Google Gemini 1.5 Flash Vision AI"
-            }
-    except Exception as e:
-        print(f"Google Gemini SDK Exception: {e}")
+    # Electronics: circuit board green patches + high color variance
+    if circuit_ratio > 0.12 and color_variance > 0.10:
+        conf = min(87 + circuit_ratio * 50, 93)
+        print(f"Classified as pc_repair (circuit:{circuit_ratio:.2f}, variance:{color_variance:.3f})")
+        return {
+            "category": "pc_repair",
+            "confidence": round(conf, 1),
+            "title": HAZARD_METADATA["pc_repair"]["title"],
+            "source": "Smart Color Vision Analysis (Electronics Detector)"
+        }
 
     return None
 
-
-
-
-
-def query_online_vision_api(image_bytes: bytes) -> Optional[Dict[str, Any]]:
-    """
-    Online Vision API router — Google Gemini 1.5 Flash Vision.
-    HuggingFace removed: EC2 Docker containers cannot resolve external DNS.
-    """
-    return query_google_vision_api(image_bytes)
 
 
 def map_online_label_to_service(label: str, score: float) -> (str, float):
@@ -343,19 +340,15 @@ async def vision_scan(request: Request):
                 predicted = str(classes[best_idx])
                 conf = round(float(probs[best_idx]) * 100, 1)
 
-            # Step 2: If image shows distinct domestic electronics or leaf mulch, refine with Cloud Vision
-            online_result = query_online_vision_api(image_bytes)
-            if online_result:
-                if online_result.get("category"):
-                    predicted = online_result["category"]
-                    conf = float(online_result.get("confidence", 94.0))
-                    detection_source = online_result.get("source", "Google Gemini 1.5 Flash Vision AI")
-                elif "label" in online_result:
-                    mapped_hazard, mapped_conf = map_online_label_to_service(online_result["label"], online_result.get("score", 0.85))
-                    if mapped_hazard in ["pc_repair", "yard_cleaning", "house_cleaning"]:
-                        predicted = mapped_hazard
-                        conf = mapped_conf
-                        detection_source = f"Cloud AI Vision ({online_result.get('label', '')})"
+            # Step 2: Smart color analysis for domestic categories (no API required)
+            # Triggers when local RF confidence is low OR result is a civic hazard
+            if conf < 68.0 or predicted in ["potholes", "water_leaks", "wall_cracks", "fallen_trees"]:
+                color_result = classify_domestic_by_color(img)
+                if color_result:
+                    predicted = color_result["category"]
+                    conf = color_result["confidence"]
+                    detection_source = color_result["source"]
+
         except Exception as e:
             print(f"Error in vision pipeline: {e}")
             predicted = "potholes"
