@@ -232,7 +232,7 @@ def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
 
     # 2. Electronics / PC / Laptop Repair:
     # Pattern A: Technician hands + dark electronics chassis (laptop/phone/desktop disassembly)
-    if green_ratio < 0.08 and skin_ratio > 0.02 and (dark_chassis_ratio > 0.10 or circuit_ratio > 0.01):
+    if green_ratio < 0.08 and skin_ratio > 0.03 and (dark_chassis_ratio > 0.15 or circuit_ratio > 0.02):
         conf = min(89 + dark_chassis_ratio * 30 + skin_ratio * 50, 95)
         print(f"Classified as pc_repair [Pattern A: Hands+Tech] (skin:{skin_ratio:.2f}, dark_tech:{dark_chassis_ratio:.2f})")
         return {
@@ -243,7 +243,7 @@ def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
         }
 
     # Pattern B: PCB / Motherboard circuit traces + components
-    if green_ratio < 0.12 and circuit_ratio > 0.05 and color_variance > 0.04:
+    if green_ratio < 0.12 and circuit_ratio > 0.06 and color_variance > 0.06:
         conf = min(88 + circuit_ratio * 40, 94)
         print(f"Classified as pc_repair [Pattern B: Circuit Board] (circuit:{circuit_ratio:.2f}, variance:{color_variance:.3f})")
         return {
@@ -253,16 +253,7 @@ def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
             "source": "Smart Color Vision Analysis (Circuit & PCB Detector)"
         }
 
-    # Pattern C: Indoor tech hardware (dark chassis dominant with low outdoor greenery)
-    if green_ratio < 0.05 and dark_chassis_ratio > 0.28 and neutral_ratio > 0.35:
-        conf = min(87 + dark_chassis_ratio * 25, 93)
-        print(f"Classified as pc_repair [Pattern C: Tech Enclosure] (dark_tech:{dark_chassis_ratio:.2f})")
-        return {
-            "category": "pc_repair",
-            "confidence": round(conf, 1),
-            "title": HAZARD_METADATA["pc_repair"]["title"],
-            "source": "Smart Color Vision Analysis (Computer Enclosure Detector)"
-        }
+    return None
 
     return None
 
@@ -371,9 +362,9 @@ async def vision_scan(request: Request):
                 predicted = str(classes[best_idx])
                 conf = round(float(probs[best_idx]) * 100, 1)
 
-            # Step 2: Smart color analysis for domestic categories (no API required)
-            # Triggers when local RF confidence is low OR result is a civic hazard
-            if conf < 68.0 or predicted in ["potholes", "water_leaks", "wall_cracks", "fallen_trees"]:
+            # Step 2: Smart domestic analysis only if the trained model is uncertain (< 55%)
+            # The trained RF model has primary authority on its trained classes (water leaks, potholes, cracks, trees)
+            if conf < 55.0:
                 color_result = classify_domestic_by_color(img)
                 if color_result:
                     predicted = color_result["category"]
