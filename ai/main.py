@@ -181,7 +181,7 @@ def extract_cv_features(img: Image.Image) -> List[float]:
 def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
     """
     Smart pixel-level color analysis for domestic categories.
-    Detects yard/garden (green/autumn colors) and electronics (circuit board patterns).
+    Detects yard/garden (green/autumn leaves) and electronics/PC repair (tech chassis, circuit boards, technician workbench).
     No API key required — works 100% offline.
     """
     img_res = img.convert("RGB").resize((128, 128))
@@ -198,22 +198,30 @@ def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
     autumn_mask = (r > 0.45) & (r > g * 1.15) & (r > b * 1.4) & (g > 0.25) & (b < 0.35)
     autumn_ratio = float(np.mean(autumn_mask))
 
-    # --- Electronics / PC / Circuit Board Detection ---
-    # PCBs: high color variance with green tones on dark background
+    # --- Electronics / PC / Circuit Board / Tech Bench Detection ---
+    # PCBs: green traces on dark background
     color_variance = float(np.std(arr, axis=2).mean())
-    circuit_green = (g > 0.28) & (g > r * 1.08) & (g < 0.78) & (gray < 0.62)
+    circuit_green = (g > 0.25) & (g > r * 1.05) & (g < 0.78) & (gray < 0.65)
     circuit_ratio = float(np.mean(circuit_green))
 
-    # Metallic/silver chip components on circuit boards
-    metallic = (gray > 0.55) & (np.std(arr, axis=2) < 0.08)
-    metallic_ratio = float(np.mean(metallic))
+    # Dark chassis/keyboard/casing (black/dark grey tech enclosure)
+    dark_chassis_mask = (gray < 0.35) & (np.abs(r - g) < 0.08) & (np.abs(g - b) < 0.08)
+    dark_chassis_ratio = float(np.mean(dark_chassis_mask))
 
-    print(f"Color analysis — green:{green_ratio:.2f} autumn:{autumn_ratio:.2f} circuit:{circuit_ratio:.2f} variance:{color_variance:.3f}")
+    # Technician hands/arms working on electronics (Skin tone detection)
+    skin_mask = (r > 0.35) & (g > 0.22) & (b > 0.15) & (r > g) & (g > b) & ((r - g) > 0.03) & ((r - b) > 0.06)
+    skin_ratio = float(np.mean(skin_mask))
+
+    # Neutral hardware (metallic/silver/grey components)
+    neutral_mask = (np.abs(r - g) < 0.06) & (np.abs(g - b) < 0.06)
+    neutral_ratio = float(np.mean(neutral_mask))
+
+    print(f"Color analysis — green:{green_ratio:.2f} autumn:{autumn_ratio:.2f} circuit:{circuit_ratio:.2f} dark_tech:{dark_chassis_ratio:.2f} skin:{skin_ratio:.2f} variance:{color_variance:.3f}")
 
     # --- Decision Logic ---
-    # Yard/Garden: strong green OR autumn brown tones
-    if green_ratio > 0.18 or autumn_ratio > 0.12:
-        conf = min(88 + green_ratio * 40 + autumn_ratio * 30, 95)
+    # 1. Yard / Garden: strong green OR autumn leaf tones
+    if green_ratio > 0.15 or autumn_ratio > 0.11 or (green_ratio + autumn_ratio > 0.18):
+        conf = min(88 + green_ratio * 35 + autumn_ratio * 30, 96)
         print(f"Classified as yard_cleaning (green:{green_ratio:.2f}, autumn:{autumn_ratio:.2f})")
         return {
             "category": "yard_cleaning",
@@ -222,15 +230,38 @@ def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
             "source": "Smart Color Vision Analysis (Vegetation Detector)"
         }
 
-    # Electronics: circuit board green patches + high color variance
-    if circuit_ratio > 0.12 and color_variance > 0.10:
-        conf = min(87 + circuit_ratio * 50, 93)
-        print(f"Classified as pc_repair (circuit:{circuit_ratio:.2f}, variance:{color_variance:.3f})")
+    # 2. Electronics / PC / Laptop Repair:
+    # Pattern A: Technician hands + dark electronics chassis (laptop/phone/desktop disassembly)
+    if green_ratio < 0.08 and skin_ratio > 0.02 and (dark_chassis_ratio > 0.10 or circuit_ratio > 0.01):
+        conf = min(89 + dark_chassis_ratio * 30 + skin_ratio * 50, 95)
+        print(f"Classified as pc_repair [Pattern A: Hands+Tech] (skin:{skin_ratio:.2f}, dark_tech:{dark_chassis_ratio:.2f})")
         return {
             "category": "pc_repair",
             "confidence": round(conf, 1),
             "title": HAZARD_METADATA["pc_repair"]["title"],
-            "source": "Smart Color Vision Analysis (Electronics Detector)"
+            "source": "Smart Color Vision Analysis (Electronics & Hardware Bench Detector)"
+        }
+
+    # Pattern B: PCB / Motherboard circuit traces + components
+    if green_ratio < 0.12 and circuit_ratio > 0.05 and color_variance > 0.04:
+        conf = min(88 + circuit_ratio * 40, 94)
+        print(f"Classified as pc_repair [Pattern B: Circuit Board] (circuit:{circuit_ratio:.2f}, variance:{color_variance:.3f})")
+        return {
+            "category": "pc_repair",
+            "confidence": round(conf, 1),
+            "title": HAZARD_METADATA["pc_repair"]["title"],
+            "source": "Smart Color Vision Analysis (Circuit & PCB Detector)"
+        }
+
+    # Pattern C: Indoor tech hardware (dark chassis dominant with low outdoor greenery)
+    if green_ratio < 0.05 and dark_chassis_ratio > 0.28 and neutral_ratio > 0.35:
+        conf = min(87 + dark_chassis_ratio * 25, 93)
+        print(f"Classified as pc_repair [Pattern C: Tech Enclosure] (dark_tech:{dark_chassis_ratio:.2f})")
+        return {
+            "category": "pc_repair",
+            "confidence": round(conf, 1),
+            "title": HAZARD_METADATA["pc_repair"]["title"],
+            "source": "Smart Color Vision Analysis (Computer Enclosure Detector)"
         }
 
     return None
