@@ -68,13 +68,14 @@ export function WorkerVerificationQueue({
           const isOld = nic.length === 10;
           const year = isOld ? 1900 + parseInt(nic.slice(0, 2) || "95") : parseInt(nic.slice(0, 4) || "2000");
           const days = isOld ? parseInt(nic.slice(2, 5) || "100") : parseInt(nic.slice(4, 7) || "100");
+          const currentYear = new Date().getFullYear();
           setNicValidation({
             valid: true,
             format_type: isOld ? "OLD_9_DIGIT" : "NEW_12_DIGIT",
             birth_year: year,
-            estimated_age: 2026 - year,
+            estimated_age: currentYear - year,
             gender: days > 500 ? "FEMALE" : "MALE",
-            is_adult: 2026 - year >= 18,
+            is_adult: currentYear - year >= 18,
           });
         })
         .finally(() => setIsValidatingNic(false));

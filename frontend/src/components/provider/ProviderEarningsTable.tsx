@@ -24,10 +24,10 @@ export function ProviderEarningsTable({ jobs }: ProviderEarningsTableProps) {
   const isDark = theme === "dark";
 
   const completedJobs = jobs.filter((j) => j.stage === "COMPLETED");
-  const totalEarnings = completedJobs.reduce((sum, j) => sum + (j.costLKR || 3000), 0);
+  const totalEarnings = completedJobs.reduce((sum, j) => sum + (j.costLKR || 0), 0);
   const cashTotal = completedJobs
     .filter((j) => j.paymentMethod === "Cash on Hand" || !j.paymentMethod)
-    .reduce((sum, j) => sum + (j.costLKR || 3000), 0);
+    .reduce((sum, j) => sum + (j.costLKR || 0), 0);
   const bankTotal = totalEarnings - cashTotal;
 
   return (

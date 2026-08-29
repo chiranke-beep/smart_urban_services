@@ -25,8 +25,7 @@ export function CivicHazardMonitor({
   hazards,
   onDispatchCrew,
 }: CivicHazardMonitorProps) {
-  const [selectedHazardId, setSelectedHazardId] = useState<string | null>(null);
-  const [crewName, setCrewName] = useState("Sunil Kumara Rig (WP-ABX-8821)");
+  const [crewName, setCrewName] = useState("Rapid Response Emergency Unit (Local Area)");
   const { theme } = useTheme();
   const isDark = theme === "dark";
 
@@ -188,10 +187,9 @@ export function CivicHazardMonitor({
                             outline: "none",
                             maxWidth: "100%",
                           }}
-                        >
-                          <option value="Sunil Kumara Rig (WP-ABX-8821)">Sunil Kumara Rig (Maharagama)</option>
-                          <option value="Rohan Jayasuriya Plumbing Squad">Rohan Jayasuriya Squad (Kelaniya)</option>
-                          <option value="Asanka Bandara Clearing Unit">Asanka Bandara Unit (Kandy)</option>
+                          <option value="Rapid Response Emergency Unit (Local Area)">Rapid Response Emergency Unit (Local Area)</option>
+                          <option value="Municipal Disaster & Hazard Clearing Squad">Municipal Disaster & Hazard Clearing Squad</option>
+                          <option value="Certified Local Specialist Crew">Certified Local Specialist Crew</option>
                         </select>
 
                         <button

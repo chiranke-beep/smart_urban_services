@@ -239,25 +239,11 @@ async def vision_scan(request: Request):
                 conf = round(float(probs[best_idx]) * 100, 1)
                 detection_source = f"Trained Random Forest Classifier (Confidence: {conf}%)"
             else:
-                predicted = "potholes"
-                conf = 80.0
-
-            # Only override if user explicitly provided a description with relevant keywords
-            desc_check = (description or "").lower()
-            if any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "chip", "hardware"]):
-                predicted = "pc_repair"
-                conf = 95.0
-            elif any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn"]):
-                predicted = "yard_cleaning"
-                conf = 95.0
-            elif any(w in desc_check for w in ["water", "pipe", "drain", "tap", "flood", "seep"]):
-                predicted = "water_leaks"
-                conf = 95.0
+                raise ValueError("Trained hazard model is not loaded")
 
         except Exception as e:
-            print(f"Error extracting features: {e}")
-            predicted = "potholes"
-            conf = 75.0
+            print(f"Error in vision ML pipeline: {e}")
+            raise HTTPException(status_code=500, detail=f"AI Vision Inference Error: {str(e)}")
     else:
         desc = (description or "").lower()
         if any(w in desc for w in ["laptop", "pc", "computer", "screen", "motherboard", "keyboard", "circuit"]):
