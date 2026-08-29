@@ -28,12 +28,12 @@ export function getAuthToken(): string | null {
 
 export async function apiClient<T>(
   endpoint: string,
-  options?: RequestInit
+  options: RequestInit = {}
 ): Promise<T> {
   const token = getAuthToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...(options?.headers as Record<string, string>),
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -41,7 +41,8 @@ export async function apiClient<T>(
   }
 
   try {
-    const res = await fetch(`${API_BASE}${endpoint}`, {
+    const baseUrl = getApiBaseUrl();
+    const res = await fetch(`${baseUrl}${endpoint}`, {
       ...options,
       headers,
     });

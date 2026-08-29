@@ -19,6 +19,7 @@ import { jobService } from "@/services/jobService";
 import { formatCurrency, formatRelativeTime } from "@/utils/formatters";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
+import { getApiBaseUrl } from "@/services/api";
 
 interface LiveChatDockProps {
   job: JobRequest;
@@ -107,7 +108,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
       const formData = new FormData();
       formData.append("photo", file);
 
-      const API_HOST = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+      const API_HOST = getApiBaseUrl();
       const res = await fetch(`${API_HOST}/upload`, {
         method: "POST",
         body: formData,

@@ -1,13 +1,22 @@
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
+const getSocketUrl = () => {
+  if (process.env.NEXT_PUBLIC_SOCKET_URL) return process.env.NEXT_PUBLIC_SOCKET_URL;
+  if (typeof window !== "undefined") {
+    const hostname = window.location.hostname;
+    const protocol = window.location.protocol;
+    return `${protocol}//${hostname}:5000`;
+  }
+  return "http://localhost:5000";
+};
 
 class SocketService {
   private socket: Socket | null = null;
 
   public getSocket(): Socket {
     if (!this.socket) {
-      this.socket = io(SOCKET_URL, {
+      const socketUrl = getSocketUrl();
+      this.socket = io(socketUrl, {
         transports: ["websocket", "polling"],
         reconnection: true,
         reconnectionAttempts: 5,
