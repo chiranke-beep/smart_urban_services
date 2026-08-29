@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/profile/ProfileModal";
+import { apiClient } from "@/services/api";
 
 interface DashboardHeaderProps {
   selectedLocality: string;
