@@ -63,7 +63,7 @@ export function TelemetryTimeline({ currentStage, etaMinutes }: TelemetryTimelin
               />
 
               {/* Step Label & Icon */}
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", gap: "4px" }}>
                 <div
                   style={{
                     width: "22px",
@@ -84,6 +84,7 @@ export function TelemetryTimeline({ currentStage, etaMinutes }: TelemetryTimelin
                       : "var(--text-secondary)",
                     fontSize: "11px",
                     fontWeight: 800,
+                    flexShrink: 0,
                   }}
                 >
                   {getStageIcon(key, isDone, isCurrent)}
@@ -91,19 +92,20 @@ export function TelemetryTimeline({ currentStage, etaMinutes }: TelemetryTimelin
                 <div>
                   <div
                     style={{
-                      fontSize: "12px",
+                      fontSize: "clamp(9.5px, 2.2vw, 11.5px)",
                       fontWeight: isCurrent ? 800 : 600,
                       color: isCurrent
                         ? "var(--accent)"
                         : isDone
                         ? "var(--text-primary)"
                         : "var(--text-secondary)",
+                      lineHeight: 1.2,
                     }}
                   >
                     {stageInfo?.label || key}
                   </div>
                   {isCurrent && key === "EN_ROUTE" && (
-                    <div style={{ fontSize: "10.5px", color: "#10b981", fontWeight: 700 }}>
+                    <div style={{ fontSize: "10px", color: "#10b981", fontWeight: 800, marginTop: "2px" }}>
                       ETA ~{etaMinutes}m
                     </div>
                   )}

@@ -733,7 +733,8 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
                         .catch(() => {});
                     };
 
-                    if (typeof window !== "undefined" && "geolocation" in navigator) {
+                    const isSecure = typeof window !== "undefined" && (window.isSecureContext === true || window.location.hostname === "localhost" || window.location.protocol === "https:");
+                    if (isSecure && "geolocation" in navigator) {
                       navigator.geolocation.getCurrentPosition(
                         (pos) => {
                           const lat = Number(pos.coords.latitude.toFixed(6));

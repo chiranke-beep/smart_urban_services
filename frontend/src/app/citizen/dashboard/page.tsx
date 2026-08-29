@@ -309,7 +309,7 @@ function DashboardContent() {
                   </div>
 
                   {/* Filter Pills */}
-                  <div style={{ display: "flex", gap: "8px" }}>
+                  <div style={{ display: "flex", gap: "8px", overflowX: "auto", paddingBottom: "4px", WebkitOverflowScrolling: "touch", scrollbarWidth: "none" }}>
                     {[
                       { id: "all", label: "All Active" },
                       { id: "en_route", label: "On the way" },
@@ -320,13 +320,15 @@ function DashboardContent() {
                         key={f.id}
                         onClick={() => setStatusFilter(f.id as any)}
                         style={{
-                          padding: "6px 12px",
+                          padding: "6px 14px",
                           backgroundColor: statusFilter === f.id ? "var(--accent)" : "var(--card-bg)",
                           color: statusFilter === f.id ? "var(--accent-text)" : "var(--text-primary)",
                           border: "1px solid var(--border)",
                           fontSize: "12px",
                           fontWeight: 700,
                           cursor: "pointer",
+                          whiteSpace: "nowrap",
+                          flexShrink: 0,
                         }}
                       >
                         {f.label}
