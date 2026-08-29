@@ -91,20 +91,8 @@ function isValidSriLankanNic(nic: string): boolean {
  * Specifically the 4th digit (birth year 2003 vs 2008).
  */
 function disambiguateNicOcr(nic: string): string {
-  if (!nic || nic.length !== 12) return nic;
-
-  // If the NIC starts with 2008 and is followed by day 215...
-  // In Sri Lanka, 2008 would indicate a minor student (15-16 yrs), whereas the true card is 2003 (adult 21 yrs)
-  if (nic.startsWith("200821513168")) {
-    return "200321513168";
-  }
-
-  // General 2008 vs 2003 check for adult registrations:
-  if (nic.startsWith("2008") && parseInt(nic.slice(4, 7), 10) === 215) {
-    return "2003" + nic.slice(4);
-  }
-
-  return nic;
+  if (!nic) return nic;
+  return nic.trim().toUpperCase();
 }
 
 export async function scanNicFromImage(imageSource: string | File): Promise<NicScanResult> {

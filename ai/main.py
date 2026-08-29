@@ -432,9 +432,10 @@ def verify_nic(req: NICVerifyRequest):
         days = int(nic[4:7])
         format_type = "NEW_12_DIGIT"
 
+    from datetime import datetime
     gender = "FEMALE" if days > 500 else "MALE"
     day = days - 500 if days > 500 else days
-    age = 2026 - birth_year
+    age = datetime.now().year - birth_year
 
     # Official Sri Lankan DRP 29-day month table
     month_days = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
