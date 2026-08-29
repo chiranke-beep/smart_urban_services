@@ -411,50 +411,84 @@ export function IncomingJobCard({
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-            {!isVerified && (
+            {(!isVerified || verificationStatus === "PENDING") && (
               <div
                 style={{
-                  padding: "8px 12px",
-                  backgroundColor: "rgba(245, 158, 11, 0.1)",
-                  border: "1px solid rgba(245, 158, 11, 0.3)",
-                  color: isDark ? "#fde68a" : "#b45309",
-                  fontSize: "12px",
+                  padding: "12px 16px",
+                  backgroundColor: isDark ? "rgba(245, 158, 11, 0.12)" : "#fffbeb",
+                  border: isDark ? "1.5px solid #f59e0b" : "1.5px solid #fbbf24",
+                  color: isDark ? "#fde68a" : "#92400e",
+                  fontSize: "12.5px",
                   fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
-                  gap: "6px",
+                  gap: "10px",
                 }}
               >
-                <ShieldCheck size={15} color="#f59e0b" />
-                <span>Verification in Progress — You can preview, quote, and accept local dispatches.</span>
+                <ShieldAlert size={20} color="#f59e0b" style={{ flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontWeight: 800, color: isDark ? "#fef3c7" : "#78350f" }}>
+                    National ID & Trade Verification Required
+                  </div>
+                  <div style={{ fontSize: "11.5px", opacity: 0.9, marginTop: "2px" }}>
+                    Your application is currently pending admin approval. You cannot send quotations or accept jobs until verified.
+                  </div>
+                </div>
               </div>
             )}
 
             <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <button
-                onClick={() => setIsQuoting(true)}
-                style={{
-                  flex: 1,
-                  padding: "12px 18px",
-                  borderRadius: "0px",
-                  backgroundColor: "#10b981",
-                  color: "#ffffff",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 800,
-                  fontSize: "13.5px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "8px",
-                  transition: "transform 0.2s ease",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
-                onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
-              >
-                <DollarSign size={16} />
-                <span>Send Quotation & Accept Request</span>
-              </button>
+              {(!isVerified || verificationStatus === "PENDING") ? (
+                <button
+                  disabled
+                  title="Admin verification required before accepting jobs"
+                  style={{
+                    flex: 1,
+                    padding: "12px 18px",
+                    borderRadius: "0px",
+                    backgroundColor: isDark ? "rgba(255,255,255,0.08)" : "#e2e8f0",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border)",
+                    fontWeight: 800,
+                    fontSize: "13.5px",
+                    cursor: "not-allowed",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    opacity: 0.7,
+                  }}
+                >
+                  <ShieldAlert size={16} color="#f59e0b" />
+                  <span>🔒 Verification Required to Quote & Accept</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => setIsQuoting(true)}
+                  style={{
+                    flex: 1,
+                    padding: "12px 18px",
+                    borderRadius: "0px",
+                    backgroundColor: "#10b981",
+                    color: "#ffffff",
+                    border: "none",
+                    fontWeight: 800,
+                    fontSize: "14px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                    boxShadow: "0 4px 14px rgba(16,185,129,0.25)",
+                    transition: "transform 0.2s ease",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-2px)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+                >
+                  <DollarSign size={16} />
+                  <span>Send Quotation & Accept Request</span>
+                </button>
+              )}
 
               <button
                 onClick={() => onDecline(job.id)}
@@ -464,9 +498,9 @@ export function IncomingJobCard({
                   backgroundColor: "transparent",
                   border: "1px solid var(--border)",
                   color: "var(--text-secondary)",
-                  cursor: "pointer",
                   fontWeight: 700,
-                  fontSize: "13.5px",
+                  fontSize: "13px",
+                  cursor: "pointer",
                 }}
               >
                 Decline

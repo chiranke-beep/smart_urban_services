@@ -229,6 +229,10 @@ export default function ProviderDashboardPage() {
       alert("Your account has been suspended by admin. Please contact support to resolve.");
       return;
     }
+    if (!user.verifiedBadge && user.verificationStatus !== "APPROVED") {
+      alert("Your account is pending admin verification. You cannot quote or accept jobs until your National ID is approved by Admin.");
+      return;
+    }
     if (hasActiveJob) {
       alert("You currently have an active job in progress. You can only work on 1 job at a time.");
       return;
