@@ -155,17 +155,20 @@ if (process.env.NODE_ENV !== 'test') {
 app.get('/api/users/profile/:id', async (req, res) => {
   try {
     const rawId = String(req.params.id || '').replace(/\D/g, '');
-    let { rows } = await pool.query(`
+    if (!rawId) {
+      return res.status(400).json({ success: false, message: 'Invalid user ID' });
+    }
+    const { rows } = await pool.query(`
       SELECT 
         u.id, u.name AS "fullName", u.email, u.phone, u.role,
         u.profile_picture AS "profilePicture",
         u.home_address AS "homeAddress",
-        COALESCE(u.saved_lat, 7.264242) AS "savedLat",
-        COALESCE(u.saved_lng, 80.621701) AS "savedLng",
+        u.saved_lat AS "savedLat",
+        u.saved_lng AS "savedLng",
         u.birthday, u.gender,
         COALESCE(u.language, 'English') AS language,
-        COALESCE(u.locality, 'Colombo') AS locality,
-        COALESCE(u.district, 'Colombo') AS district,
+        u.locality,
+        u.district,
         pp.trade, pp.daily_rate AS "dailyRate", pp.hourly_rate AS "hourlyRate",
         pp.experience_years AS "experienceYears", pp.vehicle_type AS "vehicleType",
         pp.plate_number AS "plateNumber",
@@ -176,37 +179,7 @@ app.get('/api/users/profile/:id', async (req, res) => {
       FROM users u
       LEFT JOIN provider_profiles pp ON u.id = pp.user_id
       WHERE u.id = $1
-    `, [rawId || -1]);
-
-    if (!rows[0]) {
-      const { rows: fallbackRows } = await pool.query(`
-        SELECT 
-          u.id, u.name AS "fullName", u.email, u.phone, u.role,
-          u.profile_picture AS "profilePicture",
-          u.home_address AS "homeAddress",
-          COALESCE(u.saved_lat, 7.264242) AS "savedLat",
-          COALESCE(u.saved_lng, 80.621701) AS "savedLng",
-          u.birthday, u.gender,
-          COALESCE(u.language, 'English') AS language,
-          COALESCE(u.locality, 'Heerassagala') AS locality,
-          COALESCE(u.district, 'Kandy') AS district,
-          pp.trade, pp.daily_rate AS "dailyRate", pp.hourly_rate AS "hourlyRate",
-          pp.experience_years AS "experienceYears", pp.vehicle_type AS "vehicleType",
-          pp.plate_number AS "plateNumber",
-          COALESCE(pp.verified, false) AS "verified",
-          COALESCE(pp.verification_status, 'PENDING') AS "verificationStatus",
-          pp.nic_number AS "nicNumber",
-          pp.rejection_reason AS "rejectionReason"
-        FROM users u
-        LEFT JOIN provider_profiles pp ON u.id = pp.user_id
-        WHERE u.role = 'citizen'
-        ORDER BY u.id ASC
-        LIMIT 1
-      `);
-      if (fallbackRows[0]) {
-        rows = fallbackRows;
-      }
-    }
+    `, [rawId]);
 
     if (!rows[0]) {
       return res.status(404).json({ success: false, message: 'User not found' });
