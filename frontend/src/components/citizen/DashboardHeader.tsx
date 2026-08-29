@@ -190,7 +190,7 @@ export function DashboardHeader({
               )}
             </div>
             <div>
-              <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
+              <div className="truncate-mobile" style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
                 {user?.fullName || "Citizen"}
               </div>
               <div className="desktop-only" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>

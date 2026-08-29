@@ -290,17 +290,19 @@ function DashboardContent() {
                     <button
                       onClick={() => setIsPostModalOpen(true)}
                       style={{
-                        padding: "8px 16px",
+                        padding: "8px 14px",
                         borderRadius: "0px",
-                        backgroundColor: "transparent",
-                        border: "1.5px solid var(--accent)",
-                        color: "var(--accent)",
-                        fontWeight: 700,
-                        fontSize: "13px",
+                        backgroundColor: "var(--accent)",
+                        color: "var(--accent-text)",
+                        border: "none",
+                        fontWeight: 800,
+                        fontSize: "12.5px",
                         cursor: "pointer",
                         display: "flex",
                         alignItems: "center",
                         gap: "6px",
+                        flexShrink: 0,
+                        whiteSpace: "nowrap",
                       }}
                     >
                       <Plus size={15} />

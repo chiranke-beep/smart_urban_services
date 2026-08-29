@@ -182,28 +182,29 @@ export function ProviderHeader({
 
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
+                <span className="truncate-mobile" style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
                   {displayName}
                 </span>
-                <span title="National ID & Trade Verified">
+                <span title="National ID & Trade Verified" style={{ flexShrink: 0 }}>
                   <ShieldCheck size={15} color="#10b981" />
                 </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: "var(--text-secondary)", marginTop: "1px" }}>
-                <span style={{ color: "#eab308", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px" }}>
+                <span style={{ color: "#eab308", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
                   <Star size={11} fill="#eab308" />
                   {liveRating.toFixed(1)}
                 </span>
                 <span>·</span>
-                <span style={{ display: "flex", alignItems: "center", gap: "3px", color: "var(--text-primary)", fontWeight: 600 }}>
+                <span style={{ display: "flex", alignItems: "center", gap: "3px", color: "var(--text-primary)", fontWeight: 600, flexShrink: 0 }}>
                   <MapPin size={11} color="#10b981" />
                   <span>{user?.locality || selectedLocality || "Kandy"}</span>
                 </span>
-                <span>·</span>
+                <span className="hide-on-mobile">·</span>
                 <span
                   title={displayTrade}
+                  className="hide-on-mobile"
                   style={{
-                    maxWidth: "200px",
+                    maxWidth: "180px",
                     whiteSpace: "nowrap",
                     overflow: "hidden",
                     textOverflow: "ellipsis",

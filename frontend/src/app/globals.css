@@ -225,6 +225,18 @@ body {
   }
 }
 
+@media (max-width: 640px) {
+  .hide-on-mobile {
+    display: none !important;
+  }
+  .truncate-mobile {
+    max-width: 100px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+
 @media (min-width: 769px) {
   .mobile-only {
     display: none !important;
