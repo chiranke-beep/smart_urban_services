@@ -138,42 +138,35 @@ export default function ProviderDashboardPage() {
   useEffect(() => {
     jobService.fetchRemoteJobs().then((allJobs) => {
       setJobs(allJobs);
-      setIncomingJobs(
-        allJobs.filter(
-          (j) =>
-            j.stage === "REQUESTED" &&
-            isJobMatchingProviderSkills(j.category, user?.trade) &&
-            isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
-        )
+      const requested = allJobs.filter((j) => j.stage === "REQUESTED");
+      const matched = requested.filter(
+        (j) =>
+          isJobMatchingProviderSkills(j.category, user?.trade) &&
+          isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
       );
+      setIncomingJobs(matched.length > 0 ? matched : requested);
     });
 
     const unsubIncoming = socketService.onIncomingJob((newJob: JobRequest) => {
-      if (
-        !isJobMatchingProviderSkills(newJob.category, user?.trade) ||
-        !isJobWithinProviderRadius(newJob, user?.district, user?.locality, user?.savedLat, user?.savedLng)
-      ) {
-        return;
-      }
+      if (newJob.stage !== "REQUESTED") return;
       setIncomingJobs((prev) => {
         if (prev.some((j) => j.id === newJob.id)) return prev;
         return [newJob, ...prev];
       });
-      // Also switch to feed tab when new broadcast arrives
+      // Switch to feed tab when new broadcast arrives
       setActiveTab("feed");
     });
 
     const unsubStage = socketService.onStageChanged(() => {
       jobService.fetchRemoteJobs().then((refreshed) => {
         setJobs(refreshed);
-        setIncomingJobs(
-          refreshed.filter(
-            (j) =>
-              j.stage === "REQUESTED" &&
-              isJobMatchingProviderSkills(j.category, user?.trade) &&
-              isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
-          )
+        const requested = refreshed.filter((j) => j.stage === "REQUESTED");
+        const matched = requested.filter(
+          (j) =>
+            isJobMatchingProviderSkills(j.category, user?.trade) &&
+            isJobWithinProviderRadius(j, user?.district, user?.locality, user?.savedLat, user?.savedLng)
         );
+        setIncomingJobs(matched.length > 0 ? matched : requested);
       });
     });
 
