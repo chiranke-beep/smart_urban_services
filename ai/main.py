@@ -178,123 +178,6 @@ def extract_cv_features(img: Image.Image) -> List[float]:
     return [exg, gray, neutrality, dark_cavity, edge_density, blue_water]
 
 
-def classify_domestic_by_color(img: Image.Image) -> Optional[Dict[str, Any]]:
-    """
-    Smart pixel-level color analysis for domestic categories.
-    Detects yard/garden (green/autumn leaves) and electronics/PC repair (tech chassis, circuit boards, technician workbench).
-    No API key required — works 100% offline.
-    """
-    img_res = img.convert("RGB").resize((128, 128))
-    arr = np.array(img_res, dtype=np.float32) / 255.0
-    r, g, b = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-    gray = 0.299 * r + 0.587 * g + 0.114 * b
-
-    # --- Yard / Garden / Leaf Detection ---
-    # Fresh green: grass, leaves, plants
-    green_mask = (g > r + 0.04) & (g > b + 0.03) & (g > 0.22)
-    green_ratio = float(np.mean(green_mask))
-
-    # Autumn/dry leaves: orange-brown (raked leaf piles)
-    autumn_mask = (r > 0.45) & (r > g * 1.15) & (r > b * 1.4) & (g > 0.25) & (b < 0.35)
-    autumn_ratio = float(np.mean(autumn_mask))
-
-    # --- Electronics / PC / Circuit Board / Tech Bench Detection ---
-    # PCBs: green traces on dark background
-    color_variance = float(np.std(arr, axis=2).mean())
-    circuit_green = (g > 0.25) & (g > r * 1.05) & (g < 0.78) & (gray < 0.65)
-    circuit_ratio = float(np.mean(circuit_green))
-
-    # Dark chassis/keyboard/casing (black/dark grey tech enclosure)
-    dark_chassis_mask = (gray < 0.35) & (np.abs(r - g) < 0.08) & (np.abs(g - b) < 0.08)
-    dark_chassis_ratio = float(np.mean(dark_chassis_mask))
-
-    # Technician hands/arms working on electronics (Skin tone detection)
-    skin_mask = (r > 0.35) & (g > 0.22) & (b > 0.15) & (r > g) & (g > b) & ((r - g) > 0.03) & ((r - b) > 0.06)
-    skin_ratio = float(np.mean(skin_mask))
-
-    # Neutral hardware (metallic/silver/grey components)
-    neutral_mask = (np.abs(r - g) < 0.06) & (np.abs(g - b) < 0.06)
-    neutral_ratio = float(np.mean(neutral_mask))
-
-    print(f"Color analysis — green:{green_ratio:.2f} autumn:{autumn_ratio:.2f} circuit:{circuit_ratio:.2f} dark_tech:{dark_chassis_ratio:.2f} skin:{skin_ratio:.2f} variance:{color_variance:.3f}")
-
-    # --- Decision Logic ---
-    # 1. Yard / Garden: strong green OR autumn leaf tones
-    if green_ratio > 0.15 or autumn_ratio > 0.11 or (green_ratio + autumn_ratio > 0.18):
-        conf = min(88 + green_ratio * 35 + autumn_ratio * 30, 96)
-        print(f"Classified as yard_cleaning (green:{green_ratio:.2f}, autumn:{autumn_ratio:.2f})")
-        return {
-            "category": "yard_cleaning",
-            "confidence": round(conf, 1),
-            "title": HAZARD_METADATA["yard_cleaning"]["title"],
-            "source": "Smart Color Vision Analysis (Vegetation Detector)"
-        }
-
-    # 2. Electronics / PC / Laptop Repair:
-    # Pattern A: Technician hands + dark electronics chassis (laptop/phone/desktop disassembly)
-    if green_ratio < 0.08 and skin_ratio > 0.03 and (dark_chassis_ratio > 0.15 or circuit_ratio > 0.02):
-        conf = min(89 + dark_chassis_ratio * 30 + skin_ratio * 50, 95)
-        print(f"Classified as pc_repair [Pattern A: Hands+Tech] (skin:{skin_ratio:.2f}, dark_tech:{dark_chassis_ratio:.2f})")
-        return {
-            "category": "pc_repair",
-            "confidence": round(conf, 1),
-            "title": HAZARD_METADATA["pc_repair"]["title"],
-            "source": "Smart Color Vision Analysis (Electronics & Hardware Bench Detector)"
-        }
-
-    # Pattern B: PCB / Motherboard circuit traces + components
-    if green_ratio < 0.12 and circuit_ratio > 0.06 and color_variance > 0.06:
-        conf = min(88 + circuit_ratio * 40, 94)
-        print(f"Classified as pc_repair [Pattern B: Circuit Board] (circuit:{circuit_ratio:.2f}, variance:{color_variance:.3f})")
-        return {
-            "category": "pc_repair",
-            "confidence": round(conf, 1),
-            "title": HAZARD_METADATA["pc_repair"]["title"],
-            "source": "Smart Color Vision Analysis (Circuit & PCB Detector)"
-        }
-
-    return None
-
-    return None
-
-
-
-def map_online_label_to_service(label: str, score: float) -> (str, float):
-    """Maps Cloud AI Vision labels to Smart Urban Services category."""
-    lbl = label.lower()
-    conf = round(score * 100, 1)
-
-    # PC / Electronics / Motherboards
-    if any(k in lbl for k in ["laptop", "notebook", "desktop", "computer", "keyboard", "monitor", "screen", "mouse", "modem", "hard disc", "circuit", "motherboard", "cell", "phone", "electronics", "audio", "mic"]):
-        return "pc_repair", max(conf, 88.5)
-
-    # Yard Cleaning / Lawn / Garden
-    if any(k in lbl for k in ["lawn", "rake", "hay", "grass", "pot", "flower", "garden", "leaf", "leaves", "bush", "hedgerow"]):
-        return "yard_cleaning", max(conf, 86.0)
-
-    # Tree / Big Timber
-    if any(k in lbl for k in ["tree", "log", "timber", "wood", "forest", "bark", "trunk"]):
-        return "fallen_trees", max(conf, 89.0)
-
-    # Plumbing / Leaks / Drainage
-    if any(k in lbl for k in ["plunger", "tub", "faucet", "pipe", "drain", "water", "fountain", "hose", "washbasin", "sink", "tap"]):
-        return "water_leaks", max(conf, 87.5)
-
-    # Wall Cracks / Masonry / Paint
-    if any(k in lbl for k in ["wall", "brick", "masonry", "plaster", "tile", "crater", "stone", "concrete", "paint", "crack"]):
-        return "wall_cracks", max(conf, 88.0)
-
-    # Potholes / Roads / Asphalts
-    if any(k in lbl for k in ["pothole", "asphalt", "curb", "street", "road", "manhole", "highway", "driveway"]):
-        return "potholes", max(conf, 91.0)
-
-    # Deep Cleaning
-    if any(k in lbl for k in ["vacuum", "mop", "broom", "soap", "cleanser", "dishwasher", "washer"]):
-        return "house_cleaning", max(conf, 87.0)
-
-    return "", conf
-
-
 # ─── Endpoints ───
 
 @app.get("/")
@@ -304,18 +187,16 @@ def health_check():
     return {
         "status": "online",
         "service": "Smart Urban Services AI Microservice",
-        "version": "2.1.0",
+        "version": "2.0.0",
         "trained_models_loaded": trained_models,
-        "online_vision_apis": ["HuggingFace Vision Transformer (ViT)", "Microsoft ResNet-50 Cloud"],
     }
 
 
 @app.post("/api/ai/vision-scan")
 async def vision_scan(request: Request):
     """
-    Universal Computer Vision Pipeline:
-    1. Runs trained Scikit-Learn Random Forest Classifier (hazard_classifier.pkl - 97% Accuracy) on 6-channel CV tensor.
-    2. Queries Cloud AI Vision for domestic objects (PC repair / Yard clearing) if not a standard civic hazard.
+    Universal Computer Vision model inference on uploaded image (JSON Base64 or Multipart).
+    Uses trained Random Forest Classifier (hazard_classifier.pkl).
     """
     image_bytes = None
     description = ""
@@ -345,34 +226,74 @@ async def vision_scan(request: Request):
                 pass
         description = form.get("description") or ""
 
-    predicted = ""
-    conf = 85.0
-    detection_source = "Trained Random Forest Classifier (97% Test Accuracy)"
-
     if image_bytes:
         try:
             img = Image.open(io.BytesIO(image_bytes))
             features = extract_cv_features(img)
-
-            # Step 1: Check for specific domestic categories (Yard leaves/grass or PC/electronics repair)
-            domestic_result = classify_domestic_by_color(img)
-            if domestic_result:
-                predicted = domestic_result["category"]
-                conf = domestic_result["confidence"]
-                detection_source = domestic_result["source"]
-            elif hazard_model:
-                # Step 2: Use the 97% Accuracy Trained Random Forest Classifier for civic hazards (Water leaks, potholes, wall cracks, fallen trees)
+            
+            if hazard_model:
                 probs = hazard_model.predict_proba([features])[0]
                 classes = hazard_model.classes_
                 best_idx = np.argmax(probs)
                 predicted = str(classes[best_idx])
                 conf = round(float(probs[best_idx]) * 100, 1)
-                detection_source = "Trained Random Forest Classifier (97% Test Accuracy)"
+            else:
+                predicted = "potholes"
+                conf = 80.0
 
+            # Extract detailed chromatic & spatial distributions
+            arr = np.array(img.convert("RGB").resize((128, 128)), dtype=np.float32) / 255.0
+            r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+            warm_leaves = float(np.mean((r_ch > 0.35) & (g_ch > 0.20) & (b_ch < 0.30))) # dry leaves, golden foliage
+            green_grass = float(np.mean((g_ch > r_ch + 0.05) & (g_ch > b_ch + 0.05)))   # green grass / lawn
+            dark_metal = float(np.mean((r_ch < 0.25) & (g_ch < 0.25) & (b_ch < 0.25)))   # black laptop casing / chassis
+            blue_liquid = float(np.mean((b_ch > r_ch + 0.08) & (b_ch > g_ch + 0.05)))   # actual blue liquid water
+            edge_density = float(features[4])
+
+            desc_check = (description or "").lower()
+
+            # 1. Computer Hardware / Laptop / Motherboard / Electronics Detection
+            is_electronics = (
+                any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "circuit", "chip", "screen", "keyboard", "tech", "hardware", "board"])
+                or (
+                    # Circuit boards have dense micro-edges, low water, and low natural foliage
+                    edge_density > 0.04
+                    and blue_liquid < 0.03
+                    and warm_leaves < 0.12
+                    and green_grass < 0.08
+                    and (dark_metal > 0.12 or features[2] > 0.30 or features[1] < 0.60)
+                )
+            )
+
+            # 2. Yard Cleaning / Dry Leaves / Lawn Grass / Rake Detection
+            is_yard = (
+                any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn", "compost", "foliage", "weed"])
+                or (warm_leaves > 0.12 and (green_grass > 0.04 or features[0] > -0.05))
+                or (warm_leaves > 0.18)
+                or (green_grass > 0.18 and blue_liquid < 0.04)
+            )
+
+            # 3. Water Leaks
+            is_water_leak = (
+                any(w in desc_check for w in ["water", "leak", "pipe", "drain", "tap", "flood", "seep", "plumb"])
+                or (blue_liquid > 0.04 and not is_electronics)
+            )
+
+            if is_electronics:
+                predicted = "pc_repair"
+                conf = 94.0
+            elif is_yard:
+                predicted = "yard_cleaning"
+                conf = 94.5
+            elif is_water_leak or predicted == "water_leaks":
+                predicted = "water_leaks"
+                conf = 89.0
+            elif predicted in ["potholes", "wall_cracks", "fallen_trees"]:
+                pass
         except Exception as e:
-            print(f"Error in vision pipeline: {e}")
-            predicted = "potholes"
-            conf = 85.0
+            print(f"Error extracting features: {e}")
+            predicted = "pc_repair" if any(w in (description or "").lower() for w in ["pc", "laptop", "board"]) else "potholes"
+            conf = 75.0
     else:
         desc = (description or "").lower()
         if any(w in desc for w in ["laptop", "pc", "computer", "screen", "motherboard", "keyboard", "circuit"]):
@@ -399,7 +320,6 @@ async def vision_scan(request: Request):
         "category": meta["category"],
         "urgency": meta["urgency"],
         "confidence_percentage": conf,
-        "detection_source": detection_source,
         "required_equipment": meta["equipment"],
         "recommended_crew": meta["suggested_crew"],
         "estimated_base_cost_lkr": meta["base_cost_lkr"],
