@@ -189,12 +189,8 @@ export default function ProviderDashboardPage() {
     if (isOnline && typeof window !== "undefined" && "geolocation" in navigator) {
       watchId = navigator.geolocation.watchPosition(
         (pos) => {
-          let lat = pos.coords.latitude;
-          let lng = pos.coords.longitude;
-          if (lat > 7.28 && lat < 7.32 && lng > 80.625 && lng < 80.645) {
-            lat = 7.264242;
-            lng = 80.621701;
-          }
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
           socketService.emitGpsMove({
             lat,
             lng,

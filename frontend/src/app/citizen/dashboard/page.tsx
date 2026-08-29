@@ -82,7 +82,7 @@ function DashboardContent() {
               stage: "QUOTED" as const,
               quotation: {
                 id: `quote-${Date.now()}`,
-                workerId: "w-1",
+                workerId: data.workerId || data.providerId || "worker",
                 workerName: data.workerName || "Technician",
                 avatarBg: "var(--accent)",
                 amountLKR: Number(data.amountLKR),

@@ -237,57 +237,23 @@ async def vision_scan(request: Request):
                 best_idx = np.argmax(probs)
                 predicted = str(classes[best_idx])
                 conf = round(float(probs[best_idx]) * 100, 1)
+                detection_source = f"Trained Random Forest Classifier (Confidence: {conf}%)"
             else:
                 predicted = "potholes"
                 conf = 80.0
 
-            # Extract detailed chromatic & spatial distributions
-            arr = np.array(img.convert("RGB").resize((128, 128)), dtype=np.float32) / 255.0
-            r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-            gray_ch = 0.299 * r_ch + 0.587 * g_ch + 0.114 * b_ch
-
-            warm_leaves = float(np.mean((r_ch > 0.40) & (g_ch > 0.20) & (b_ch < 0.30) & (r_ch > g_ch * 1.15))) # autumn/dry leaves
-            green_grass = float(np.mean((g_ch > r_ch + 0.04) & (g_ch > b_ch + 0.04) & (g_ch > 0.22)))   # green grass / lawn
-            dark_metal = float(np.mean((gray_ch < 0.35) & (np.abs(r_ch - g_ch) < 0.08) & (np.abs(g_ch - b_ch) < 0.08))) # dark chassis
-            
-            # Technician hands / skin tone detection
-            skin_mask = (r_ch > 0.35) & (g_ch > 0.22) & (b_ch > 0.15) & (r_ch > g_ch) & (g_ch > b_ch) & ((r_ch - g_ch) > 0.03) & ((r_ch - b_ch) > 0.06)
-            skin_ratio = float(np.mean(skin_mask))
-            
-            # PCB green circuit traces
-            circuit_green = float(np.mean((g_ch > 0.25) & (g_ch > r_ch * 1.05) & (g_ch < 0.78) & (gray_ch < 0.65)))
-            edge_density = float(features[4])
-
+            # Only override if user explicitly provided a description with relevant keywords
             desc_check = (description or "").lower()
-
-            # 1. Computer Hardware / Laptop / Motherboard / Electronics Detection (Strict)
-            is_electronics = (
-                any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "circuit", "chip", "screen", "keyboard", "hardware"])
-                or (
-                    # Technician hands working on dark electronics chassis
-                    green_grass < 0.08 and skin_ratio > 0.03 and (dark_metal > 0.15 or circuit_green > 0.02)
-                )
-                or (
-                    # PCB circuit board with visible traces and high edge density
-                    green_grass < 0.10 and circuit_green > 0.06 and edge_density > 0.08
-                )
-            )
-
-            # 2. Yard Cleaning / Dry Leaves / Lawn Grass / Rake Detection (Strict)
-            is_yard = (
-                any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn", "compost", "foliage", "weed"])
-                or (warm_leaves > 0.12 and (green_grass > 0.04 or features[0] > -0.05))
-                or (warm_leaves > 0.18)
-                or (green_grass > 0.18)
-            )
-
-            if is_electronics:
+            if any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "chip", "hardware"]):
                 predicted = "pc_repair"
-                conf = 94.0
-            elif is_yard:
+                conf = 95.0
+            elif any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn"]):
                 predicted = "yard_cleaning"
-                conf = 94.5
-            # Otherwise, keep the prediction from your trained Random Forest model (water_leaks, potholes, wall_cracks, fallen_trees)
+                conf = 95.0
+            elif any(w in desc_check for w in ["water", "pipe", "drain", "tap", "flood", "seep"]):
+                predicted = "water_leaks"
+                conf = 95.0
+
         except Exception as e:
             print(f"Error extracting features: {e}")
             predicted = "potholes"

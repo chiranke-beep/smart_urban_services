@@ -487,16 +487,16 @@ app.get('/api/admin/analytics', async (req, res) => {
       const active = Number(inc.activeJobs || 0);
       const resolved = Number(inc.resolvedJobs || 0);
       const total = active + resolved;
-      const rate = total > 0 ? ((resolved / total) * 100).toFixed(1) : "98.5";
+      const rate = total > 0 ? Number(((resolved / total) * 100).toFixed(1)) : 100.0;
 
       return {
         district: d.district,
         province: d.province,
         activeJobs: active,
         verifiedWorkers: Number(wrk.verifiedWorkers || 0),
-        totalSettledLKR: (resolved * 3500) + (active * 1500),
-        avgResponseMins: 12 + Math.floor(Math.random() * 5),
-        hazardResolutionRate: Number(rate),
+        totalSettledLKR: resolved * 3500,
+        avgResponseMins: 15,
+        hazardResolutionRate: rate,
       };
     });
 
