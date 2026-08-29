@@ -31,8 +31,6 @@ ai/env/
 !ai/models/
 !ai/models/*.pkl
 
-# Uploads 
-backend/uploads/
 
 # Datasets & ML Training Data
 ai/data/

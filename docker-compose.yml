@@ -38,8 +38,6 @@ services:
       JWT_SECRET: ${JWT_SECRET:-smart_urban_services_jwt_super_secret_key_2026}
       JWT_EXPIRES_IN: 7d
       CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
-    volumes:
-      - ./backend/uploads:/app/uploads
     ports:
       - "5000:5000"
 
@@ -76,4 +74,3 @@ services:
 
 volumes:
   postgres_data:
-  uploads_data:

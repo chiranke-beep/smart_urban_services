@@ -13,9 +13,6 @@ COPY server.js ./
 COPY migrations.js ./
 COPY src/ ./src/
 
-# Create uploads directory
-RUN mkdir -p uploads
-
 # Expose port
 EXPOSE 5000
 

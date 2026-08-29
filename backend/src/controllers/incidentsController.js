@@ -13,10 +13,10 @@ const createIncident = async (req, res) => {
   try {
     const { title, description, category, priority, location_text, latitude, longitude, cost_lkr } = req.body;
 
-    // If image was uploaded, build the URL
+    // If image was uploaded as multipart file, convert to Base64 Data URL, else use JSON body image_url
     const image_url = req.file
-      ? `/uploads/incidents/${req.file.filename}`
-      : null;
+      ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`
+      : (req.body.image_url || null);
 
     const reported_by = req.user ? req.user.id : 1;
 

@@ -1,21 +1,11 @@
-const path = require('path');
 const multer = require('multer');
 
-// Store uploaded images in backend/uploads/incidents/
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../../uploads/incidents'));
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `incident-${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
-  },
-});
+// Store uploaded files in RAM memory buffer instead of writing to disk
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   const allowed = /jpeg|jpg|png|webp/;
-  const isValid = allowed.test(path.extname(file.originalname).toLowerCase()) &&
-                  allowed.test(file.mimetype);
+  const isValid = allowed.test(file.mimetype.toLowerCase());
   if (isValid) {
     cb(null, true);
   } else {
