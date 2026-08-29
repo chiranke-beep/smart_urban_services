@@ -440,7 +440,8 @@ export function LiveGpsRouteMap({
       style={{
         position: "relative",
         width: "100%",
-        height: "260px",
+        height: "clamp(260px, 36vw, 380px)",
+        minHeight: "260px",
         backgroundColor: isDark ? "#090b0e" : "#f1f5f9",
         border: "1px solid var(--border)",
         overflow: "hidden",
@@ -455,17 +456,20 @@ export function LiveGpsRouteMap({
           left: "10px",
           right: "10px",
           zIndex: 400,
-          backgroundColor: isDark ? "rgba(9, 11, 14, 0.9)" : "rgba(255, 255, 255, 0.94)",
+          backgroundColor: isDark ? "rgba(9, 11, 14, 0.92)" : "rgba(255, 255, 255, 0.95)",
           border: "1px solid var(--border)",
-          padding: "8px 14px",
+          padding: "8px 12px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "6px 12px",
           backdropFilter: "blur(12px)",
           WebkitBackdropFilter: "blur(12px)",
+          borderRadius: "0px",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
           <span
             style={{
               width: "8px",
@@ -473,16 +477,17 @@ export function LiveGpsRouteMap({
               borderRadius: "50%",
               backgroundColor: isGeofenced ? "#0891b2" : "#10b981",
               boxShadow: `0 0 10px ${isGeofenced ? "#0891b2" : "#10b981"}`,
+              flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: "12px", fontWeight: 800, color: "var(--text-primary)" }}>
+          <span style={{ fontSize: "clamp(11px, 2.4vw, 12px)", fontWeight: 800, color: "var(--text-primary)" }}>
             {isGeofenced
               ? "GEOFENCE VERIFIED ON PROPERTY (<50m)"
               : `LIVE GPS ROAD ROUTING · ${roadStreetName}`}
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "14px", fontSize: "12px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px 14px", flexWrap: "wrap", fontSize: "clamp(11px, 2.4vw, 12px)" }}>
           <span style={{ color: "var(--text-secondary)" }}>
             Road Distance:{" "}
             <strong style={{ color: "var(--text-primary)" }}>
