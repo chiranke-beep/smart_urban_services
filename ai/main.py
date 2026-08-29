@@ -244,39 +244,41 @@ async def vision_scan(request: Request):
             # Extract detailed chromatic & spatial distributions
             arr = np.array(img.convert("RGB").resize((128, 128)), dtype=np.float32) / 255.0
             r_ch, g_ch, b_ch = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
-            warm_leaves = float(np.mean((r_ch > 0.35) & (g_ch > 0.20) & (b_ch < 0.30))) # dry leaves, golden foliage
-            green_grass = float(np.mean((g_ch > r_ch + 0.05) & (g_ch > b_ch + 0.05)))   # green grass / lawn
-            dark_metal = float(np.mean((r_ch < 0.25) & (g_ch < 0.25) & (b_ch < 0.25)))   # black laptop casing / chassis
-            blue_liquid = float(np.mean((b_ch > r_ch + 0.08) & (b_ch > g_ch + 0.05)))   # actual blue liquid water
+            gray_ch = 0.299 * r_ch + 0.587 * g_ch + 0.114 * b_ch
+
+            warm_leaves = float(np.mean((r_ch > 0.40) & (g_ch > 0.20) & (b_ch < 0.30) & (r_ch > g_ch * 1.15))) # autumn/dry leaves
+            green_grass = float(np.mean((g_ch > r_ch + 0.04) & (g_ch > b_ch + 0.04) & (g_ch > 0.22)))   # green grass / lawn
+            dark_metal = float(np.mean((gray_ch < 0.35) & (np.abs(r_ch - g_ch) < 0.08) & (np.abs(g_ch - b_ch) < 0.08))) # dark chassis
+            
+            # Technician hands / skin tone detection
+            skin_mask = (r_ch > 0.35) & (g_ch > 0.22) & (b_ch > 0.15) & (r_ch > g_ch) & (g_ch > b_ch) & ((r_ch - g_ch) > 0.03) & ((r_ch - b_ch) > 0.06)
+            skin_ratio = float(np.mean(skin_mask))
+            
+            # PCB green circuit traces
+            circuit_green = float(np.mean((g_ch > 0.25) & (g_ch > r_ch * 1.05) & (g_ch < 0.78) & (gray_ch < 0.65)))
             edge_density = float(features[4])
 
             desc_check = (description or "").lower()
 
-            # 1. Computer Hardware / Laptop / Motherboard / Electronics Detection
+            # 1. Computer Hardware / Laptop / Motherboard / Electronics Detection (Strict)
             is_electronics = (
-                any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "circuit", "chip", "screen", "keyboard", "tech", "hardware", "board"])
+                any(w in desc_check for w in ["laptop", "pc", "computer", "motherboard", "circuit", "chip", "screen", "keyboard", "hardware"])
                 or (
-                    # Circuit boards have dense micro-edges, low water, and low natural foliage
-                    edge_density > 0.04
-                    and blue_liquid < 0.03
-                    and warm_leaves < 0.12
-                    and green_grass < 0.08
-                    and (dark_metal > 0.12 or features[2] > 0.30 or features[1] < 0.60)
+                    # Technician hands working on dark electronics chassis
+                    green_grass < 0.08 and skin_ratio > 0.03 and (dark_metal > 0.15 or circuit_green > 0.02)
+                )
+                or (
+                    # PCB circuit board with visible traces and high edge density
+                    green_grass < 0.10 and circuit_green > 0.06 and edge_density > 0.08
                 )
             )
 
-            # 2. Yard Cleaning / Dry Leaves / Lawn Grass / Rake Detection
+            # 2. Yard Cleaning / Dry Leaves / Lawn Grass / Rake Detection (Strict)
             is_yard = (
                 any(w in desc_check for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn", "compost", "foliage", "weed"])
                 or (warm_leaves > 0.12 and (green_grass > 0.04 or features[0] > -0.05))
                 or (warm_leaves > 0.18)
-                or (green_grass > 0.18 and blue_liquid < 0.04)
-            )
-
-            # 3. Water Leaks
-            is_water_leak = (
-                any(w in desc_check for w in ["water", "leak", "pipe", "drain", "tap", "flood", "seep", "plumb"])
-                or (blue_liquid > 0.04 and not is_electronics)
+                or (green_grass > 0.18)
             )
 
             if is_electronics:
@@ -285,14 +287,10 @@ async def vision_scan(request: Request):
             elif is_yard:
                 predicted = "yard_cleaning"
                 conf = 94.5
-            elif is_water_leak or predicted == "water_leaks":
-                predicted = "water_leaks"
-                conf = 89.0
-            elif predicted in ["potholes", "wall_cracks", "fallen_trees"]:
-                pass
+            # Otherwise, keep the prediction from your trained Random Forest model (water_leaks, potholes, wall_cracks, fallen_trees)
         except Exception as e:
             print(f"Error extracting features: {e}")
-            predicted = "pc_repair" if any(w in (description or "").lower() for w in ["pc", "laptop", "board"]) else "potholes"
+            predicted = "potholes"
             conf = 75.0
     else:
         desc = (description or "").lower()
