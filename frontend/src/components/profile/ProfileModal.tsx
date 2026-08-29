@@ -220,32 +220,41 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
 
     setIsUploadingPhoto(true);
 
-    // 1. Read immediately for instant visual feedback
-    const reader = new FileReader();
-    reader.onload = async () => {
-      if (reader.result) {
-        const base64Data = String(reader.result);
-        setProfilePicture(base64Data);
-
-        // 2. Upload to server to get permanent static URL
-        try {
-          const res = await fetch("http://localhost:5000/api/upload", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ imageBase64: base64Data }),
-          });
-          const data = await res.json();
-          if (data?.success && data?.url) {
-            setProfilePicture(data.url);
+    try {
+      // Auto-resize and compress to compact 256x256 JPEG (~15-25 KB)
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 256;
+          let w = img.width;
+          let h = img.height;
+          if (w > h) {
+            if (w > maxDim) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            }
+          } else {
+            if (h > maxDim) {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
           }
-        } catch {
-          // Keep base64Data if network issue
-        } finally {
+          const canvas = document.createElement("canvas");
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, w, h);
+          const compactBase64 = canvas.toDataURL("image/jpeg", 0.82);
+          setProfilePicture(compactBase64);
           setIsUploadingPhoto(false);
-        }
-      }
-    };
-    reader.readAsDataURL(file);
+        };
+        img.src = ev.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      setIsUploadingPhoto(false);
+    }
   };
 
   const handleRemovePhoto = async () => {
@@ -333,7 +342,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
         }),
       });
 
-      const savedPic = patchRes?.profilePicture || "";
+      const savedPic = patchRes?.profilePicture !== undefined ? (patchRes.profilePicture || "") : (profilePicture || "");
       setProfilePicture(savedPic);
 
       // Update session localStorage cache

@@ -10,6 +10,7 @@ import {
 } from "@/types/auth";
 import { authService } from "@/services/authService";
 import { socketService } from "@/services/socketService";
+import { getApiBaseUrl } from "@/services/api";
 import { useRouter } from "next/navigation";
 
 interface AuthContextType {
@@ -36,19 +37,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshProfile = (userId?: string | number) => {
     const rawId = String(userId || "").replace(/\D/g, "");
-    fetch(`http://localhost:5000/api/users/profile/${rawId || 2}`)
+    const base = getApiBaseUrl();
+    fetch(`${base}/users/profile/${rawId || 2}`)
       .then((r) => r.json())
       .then((res) => {
         if (res?.data) {
           const d = res.data;
           setUser((prev) => {
             if (!prev) return prev;
+            const finalPic = d.profilePicture ? d.profilePicture : prev.profilePicture;
             const synced: UserProfile = {
               ...prev,
-              id: `USR-${d.id}`,
+              id: prev.id || `USR-${d.id}`,
               fullName: d.fullName || prev.fullName,
               phone: d.phone || prev.phone,
-              profilePicture: d.profilePicture ? d.profilePicture : undefined,
+              profilePicture: finalPic || undefined,
               homeAddress: d.homeAddress || prev.homeAddress,
               savedLat: d.savedLat ? Number(d.savedLat) : prev.savedLat,
               savedLng: d.savedLng ? Number(d.savedLng) : prev.savedLng,
@@ -61,9 +64,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               verificationStatus: d.verificationStatus || (d.verified ? "APPROVED" : "PENDING"),
               rejectionReason: d.rejectionReason || undefined,
             };
-            if (!d.profilePicture) {
-              delete synced.profilePicture;
-            }
             authService.setSession(synced, authService.getToken() || "");
             return synced;
           });

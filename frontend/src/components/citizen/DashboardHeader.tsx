@@ -23,6 +23,30 @@ export function DashboardHeader({
   const { user, logout } = useAuth();
   const isDark = theme === "dark";
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [liveProfilePic, setLiveProfilePic] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
+
+  const numericId = user?.id ? String(user.id).replace(/\D/g, "") : "1";
+
+  const fetchLiveProfile = () => {
+    if (numericId) {
+      apiClient<{ success: boolean; data?: any }>(`/users/profile/${numericId}`)
+        .then((res) => {
+          if (res?.data?.profilePicture) {
+            setLiveProfilePic(res.data.profilePicture);
+          }
+        })
+        .catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveProfile();
+  }, [numericId]);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user?.profilePicture, liveProfilePic]);
 
   const initials = user?.fullName
     ? user.fullName
@@ -176,13 +200,11 @@ export function DashboardHeader({
                 overflow: "hidden",
               }}
             >
-              {user?.profilePicture ? (
+              {(liveProfilePic || user?.profilePicture) && !imgError ? (
                 <img
-                  src={user.profilePicture}
+                  src={liveProfilePic || user?.profilePicture}
                   alt="Avatar"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
+                  onError={() => setImgError(true)}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               ) : (
@@ -232,6 +254,7 @@ export function DashboardHeader({
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
+        onProfileUpdated={fetchLiveProfile}
       />
     </header>
   );

@@ -30,11 +30,23 @@ export function ProviderHeader({
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [liveRating, setLiveRating] = useState<number>(workerRating || 5.0);
   const [liveReviews, setLiveReviews] = useState<number>(workerReviews || 0);
+  const [liveProfilePic, setLiveProfilePic] = useState<string | null>(null);
+  const [imgError, setImgError] = useState(false);
 
   const numericId = user?.id ? String(user.id).replace(/\D/g, "") : "1";
 
-  const fetchLiveStats = () => {
+  const fetchLiveProfile = () => {
     if (numericId) {
+      apiClient<{ success: boolean; data?: any }>(`/users/profile/${numericId}`)
+        .then((res) => {
+          if (res?.data) {
+            if (res.data.profilePicture) {
+              setLiveProfilePic(res.data.profilePicture);
+            }
+          }
+        })
+        .catch(() => {});
+
       apiClient<{ success: boolean; data?: any }>(`/providers/${numericId}/stats`)
         .then((res) => {
           if (res?.data) {
@@ -47,8 +59,12 @@ export function ProviderHeader({
   };
 
   useEffect(() => {
-    fetchLiveStats();
+    fetchLiveProfile();
   }, [numericId]);
+
+  useEffect(() => {
+    setImgError(false);
+  }, [user?.profilePicture, liveProfilePic]);
 
   const displayName = workerName || user?.fullName || "Service Provider";
   const displayTrade = workerTrade || user?.trade || "Verified Technician";
@@ -166,13 +182,11 @@ export function ProviderHeader({
                 overflow: "hidden",
               }}
             >
-              {user?.profilePicture ? (
+              {(liveProfilePic || user?.profilePicture) && !imgError ? (
                 <img
-                  src={user.profilePicture}
+                  src={liveProfilePic || user?.profilePicture}
                   alt="Avatar"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
+                  onError={() => setImgError(true)}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
               ) : (
@@ -251,7 +265,7 @@ export function ProviderHeader({
       <ProfileModal
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
-        onProfileUpdated={fetchLiveStats}
+        onProfileUpdated={fetchLiveProfile}
       />
     </header>
   );

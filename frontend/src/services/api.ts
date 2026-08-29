@@ -1,4 +1,16 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+export function getApiBaseUrl(): string {
+  if (typeof window !== "undefined" && window.location?.hostname) {
+    if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    const proto = window.location.protocol;
+    const host = window.location.hostname;
+    return `${proto}//${host}:5000/api`;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+}
+
+const API_BASE = getApiBaseUrl();
 
 const AUTH_STORAGE_KEY = "smart_urban_auth_session";
 
