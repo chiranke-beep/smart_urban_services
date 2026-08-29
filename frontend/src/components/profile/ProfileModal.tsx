@@ -716,7 +716,24 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
                 <button
                   type="button"
                   onClick={() => {
-                    if ("geolocation" in navigator) {
+                    const fallbackToIp = () => {
+                      fetch("https://ipapi.co/json/")
+                        .then((r) => r.json())
+                        .then((data) => {
+                          if (data?.latitude && data?.longitude) {
+                            const lat = Number(Number(data.latitude).toFixed(6));
+                            const lng = Number(Number(data.longitude).toFixed(6));
+                            setSavedLat(lat);
+                            setSavedLng(lng);
+                            if (data.city || data.region) {
+                              setHomeAddress(`${data.city || ""}, ${data.region || ""}`.trim());
+                            }
+                          }
+                        })
+                        .catch(() => {});
+                    };
+
+                    if (typeof window !== "undefined" && "geolocation" in navigator) {
                       navigator.geolocation.getCurrentPosition(
                         (pos) => {
                           const lat = Number(pos.coords.latitude.toFixed(6));
@@ -733,13 +750,16 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
                                 setHomeAddress(short);
                               }
                             })
-                            .catch(() => { });
+                            .catch(() => {});
                         },
                         (err) => {
-                          alert("GPS fix notice: " + err.message);
+                          console.log("[Geolocation fallback to IP]:", err.message);
+                          fallbackToIp();
                         },
-                        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
                       );
+                    } else {
+                      fallbackToIp();
                     }
                   }}
                   style={{
