@@ -75,12 +75,12 @@ class SocketService {
     };
   }
 
-  public updateQuotation(jobId: string, amountLKR: number, workerName?: string, notes?: string) {
+  public updateQuotation(jobId: string, amountLKR: number, workerName?: string, notes?: string, workerId?: string) {
     const s = this.getSocket();
-    s.emit("update_quotation", { jobId, amountLKR, workerName, notes, timestamp: new Date().toISOString() });
+    s.emit("update_quotation", { jobId, amountLKR, workerName, notes, workerId, timestamp: new Date().toISOString() });
   }
 
-  public onQuotationUpdated(callback: (data: { jobId: string; amountLKR: number; workerName?: string; notes?: string }) => void) {
+  public onQuotationUpdated(callback: (data: { jobId: string; amountLKR: number; workerName?: string; notes?: string; workerId?: string; providerId?: string }) => void) {
     const s = this.getSocket();
     s.on("quotation_updated", callback);
     return () => {

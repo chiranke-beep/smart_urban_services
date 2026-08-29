@@ -25,6 +25,7 @@ export function CivicHazardMonitor({
   hazards,
   onDispatchCrew,
 }: CivicHazardMonitorProps) {
+  const [selectedHazardId, setSelectedHazardId] = useState<string | null>(null);
   const [crewName, setCrewName] = useState("Rapid Response Emergency Unit (Local Area)");
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -183,10 +184,8 @@ export function CivicHazardMonitor({
                             border: "1px solid var(--border)",
                             color: "var(--text-primary)",
                             fontSize: "12.5px",
-                            fontWeight: 700,
-                            outline: "none",
-                            maxWidth: "100%",
                           }}
+                        >
                           <option value="Rapid Response Emergency Unit (Local Area)">Rapid Response Emergency Unit (Local Area)</option>
                           <option value="Municipal Disaster & Hazard Clearing Squad">Municipal Disaster & Hazard Clearing Squad</option>
                           <option value="Certified Local Specialist Crew">Certified Local Specialist Crew</option>
