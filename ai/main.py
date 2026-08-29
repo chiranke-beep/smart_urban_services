@@ -352,8 +352,9 @@ async def vision_scan(request: Request):
     if image_bytes:
         try:
             img = Image.open(io.BytesIO(image_bytes))
+            features = extract_cv_features(img)
+
             # Step 1: Check for specific domestic categories (Yard leaves/grass or PC/electronics repair)
-            # Since these rules strictly require real leaves/grass or technician hands+PCB, they never false-trigger on civic hazards.
             domestic_result = classify_domestic_by_color(img)
             if domestic_result:
                 predicted = domestic_result["category"]
