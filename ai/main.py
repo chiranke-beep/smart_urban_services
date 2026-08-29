@@ -352,24 +352,21 @@ async def vision_scan(request: Request):
     if image_bytes:
         try:
             img = Image.open(io.BytesIO(image_bytes))
-            features = extract_cv_features(img)
-
-            # Step 1: Run the 97% Accuracy Trained Random Forest Classifier
-            if hazard_model:
+            # Step 1: Check for specific domestic categories (Yard leaves/grass or PC/electronics repair)
+            # Since these rules strictly require real leaves/grass or technician hands+PCB, they never false-trigger on civic hazards.
+            domestic_result = classify_domestic_by_color(img)
+            if domestic_result:
+                predicted = domestic_result["category"]
+                conf = domestic_result["confidence"]
+                detection_source = domestic_result["source"]
+            elif hazard_model:
+                # Step 2: Use the 97% Accuracy Trained Random Forest Classifier for civic hazards (Water leaks, potholes, wall cracks, fallen trees)
                 probs = hazard_model.predict_proba([features])[0]
                 classes = hazard_model.classes_
                 best_idx = np.argmax(probs)
                 predicted = str(classes[best_idx])
                 conf = round(float(probs[best_idx]) * 100, 1)
-
-            # Step 2: Smart domestic analysis only if the trained model is uncertain (< 55%)
-            # The trained RF model has primary authority on its trained classes (water leaks, potholes, cracks, trees)
-            if conf < 55.0:
-                color_result = classify_domestic_by_color(img)
-                if color_result:
-                    predicted = color_result["category"]
-                    conf = color_result["confidence"]
-                    detection_source = color_result["source"]
+                detection_source = "Trained Random Forest Classifier (97% Test Accuracy)"
 
         except Exception as e:
             print(f"Error in vision pipeline: {e}")
