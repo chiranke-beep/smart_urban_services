@@ -183,22 +183,7 @@ app.patch('/api/users/profile/:id', async (req, res) => {
 
     if (profilePicture !== undefined) {
       shouldUpdatePhoto = true;
-      if (profilePicture && typeof profilePicture === 'string' && profilePicture.startsWith('data:image/')) {
-        const matches = profilePicture.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const rawExt = matches[1].split('/')[1] || 'jpg';
-          const ext = rawExt.includes('png') ? 'png' : rawExt.includes('webp') ? 'webp' : 'jpg';
-          const buffer = Buffer.from(matches[2], 'base64');
-          const filename = `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-          const filePath = path.join(uploadsDir, filename);
-          fs.writeFileSync(filePath, buffer);
-          finalProfilePic = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-        }
-      } else if (profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '') {
-        finalProfilePic = profilePicture.trim();
-      } else {
-        finalProfilePic = null;
-      }
+      finalProfilePic = profilePicture && typeof profilePicture === 'string' && profilePicture.trim() !== '' ? profilePicture.trim() : null;
     }
 
     await pool.query(`
@@ -222,19 +207,7 @@ app.patch('/api/users/profile/:id', async (req, res) => {
       language || null, locality || null, district || null, rawId, shouldUpdatePhoto
     ]);
 
-    let finalNicDoc = nicDocumentUrl || null;
-    if (nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.startsWith('data:image/')) {
-      const matches = nicDocumentUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        const rawExt = matches[1].split('/')[1] || 'jpg';
-        const ext = rawExt.includes('png') ? 'png' : rawExt.includes('webp') ? 'webp' : 'jpg';
-        const buffer = Buffer.from(matches[2], 'base64');
-        const filename = `nic-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-        const filePath = path.join(uploadsDir, filename);
-        fs.writeFileSync(filePath, buffer);
-        finalNicDoc = `${req.protocol}://${req.get('host')}/uploads/${filename}`;
-      }
-    }
+    let finalNicDoc = nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.trim() !== '' ? nicDocumentUrl.trim() : null;
 
     if (trade || dailyRate || hourlyRate || vehicleType || plateNumber || nicNumber || finalNicDoc) {
       await pool.query(`
@@ -830,28 +803,16 @@ app.use('/api/analytics', analyticsRoutes);
 
 
 
-// Photo Upload API (converts uploaded file to accessible static URL)
+// Photo Upload API (returns Base64 Data URL directly from in-memory buffer)
 app.post('/api/upload', upload.single('photo'), (req, res) => {
   try {
     if (req.file) {
-      const baseUrl = `${req.protocol}://${req.get('host')}`;
-      const fileUrl = `${baseUrl}/uploads/${req.file.filename}`;
-      return res.json({ success: true, url: fileUrl });
+      const dataUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+      return res.json({ success: true, url: dataUrl });
     }
 
     if (req.body?.imageBase64) {
-      const matches = req.body.imageBase64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        const rawExt = matches[1].split('/')[1] || 'jpg';
-        const ext = rawExt.includes('png') ? 'png' : rawExt.includes('webp') ? 'webp' : 'jpg';
-        const buffer = Buffer.from(matches[2], 'base64');
-        const filename = `avatar-${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`;
-        const filePath = path.join(uploadsDir, filename);
-        fs.writeFileSync(filePath, buffer);
-        const baseUrl = `${req.protocol}://${req.get('host')}`;
-        const fileUrl = `${baseUrl}/uploads/${filename}`;
-        return res.json({ success: true, url: fileUrl });
-      }
+      return res.json({ success: true, url: req.body.imageBase64 });
     }
 
     return res.status(400).json({ success: false, message: 'No file or valid base64 provided.' });
@@ -1196,8 +1157,10 @@ const startServer = async () => {
         sender VARCHAR(50) NOT NULL,
         sender_name VARCHAR(100) NOT NULL,
         text TEXT NOT NULL,
+        photo_url TEXT,
         created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
       );
+      ALTER TABLE messages ADD COLUMN IF NOT EXISTS photo_url TEXT;
       CREATE INDEX IF NOT EXISTS idx_messages_job_id ON messages(job_id);
     `);
     console.log('Messages table ready');
