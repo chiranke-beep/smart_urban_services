@@ -161,6 +161,8 @@ class AuthService {
         password,
         role: "citizen",
         phone: data.phone,
+        locality: data.locality,
+        district: data.district,
       }),
     });
 
@@ -172,8 +174,8 @@ class AuthService {
         email: backendUser.email,
         phone: backendUser.phone || data.phone,
         role: "HOMEOWNER",
-        locality: data.locality,
-        district: data.district,
+        locality: data.locality || backendUser.locality,
+        district: data.district || backendUser.district,
         createdAt: backendUser.created_at || new Date().toISOString(),
       };
 
@@ -197,6 +199,8 @@ class AuthService {
         password,
         role: "service_provider",
         phone: data.phone,
+        locality: data.locality || "Colombo",
+        district: data.district || "Colombo",
       }),
     });
 

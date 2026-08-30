@@ -58,6 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
               birthday: d.birthday || prev.birthday,
               gender: d.gender || prev.gender,
               language: d.language || prev.language,
+              locality: d.locality || prev.locality,
+              district: d.district || prev.district,
               trade: d.trade || prev.trade,
               dailyRate: d.dailyRate ? Number(d.dailyRate) : prev.dailyRate,
               verifiedBadge: d.verified === true,

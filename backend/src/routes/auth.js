@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const { body } = require('express-validator');
 const { register, login, getMe } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
@@ -30,6 +30,14 @@ const registerValidation = [
     .optional()
     .custom((val) => !val || (typeof val === 'string' && val.replace(/\D/g, '').length >= 9))
     .withMessage('Please provide a valid phone number with at least 9 digits.'),
+
+  body('locality')
+    .optional()
+    .trim(),
+
+  body('district')
+    .optional()
+    .trim(),
 ];
 
 const loginValidation = [

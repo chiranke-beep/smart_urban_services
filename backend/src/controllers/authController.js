@@ -1,4 +1,4 @@
-﻿const bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
@@ -22,6 +22,8 @@ const sendTokenResponse = (user, statusCode, res) => {
       email: user.email,
       role: user.role,
       phone: user.phone,
+      locality: user.locality,
+      district: user.district,
       profile_picture: user.profile_picture,
       home_address: user.home_address,
       saved_lat: user.saved_lat,

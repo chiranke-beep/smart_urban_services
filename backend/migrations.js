@@ -40,7 +40,48 @@ async function runMigrations() {
       ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
     `);
 
-    // 3. Ensure admin user exists with proper password
+    // 3. Ensure incidents table has review and quotation columns
+    await pool.query(`
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS cost_lkr INTEGER DEFAULT 3500;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS stage VARCHAR(30) DEFAULT 'REQUESTED';
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS quotation_notes TEXT;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS rating INTEGER;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS review_comment TEXT;
+    `);
+
+    // 4. Ensure reviews table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS reviews (
+        id SERIAL PRIMARY KEY,
+        job_id VARCHAR(50),
+        incident_id INTEGER REFERENCES incidents(id) ON DELETE CASCADE,
+        reviewer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        worker_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        rating INTEGER NOT NULL DEFAULT 5,
+        comment TEXT NOT NULL,
+        likes_count INTEGER DEFAULT 0,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+      CREATE INDEX IF NOT EXISTS idx_reviews_incident ON reviews(incident_id);
+      CREATE INDEX IF NOT EXISTS idx_reviews_worker ON reviews(worker_id);
+    `);
+
+    // 5. Ensure payments table exists
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id SERIAL PRIMARY KEY,
+        job_id VARCHAR(50),
+        incident_id INTEGER REFERENCES incidents(id) ON DELETE CASCADE,
+        payer_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        payee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+        amount_lkr NUMERIC DEFAULT 3500,
+        payment_method VARCHAR(50) DEFAULT 'Cash on Hand',
+        status VARCHAR(20) DEFAULT 'completed',
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      );
+    `);
+
+    // 6. Ensure admin user exists with proper password
     const adminPassword = await bcrypt.hash('Admin@123', 10);
     await pool.query(`
       INSERT INTO users (name, email, password, role, is_active)

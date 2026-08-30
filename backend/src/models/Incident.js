@@ -56,6 +56,8 @@ const Incident = {
       ALTER TABLE incidents ADD COLUMN IF NOT EXISTS cost_lkr INTEGER DEFAULT 3500;
       ALTER TABLE incidents ADD COLUMN IF NOT EXISTS stage VARCHAR(30) DEFAULT 'REQUESTED';
       ALTER TABLE incidents ADD COLUMN IF NOT EXISTS quotation_notes TEXT;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS rating INTEGER;
+      ALTER TABLE incidents ADD COLUMN IF NOT EXISTS review_comment TEXT;
       ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_category_check;
       ALTER TABLE incidents DROP CONSTRAINT IF EXISTS incidents_status_check;
     `);

@@ -858,8 +858,23 @@ app.post('/api/reviews', async (req, res) => {
       [jobId, rawId ? Number(rawId) : null, finalReviewerId, finalWorkerId, numRating, comment]
     );
 
+    if (finalWorkerId) {
+      try {
+        await pool.query(`
+          UPDATE provider_profiles
+          SET 
+            rating = ROUND(((COALESCE(rating, 5.0) * COALESCE(review_count, 0) + $1) / (COALESCE(review_count, 0) + 1))::numeric, 1),
+            review_count = COALESCE(review_count, 0) + 1
+          WHERE user_id = $2
+        `, [numRating, finalWorkerId]);
+      } catch (pe) {
+        console.warn('Provider profile rating update notice:', pe.message);
+      }
+    }
+
     res.status(201).json({ success: true, data: rows[0] });
   } catch (err) {
+    console.error('Review submit error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
 });
