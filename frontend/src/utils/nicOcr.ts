@@ -177,21 +177,56 @@ function buildCanvasDataUrl(
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
+import { getApiBaseUrl } from "@/services/api";
+
+/** Downscale large phone camera photos (12-48MP) to ~1200px before uploading.
+ * Cuts network payload from 15MB down to ~80KB so uploads take ~0.5s even on 3G/weak mobile. */
+function downscaleImageForOcr(imageSrc: string, maxDim = 1200): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(imageSrc);
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      let { width, height } = img;
+      if (width <= maxDim && height <= maxDim) {
+        return resolve(imageSrc);
+      }
+      if (width > height) {
+        height = Math.round((height * maxDim) / width);
+        width = maxDim;
+      } else {
+        width = Math.round((width * maxDim) / height);
+        height = maxDim;
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(imageSrc);
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.onerror = () => resolve(imageSrc);
+    img.src = imageSrc;
+  });
+}
+
 /** Call the backend OCR endpoint — runs Tesseract on EC2, fast on any device. */
 async function scanNicServerSide(imageSrc: string): Promise<NicScanResult | null> {
   try {
-    const apiBase =
-      process.env.NEXT_PUBLIC_API_URL ||
-      (typeof window !== "undefined" && window.location.origin) ||
-      "";
+    const apiBase = getApiBaseUrl(); // dynamically resolves to http://<ec2-ip>:5000/api
+    const url = `${apiBase.replace(/\/+$/, "")}/ocr/nic`;
+
+    // Downscale first so even a 15MB mobile camera photo transfers in ~0.5s
+    const optimizedImage = await downscaleImageForOcr(imageSrc, 1200);
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15_000); // 15 s max
+    const timeout = setTimeout(() => controller.abort(), 10_000); // 10s strict timeout
 
-    const resp = await fetch(`${apiBase}/api/ocr/nic`, {
+    const resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ imageBase64: imageSrc }),
+      body: JSON.stringify({ imageBase64: optimizedImage }),
       signal: controller.signal,
     });
     clearTimeout(timeout);
@@ -202,8 +237,9 @@ async function scanNicServerSide(imageSrc: string): Promise<NicScanResult | null
       return { nicNumber: json.nicNumber, rawText: json.rawText || "", confidence: json.confidence || 0 };
     }
     return null;
-  } catch {
-    return null; // server unreachable → fall back to browser OCR
+  } catch (err: any) {
+    console.warn("[NIC OCR Server] Network fallback:", err?.message || err);
+    return null;
   }
 }
 
@@ -223,39 +259,28 @@ export async function scanNicFromImage(imageSource: string | File): Promise<NicS
 
     // ── Step 1: Try server-side OCR (fast: 1-3s on EC2, works on any device) ──
     const serverResult = await scanNicServerSide(imageSrc);
-    if (serverResult) return serverResult;
+    if (serverResult?.nicNumber) return serverResult;
 
-    // ── Step 2: Browser fallback (if server is unreachable / offline) ──────────
-    console.warn("[NIC OCR] Server OCR unavailable, falling back to browser OCR");
+    // ── Step 2: Browser fallback (fast single pass, 6s max timeout, never hangs) ──
+    try {
+      const Tesseract = await import("tesseract.js");
 
-    const Tesseract = await import("tesseract.js");
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const el = new Image();
+        el.crossOrigin = "anonymous";
+        el.onload = () => resolve(el);
+        el.onerror = reject;
+        el.src = imageSrc;
+      });
 
-    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-      const el = new Image();
-      el.crossOrigin = "anonymous";
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = imageSrc;
-    });
-
-    const attempts: Array<[number, "sharp_thin" | "contrast" | "raw"]> = [
-      [0,   "raw"],
-      [270, "raw"],
-      [90,  "raw"],
-      [180, "raw"],
-      [0,   "sharp_thin"],
-      [270, "sharp_thin"],
-      [0,   "contrast"],
-      [270, "contrast"],
-    ];
-
-    for (const [deg, mode] of attempts) {
-      const dataUrl = buildCanvasDataUrl(img, deg, mode);
-      const result = await recogniseWithTimeout(Tesseract, dataUrl, 20_000);
-      if (!result) continue;
-
-      const found = extractNicFromText(result.text, result.confidence);
-      if (found) return found;
+      const dataUrl = buildCanvasDataUrl(img, 0, "raw");
+      const result = await recogniseWithTimeout(Tesseract, dataUrl, 6_000);
+      if (result) {
+        const found = extractNicFromText(result.text, result.confidence);
+        if (found) return found;
+      }
+    } catch {
+      // ignore browser OCR failures
     }
 
     return { nicNumber: null, rawText: "", confidence: 0 };

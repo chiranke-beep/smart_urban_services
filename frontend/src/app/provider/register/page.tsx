@@ -131,6 +131,10 @@ export default function ProviderRegisterPage() {
         const base64Data = String(reader.result);
         setNicDocumentUrl(base64Data);
 
+        const safetyTimer = setTimeout(() => {
+          setIsOcrScanning(false);
+        }, 12_000);
+
         try {
           // Dynamic AI OCR scan across rotations
           const ocrRes = await scanNicFromImage(base64Data);
@@ -141,6 +145,7 @@ export default function ProviderRegisterPage() {
         } catch (ocrErr: any) {
           console.warn("[AI OCR Scan error]:", ocrErr.message);
         } finally {
+          clearTimeout(safetyTimer);
           setIsOcrScanning(false);
         }
 

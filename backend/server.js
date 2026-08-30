@@ -1128,8 +1128,11 @@ app.post('/api/ocr/nic', async (req, res) => {
       return res.status(400).json({ success: false, message: 'imageBase64 is required' });
     }
 
+    const cleanBase64 = imageBase64.includes(',') ? imageBase64.split(',')[1] : imageBase64;
+    const imgBuffer = Buffer.from(cleanBase64, 'base64');
+
     const worker = await getTesseractWorker();
-    const { data: { text, confidence } } = await worker.recognize(imageBase64);
+    const { data: { text, confidence } } = await worker.recognize(imgBuffer);
 
     const nicNumber = extractNicFromText(text);
     return res.json({ success: true, nicNumber, confidence, rawText: text });
