@@ -147,8 +147,7 @@ app.get('/api/users/profile/:id', async (req, res) => {
         u.locality,
         u.district,
         pp.trade, pp.daily_rate AS "dailyRate", pp.hourly_rate AS "hourlyRate",
-        pp.experience_years AS "experienceYears", pp.vehicle_type AS "vehicleType",
-        pp.plate_number AS "plateNumber",
+        pp.experience_years AS "experienceYears",
         COALESCE(pp.verified, false) AS "verified",
         COALESCE(pp.verification_status, 'PENDING') AS "verificationStatus",
         pp.nic_number AS "nicNumber",
@@ -174,7 +173,7 @@ app.patch('/api/users/profile/:id', async (req, res) => {
     const {
       fullName, phone, profilePicture, homeAddress,
       savedLat, savedLng, birthday, gender, language,
-      locality, district, trade, dailyRate, hourlyRate, vehicleType, plateNumber,
+      locality, district, trade, dailyRate, hourlyRate,
       nicNumber, nicDocumentUrl, experienceYears
     } = req.body;
 
@@ -209,26 +208,22 @@ app.patch('/api/users/profile/:id', async (req, res) => {
 
     let finalNicDoc = nicDocumentUrl && typeof nicDocumentUrl === 'string' && nicDocumentUrl.trim() !== '' ? nicDocumentUrl.trim() : null;
 
-    if (trade || dailyRate || hourlyRate || vehicleType || plateNumber || nicNumber || finalNicDoc) {
+    if (trade || dailyRate || hourlyRate || nicNumber || finalNicDoc) {
       await pool.query(`
-        INSERT INTO provider_profiles (user_id, trade, daily_rate, hourly_rate, vehicle_type, plate_number, nic_number, nic_document_url, experience_years)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        INSERT INTO provider_profiles (user_id, trade, daily_rate, hourly_rate, nic_number, nic_document_url, experience_years)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         ON CONFLICT (user_id) DO UPDATE SET
           trade = COALESCE($2, provider_profiles.trade),
           daily_rate = COALESCE($3, provider_profiles.daily_rate),
           hourly_rate = COALESCE($4, provider_profiles.hourly_rate),
-          vehicle_type = COALESCE($5, provider_profiles.vehicle_type),
-          plate_number = COALESCE($6, provider_profiles.plate_number),
-          nic_number = COALESCE($7, provider_profiles.nic_number),
-          nic_document_url = COALESCE($8, provider_profiles.nic_document_url),
-          experience_years = COALESCE($9, provider_profiles.experience_years)
+          nic_number = COALESCE($5, provider_profiles.nic_number),
+          nic_document_url = COALESCE($6, provider_profiles.nic_document_url),
+          experience_years = COALESCE($7, provider_profiles.experience_years)
       `, [
         rawId,
         trade || 'Technician',
         dailyRate || 3500,
         hourlyRate || 600,
-        vehicleType || 'Service Vehicle',
-        plateNumber || 'WP-CAB-8821',
         nicNumber || null,
         finalNicDoc || null,
         experienceYears || 5
@@ -257,8 +252,6 @@ app.get('/api/admin/workers', async (req, res) => {
         pp.experience_years AS "experienceYears",
         pp.daily_rate AS "dailyRate",
         pp.hourly_rate AS "hourlyRate",
-        pp.vehicle_type AS "vehicleType",
-        pp.plate_number AS "plateNumber",
         pp.nic_number AS "nicNumber",
         pp.nic_document_url AS "nicFrontUrl",
         COALESCE(pp.verification_status, CASE WHEN pp.verified = true THEN 'APPROVED' ELSE 'PENDING' END) AS status,
@@ -279,8 +272,6 @@ app.get('/api/admin/workers', async (req, res) => {
       locality: r.locality || 'Colombo Urban',
       experienceYears: Number(r.experienceYears || 5),
       phone: r.phone || 'N/A',
-      vehicleType: r.vehicleType,
-      plateNumber: r.plateNumber,
       nicNumber: r.nicNumber || 'N/A',
       nicFrontUrl: r.nicFrontUrl || null,
       status: r.status || 'PENDING',
@@ -329,46 +320,7 @@ app.patch('/api/admin/workers/:id/verify', async (req, res) => {
   }
 });
 
-app.get('/api/admin/hazards', async (req, res) => {
-  try {
-    const { rows } = await pool.query(`
-      SELECT
-        i.id,
-        'HAZ-' || i.id AS "hazardId",
-        i.title,
-        i.category,
-        i.description,
-        i.priority,
-        i.status,
-        i.location_text,
-        i.latitude,
-        i.longitude,
-        i.created_at AS "reportedAt",
-        COALESCE(u.name, 'Citizen') AS "reporterName"
-      FROM incidents i
-      LEFT JOIN users u ON i.reported_by = u.id
-      WHERE i.stage != 'CANCELLED' AND i.status != 'rejected'
-      ORDER BY i.created_at DESC
-    `);
 
-    const mapped = rows.map((r) => ({
-      id: `HAZ-${r.id}`,
-      title: r.title,
-      category: r.category === 'waste' ? 'Garbage Overflow & Waste Dump' : r.category === 'water' ? 'Broken Pipe & Main Flooding' : r.category === 'electricity' ? 'Dangling Live Wire & Sparking' : r.category === 'road' ? 'Road Craters & Manhole Collapse' : r.title,
-      district: r.location_text?.split(',')?.[1]?.trim() || 'Colombo',
-      locality: r.location_text?.split(',')?.[0]?.trim() || 'Colombo Urban',
-      urgency: r.priority === 'critical' ? 'CRITICAL' : r.priority === 'high' ? 'HIGH' : 'MEDIUM',
-      reportedBy: r.reporterName,
-      reportedAt: r.reportedAt || new Date().toISOString(),
-      status: r.status === 'resolved' ? 'RESOLVED' : r.status === 'in_progress' ? 'DISPATCHED' : 'OPEN',
-      description: r.description || 'Civic infrastructure anomaly reported by citizen.',
-    }));
-
-    res.json({ success: true, data: mapped });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
 
 app.get('/api/admin/analytics', async (req, res) => {
   try {
@@ -996,8 +948,6 @@ app.get('/api/providers', async (req, res) => {
           (SELECT COUNT(*) FROM reviews r WHERE r.worker_id = u.id OR r.incident_id IN (SELECT id FROM incidents WHERE assigned_to = u.id)),
           1
         ) AS "reviewCount",
-        COALESCE(pp.vehicle_type, 'Service Vehicle') AS "vehicleType",
-        COALESCE(pp.plate_number, 'WP-CAB-8821') AS "plateNumber",
         COALESCE(pp.verified, true) AS "verifiedBadge",
         COALESCE(u.locality, 'Heerassagala') AS locality,
         COALESCE(u.district, 'Kandy') AS district

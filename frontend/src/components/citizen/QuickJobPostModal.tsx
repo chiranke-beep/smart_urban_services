@@ -41,7 +41,7 @@ interface AIVisionResult {
   hazard_title: string;
   category: string;
   urgency: string;
-  confidence_percentage: number;
+  confidence_percentage: number | null;
   recommended_crew: string;
   required_equipment: string[];
   estimated_base_cost_lkr: number;
@@ -799,9 +799,11 @@ export function QuickJobPostModal({
                           <CheckCircle2 size={15} />
                           AI Found: {aiResult.hazard_title}
                         </span>
-                        <span style={{ fontSize: "11px", fontWeight: 800, padding: "2px 6px", backgroundColor: "rgba(16,185,129,0.15)", color: "#10b981" }}>
-                          {aiResult.confidence_percentage}% Match
-                        </span>
+                        {aiResult.confidence_percentage !== null && aiResult.confidence_percentage !== undefined ? (
+                          <span style={{ fontSize: "11px", fontWeight: 800, padding: "2px 6px", backgroundColor: "rgba(16,185,129,0.15)", color: "#10b981" }}>
+                            {aiResult.confidence_percentage}% Match
+                          </span>
+                        ) : null}
                       </div>
 
                       <div style={{ fontSize: "11.5px", color: isDark ? "#cbd5e1" : "#475569" }}>

@@ -19,7 +19,6 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 
 interface LiveGpsRouteMapProps {
   workerName: string;
-  vehiclePlate?: string;
   locality: string;
   homeLat?: number;
   homeLng?: number;
@@ -31,7 +30,6 @@ interface LiveGpsRouteMapProps {
 
 export function LiveGpsRouteMap({
   workerName,
-  vehiclePlate,
   locality,
   homeLat,
   homeLng,
@@ -574,7 +572,7 @@ export function LiveGpsRouteMap({
         </div>
       )}
 
-      {/* Bottom vehicle tag */}
+      {/* Bottom status tag */}
       <div
         style={{
           position: "absolute",
@@ -593,7 +591,7 @@ export function LiveGpsRouteMap({
         }}
       >
         <Navigation size={13} color="var(--accent)" />
-        <span>{workerName} · {vehiclePlate || "Arriving"}</span>
+        <span>{workerName} · En Route</span>
       </div>
 
       {/* Floating Map Zoom In / Out Controls */}

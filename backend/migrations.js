@@ -29,8 +29,6 @@ async function runMigrations() {
         experience_years INTEGER DEFAULT 5,
         nic_number VARCHAR(30),
         nic_document_url TEXT,
-        vehicle_type TEXT DEFAULT 'Professional Tools',
-        plate_number VARCHAR(50) DEFAULT 'WP-CAB-8821',
         verified BOOLEAN DEFAULT FALSE,
         rating NUMERIC DEFAULT 5.0,
         review_count INTEGER DEFAULT 0,

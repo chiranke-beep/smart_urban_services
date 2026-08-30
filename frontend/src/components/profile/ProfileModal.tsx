@@ -193,8 +193,6 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
 
   const [trade, setTrade] = useState<string>(user?.trade || "Technician & Craftsman");
   const [dailyRate, setDailyRate] = useState<number>(user?.dailyRate || 3500);
-  const [vehicleType, setVehicleType] = useState<string>(user?.vehicleType && user.vehicleType !== "Service Vehicle" ? user.vehicleType : "Professional Trade Kit & Hand Tools");
-  const [plateNumber, setPlateNumber] = useState<string>(user?.plateNumber || "");
 
   // Auto-decode Birthday & Gender from Sri Lankan NIC
   useEffect(() => {
@@ -307,8 +305,6 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
             if (d.language) setLanguage(d.language);
             if (d.trade) setTrade(d.trade);
             if (d.dailyRate) setDailyRate(Number(d.dailyRate));
-            if (d.vehicleType) setVehicleType(d.vehicleType);
-            if (d.plateNumber) setPlateNumber(d.plateNumber);
           }
         })
         .catch((err) => console.warn("[Profile fetch notice]:", err.message));
@@ -337,8 +333,6 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
           language,
           trade: !isCitizen ? trade : undefined,
           dailyRate: !isCitizen ? dailyRate : undefined,
-          vehicleType: !isCitizen ? vehicleType : undefined,
-          plateNumber: !isCitizen ? plateNumber : undefined,
         }),
       });
 
@@ -364,8 +358,6 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
           if (!isCitizen) {
             session.user.trade = trade;
             session.user.dailyRate = dailyRate;
-            session.user.vehicleType = vehicleType;
-            session.user.plateNumber = plateNumber;
           }
           localStorage.setItem("smart_urban_auth_session", JSON.stringify(session));
         }
@@ -383,8 +375,6 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
         language,
         trade: !isCitizen ? trade : undefined,
         dailyRate: !isCitizen ? dailyRate : undefined,
-        vehicleType: !isCitizen ? vehicleType : undefined,
-        plateNumber: !isCitizen ? plateNumber : undefined,
       });
 
       setSaveSuccess(true);

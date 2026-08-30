@@ -37,7 +37,6 @@ function DashboardContent() {
   const [jobs, setJobs] = useState<JobRequest[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [selectedLocality, setSelectedLocality] = useState("Maharagama");
-  const [searchQuery, setSearchQuery] = useState("");
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [activeChatJobId, setActiveChatJobId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "en_route" | "in_progress" | "requested">("all");
@@ -149,11 +148,6 @@ function DashboardContent() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const filteredActiveJobs = activeJobs.filter((job) => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchText = `${job.title} ${job.description} ${job.locality} ${job.assignedWorker?.name || ""}`.toLowerCase();
-      if (!matchText.includes(q)) return false;
-    }
     if (statusFilter === "en_route") return job.stage === "EN_ROUTE";
     if (statusFilter === "in_progress") return job.stage === "IN_PROGRESS";
     if (statusFilter === "requested") return job.stage === "REQUESTED" || job.stage === "QUOTED";
@@ -192,8 +186,6 @@ function DashboardContent() {
         <DashboardHeader
           selectedLocality={selectedLocality}
           onChangeLocality={setSelectedLocality}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 

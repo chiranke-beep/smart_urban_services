@@ -30,7 +30,7 @@ interface TimeframeDataset {
   totalOrders: number;
   points: {
     label: string;
-    hazards: number; // 0 to 100
+    urgent: number; // 0 to 100
     services: number; // 0 to 100
     revenueLKR: number;
   }[];
@@ -46,7 +46,7 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
     totalOrders?: number;
     activeOrders?: number;
     settledVolumeLKR?: number;
-    hazardJobsCount?: number;
+    urgentJobsCount?: number;
     serviceJobsCount?: number;
     verifiedWorkers?: number;
     avgTrustScore?: string;
@@ -72,7 +72,7 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
   const totalActiveJobs = detailedData.totalOrders ?? 0;
   const totalVerifiedWorkers = detailedData.verifiedWorkers ?? 0;
   const totalSettledLKR = detailedData.settledVolumeLKR ?? 0;
-  const totalHazardJobs = detailedData.hazardJobsCount ?? 0;
+  const totalUrgentJobs = detailedData.urgentJobsCount ?? 0;
   const totalServiceJobs = detailedData.serviceJobsCount ?? 0;
 
   // Real Datasets by Timeframe (computed from real platform volume)
@@ -84,10 +84,10 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       growth: totalActiveJobs > 0 ? "↑ 100%" : "0%",
       totalOrders: totalActiveJobs,
       points: [
-        { label: "08:00", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 20) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 15) : 0, revenueLKR: Math.round(totalSettledLKR * 0.2) },
-        { label: "12:00", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 40) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 35) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
-        { label: "16:00", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 70) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 65) : 0, revenueLKR: Math.round(totalSettledLKR * 0.8) },
-        { label: "20:00", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
+        { label: "08:00", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 20) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 15) : 0, revenueLKR: Math.round(totalSettledLKR * 0.2) },
+        { label: "12:00", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 40) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 35) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
+        { label: "16:00", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 70) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 65) : 0, revenueLKR: Math.round(totalSettledLKR * 0.8) },
+        { label: "20:00", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
       ],
     },
     weekly: {
@@ -96,10 +96,10 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       growth: totalActiveJobs > 0 ? "↑ 100%" : "0%",
       totalOrders: totalActiveJobs,
       points: [
-        { label: "Mon", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 25) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 20) : 0, revenueLKR: Math.round(totalSettledLKR * 0.25) },
-        { label: "Wed", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 50) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 45) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
-        { label: "Fri", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 75) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 70) : 0, revenueLKR: Math.round(totalSettledLKR * 0.75) },
-        { label: "Sun", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
+        { label: "Mon", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 25) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 20) : 0, revenueLKR: Math.round(totalSettledLKR * 0.25) },
+        { label: "Wed", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 50) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 45) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
+        { label: "Fri", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 75) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 70) : 0, revenueLKR: Math.round(totalSettledLKR * 0.75) },
+        { label: "Sun", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
       ],
     },
     monthly: {
@@ -108,10 +108,10 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       growth: totalActiveJobs > 0 ? "↑ 100%" : "0%",
       totalOrders: totalActiveJobs,
       points: [
-        { label: "Q1", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 20) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 25) : 0, revenueLKR: Math.round(totalSettledLKR * 0.25) },
-        { label: "Q2", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 45) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 50) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
-        { label: "Q3", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 70) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 75) : 0, revenueLKR: Math.round(totalSettledLKR * 0.75) },
-        { label: "Q4", hazards: totalHazardJobs > 0 ? Math.min(100, totalHazardJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
+        { label: "Q1", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 20) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 25) : 0, revenueLKR: Math.round(totalSettledLKR * 0.25) },
+        { label: "Q2", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 45) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 50) : 0, revenueLKR: Math.round(totalSettledLKR * 0.5) },
+        { label: "Q3", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 70) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 75) : 0, revenueLKR: Math.round(totalSettledLKR * 0.75) },
+        { label: "Q4", urgent: totalUrgentJobs > 0 ? Math.min(100, totalUrgentJobs * 100) : 0, services: totalServiceJobs > 0 ? Math.min(100, totalServiceJobs * 100) : 0, revenueLKR: totalSettledLKR },
       ],
     },
     yearly: {
@@ -120,9 +120,9 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
       growth: totalActiveJobs > 0 ? "↑ 100%" : "0%",
       totalOrders: totalActiveJobs,
       points: [
-        { label: "2024", hazards: 0, services: 0, revenueLKR: 0 },
-        { label: "2025", hazards: 0, services: 0, revenueLKR: 0 },
-        { label: "2026", hazards: totalHazardJobs > 0 ? 90 : 0, services: totalServiceJobs > 0 ? 95 : 0, revenueLKR: totalSettledLKR },
+        { label: "2024", urgent: 0, services: 0, revenueLKR: 0 },
+        { label: "2025", urgent: 0, services: 0, revenueLKR: 0 },
+        { label: "2026", urgent: totalUrgentJobs > 0 ? 90 : 0, services: totalServiceJobs > 0 ? 95 : 0, revenueLKR: totalSettledLKR },
       ],
     },
   };
@@ -138,7 +138,7 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
   // Compute exact coordinates from points (0 to 100 value maps to usableHeight)
   const coords = currentDataset.points.map((pt, i) => {
     const x = paddingX + i * ((chartWidth - paddingX * 2) / (currentDataset.points.length - 1));
-    const y1 = bottomY - (pt.hazards / 100) * usableHeight;
+    const y1 = bottomY - (pt.urgent / 100) * usableHeight;
     const y2 = bottomY - (pt.services / 100) * usableHeight;
     return { ...pt, x, y1, y2 };
   });
@@ -277,8 +277,8 @@ export function AdminDistrictAnalytics({ metrics }: AdminDistrictAnalyticsProps)
           <div style={{ display: "flex", alignItems: "center", gap: "20px", fontSize: "12.5px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ width: "9px", height: "9px", borderRadius: "50%", backgroundColor: "#ec4899", boxShadow: "0 0 8px #ec4899" }} />
-              <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>Emergency Hazard Calls</span>
-              <strong style={{ color: "#ec4899" }}>({totalHazardJobs} jobs)</strong>
+              <span style={{ color: "var(--text-primary)", fontWeight: 700 }}>Emergency & Urgent Calls</span>
+              <strong style={{ color: "#ec4899" }}>({totalUrgentJobs} jobs)</strong>
             </div>
 
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>

@@ -28,8 +28,6 @@ export interface UserProfile {
   verifiedBadge?: boolean;
   verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
   rejectionReason?: string;
-  vehicleType?: string;
-  plateNumber?: string;
   status?: "AVAILABLE" | "BUSY" | "OFFLINE";
 
   // Specific to ADMIN
@@ -71,8 +69,6 @@ export interface ProviderRegistrationData {
   nicDocumentUrl?: string;
   skillCertUrl?: string;
   nvqCertificateName?: string;
-  vehicleType?: string;
-  plateNumber?: string;
   dailyRate: number;
   hourlyRate: number;
   payoutMethod: "CASH_ON_HAND" | "BANK_TRANSFER";

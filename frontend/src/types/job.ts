@@ -56,8 +56,6 @@ export interface JobRequest {
     phone: string;
     avatarBg: string;
     verified: boolean;
-    vehicleType?: string;
-    plateNumber?: string;
   };
   quotation?: Quotation;
   costLKR?: number;

@@ -38,8 +38,6 @@ const DEMO_PROVIDER: UserProfile = {
   dailyRate: 3500,
   hourlyRate: 600,
   verifiedBadge: true,
-  vehicleType: "Three Wheeler & Ladders",
-  plateNumber: "WP-ABX-8821",
   status: "AVAILABLE",
   createdAt: "2025-11-20T08:30:00Z",
 };

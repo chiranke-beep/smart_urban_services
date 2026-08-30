@@ -17,7 +17,6 @@ interface AdminSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   pendingVerificationsCount?: number;
-  openHazardsCount?: number;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
 }
@@ -25,8 +24,7 @@ interface AdminSidebarProps {
 export function AdminSidebar({
   activeTab,
   setActiveTab,
-  pendingVerificationsCount = 3,
-  openHazardsCount = 1,
+  pendingVerificationsCount = 0,
   isOpenMobile = false,
   onCloseMobile,
 }: AdminSidebarProps) {

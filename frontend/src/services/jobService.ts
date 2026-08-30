@@ -187,8 +187,6 @@ export const jobService = {
       phone: provider.phone,
       avatarBg: "#10b981",
       verified: true,
-      vehicleType: provider.vehicleType || "Standard Work Toolset",
-      plateNumber: provider.plateNumber || "",
     };
     job.quotation = {
       id: `Q-${Date.now().toString().slice(-4)}`,

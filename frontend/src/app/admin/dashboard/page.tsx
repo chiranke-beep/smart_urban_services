@@ -5,11 +5,9 @@ import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { WorkerVerificationQueue } from "@/components/admin/WorkerVerificationQueue";
 import { AdminDistrictAnalytics } from "@/components/admin/AdminDistrictAnalytics";
-import { CivicHazardMonitor } from "@/components/admin/CivicHazardMonitor";
 import { adminService } from "@/services/adminService";
 import {
   PendingWorkerApplication,
-  CivicHazardIncident,
   DistrictMetric,
 } from "@/types/admin";
 import { useTheme } from "@/components/ThemeProvider";
@@ -20,7 +18,6 @@ export default function AdminDashboardPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
   const [applications, setApplications] = useState<PendingWorkerApplication[]>([]);
-  const [hazards, setHazards] = useState<CivicHazardIncident[]>([]);
   const [metrics, setMetrics] = useState<DistrictMetric[]>([]);
   const [activeTab, setActiveTab] = useState("verification");
   const { theme } = useTheme();
@@ -32,13 +29,11 @@ export default function AdminDashboardPage() {
   }, [isLoading, isAuthenticated, user, router]);
 
   const loadAdminData = async () => {
-    const [apps, haz, met] = await Promise.all([
+    const [apps, met] = await Promise.all([
       adminService.fetchApplications(),
-      adminService.fetchHazards(),
       adminService.fetchDistrictMetrics(),
     ]);
     setApplications(apps);
-    setHazards(haz);
     setMetrics(met);
   };
 
@@ -47,7 +42,6 @@ export default function AdminDashboardPage() {
   }, []);
 
   const pendingAppsCount = applications.filter((a) => a.status === "PENDING").length;
-  const openHazardsCount = hazards.filter((h) => h.status !== "RESOLVED").length;
 
   const handleApprove = async (appId: string) => {
     setApplications((prev) =>
@@ -63,11 +57,6 @@ export default function AdminDashboardPage() {
     );
     await adminService.updateApplicationStatus(appId, "REJECTED", reason);
     await loadAdminData();
-  };
-
-  const handleDispatchHazard = (hazardId: string, crewName: string) => {
-    adminService.dispatchHazard(hazardId, crewName);
-    setHazards(adminService.getHazards());
   };
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -93,7 +82,6 @@ export default function AdminDashboardPage() {
           setIsMobileMenuOpen(false);
         }}
         pendingVerificationsCount={pendingAppsCount}
-        openHazardsCount={openHazardsCount}
         isOpenMobile={isMobileMenuOpen}
         onCloseMobile={() => setIsMobileMenuOpen(false)}
       />

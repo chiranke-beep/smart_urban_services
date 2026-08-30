@@ -138,7 +138,6 @@ export function ProviderActiveJobCard({
       {/* Live GPS Route Map */}
       <LiveGpsRouteMap
         workerName={user?.fullName || "You (Technician)"}
-        vehiclePlate={user?.plateNumber || "Registered Vehicle"}
         locality={job.locality}
         homeLat={job.latitude}
         homeLng={job.longitude}

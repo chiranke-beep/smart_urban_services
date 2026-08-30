@@ -64,7 +64,7 @@ const User = {
         u.locality, u.district, u.saved_lat, u.saved_lng, u.profile_picture,
         u.birthday, u.gender, u.language, u.home_address,
         pp.trade, pp.experience_years, pp.daily_rate, pp.hourly_rate,
-        pp.vehicle_type, pp.plate_number, COALESCE(pp.verified, false) AS verified,
+        COALESCE(pp.verified, false) AS verified,
         COALESCE(pp.verification_status, 'PENDING') AS verification_status,
         pp.nic_number, pp.rejection_reason, COALESCE(pp.rating, 5.0) AS rating,
         COALESCE(pp.review_count, 0) AS review_count

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Search, MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User, Menu } from "lucide-react";
+import { MapPin, Sun, Moon, Bell, ShieldCheck, LogOut, User, Menu } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/profile/ProfileModal";
@@ -8,16 +8,12 @@ import { apiClient } from "@/services/api";
 interface DashboardHeaderProps {
   selectedLocality: string;
   onChangeLocality: (loc: string) => void;
-  searchQuery: string;
-  onSearchChange: (q: string) => void;
   onToggleMobileMenu?: () => void;
 }
 
 export function DashboardHeader({
   selectedLocality,
   onChangeLocality,
-  searchQuery,
-  onSearchChange,
   onToggleMobileMenu,
 }: DashboardHeaderProps) {
   const { theme, toggleTheme } = useTheme();
@@ -75,8 +71,8 @@ export function DashboardHeader({
         zIndex: 40,
       }}
     >
-      {/* Left: Mobile Hamburger & Search input */}
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1, maxWidth: "460px" }}>
+      {/* Left: Mobile Hamburger & Citizen Portal Badge */}
+      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
@@ -98,43 +94,13 @@ export function DashboardHeader({
           </button>
         )}
 
-        <div
-          style={{
-            position: "relative",
-            width: "100%",
-            display: "flex",
-            alignItems: "center",
-          }}
-        >
-          <Search
-            size={16}
-            style={{
-              position: "absolute",
-              left: "14px",
-              color: "var(--text-secondary)",
-              pointerEvents: "none",
-            }}
-          />
-          <input
-            type="text"
-            placeholder="Search workers, trades, locations..."
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 14px 10px 40px",
-              borderRadius: "0px",
-              backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(15,23,42,0.04)",
-              border: "1px solid var(--border)",
-              color: "var(--text-primary)",
-              fontSize: "13.5px",
-              outline: "none",
-              fontFamily: "inherit",
-              transition: "border-color 0.2s ease",
-            }}
-            onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
-            onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
-          />
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+            Citizen Portal
+          </span>
+          <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", backgroundColor: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "2px" }}>
+            Live Dispatch
+          </span>
         </div>
       </div>
 

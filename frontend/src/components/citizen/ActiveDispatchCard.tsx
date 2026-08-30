@@ -209,7 +209,6 @@ export function ActiveDispatchCard({
       {(job.stage === "EN_ROUTE" || job.stage === "IN_PROGRESS") && worker && (
         <LiveGpsRouteMap
           workerName={worker.name}
-          vehiclePlate={worker.plateNumber}
           locality={job.locality}
           homeLat={job.latitude}
           homeLng={job.longitude}
@@ -376,12 +375,6 @@ export function ActiveDispatchCard({
                   <Star size={13} fill="#eab308" />
                   {worker.rating} ({worker.reviewCount})
                 </span>
-                {worker.vehicleType && (
-                  <span style={{ color: "var(--text-secondary)", display: "flex", alignItems: "center", gap: "4px" }}>
-                    <Truck size={13} />
-                    {worker.plateNumber}
-                  </span>
-                )}
               </div>
             </div>
           </div>

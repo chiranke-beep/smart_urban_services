@@ -241,39 +241,53 @@ async def vision_scan(request: Request):
             else:
                 raise ValueError("Trained hazard model is not loaded")
 
+            meta = HAZARD_METADATA.get(predicted, HAZARD_METADATA["potholes"])
+            return {
+                "success": True,
+                "has_image": True,
+                "predicted_hazard": predicted,
+                "hazard_title": meta["title"],
+                "category": meta["category"],
+                "urgency": meta["urgency"],
+                "confidence_percentage": conf,
+                "required_equipment": meta["equipment"],
+                "recommended_crew": meta["suggested_crew"],
+                "estimated_base_cost_lkr": meta["base_cost_lkr"],
+                "detection_source": detection_source,
+            }
         except Exception as e:
             print(f"Error in vision ML pipeline: {e}")
             raise HTTPException(status_code=500, detail=f"AI Vision Inference Error: {str(e)}")
     else:
-        desc = (description or "").lower()
-        if any(w in desc for w in ["laptop", "pc", "computer", "screen", "motherboard", "keyboard", "circuit"]):
-            predicted = "pc_repair"
-        elif any(w in desc for w in ["yard", "garden", "leaf", "leaves", "rake", "grass", "lawn"]):
-            predicted = "yard_cleaning"
-        elif any(w in desc for w in ["water", "leak", "pipe", "drain", "tap", "plumb"]):
-            predicted = "water_leaks"
-        elif "road" in desc or "pothole" in desc:
-            predicted = "potholes"
-        elif "wall" in desc or "crack" in desc:
-            predicted = "wall_cracks"
-        elif "tree" in desc:
-            predicted = "fallen_trees"
-        else:
-            predicted = "pc_repair" if "tech" in desc else "potholes"
-        conf = 88.0
+        # ── NO IMAGE UPLOADED ──
+        # Use category selected by the citizen without generating a fake AI confidence score.
+        user_cat = (user_category or "plumbing").lower().replace("-", "_")
+        
+        # Map user category to hazard metadata key
+        category_to_hazard = {
+            "plumbing": "water_leaks",
+            "pc_repair": "pc_repair",
+            "painting": "wall_cracks",
+            "tree_cutting": "fallen_trees",
+            "cleaning": "house_cleaning",
+            "odd_jobs": "potholes",
+        }
+        matched_hazard = category_to_hazard.get(user_cat, "water_leaks")
+        meta = HAZARD_METADATA.get(matched_hazard, HAZARD_METADATA["water_leaks"])
 
-    meta = HAZARD_METADATA.get(predicted, HAZARD_METADATA["potholes"])
-    return {
-        "success": True,
-        "predicted_hazard": predicted,
-        "hazard_title": meta["title"],
-        "category": meta["category"],
-        "urgency": meta["urgency"],
-        "confidence_percentage": conf,
-        "required_equipment": meta["equipment"],
-        "recommended_crew": meta["suggested_crew"],
-        "estimated_base_cost_lkr": meta["base_cost_lkr"],
-    }
+        return {
+            "success": True,
+            "has_image": False,
+            "predicted_hazard": matched_hazard,
+            "hazard_title": meta["title"],
+            "category": meta["category"],
+            "urgency": meta["urgency"],
+            "confidence_percentage": None,  # No fake AI confidence when no image is uploaded
+            "required_equipment": meta["equipment"],
+            "recommended_crew": meta["suggested_crew"],
+            "estimated_base_cost_lkr": meta["base_cost_lkr"],
+            "detection_source": "User-Selected Category (No Image Uploaded)",
+        }
 
 
 @app.post("/api/ai/predict-cost")
