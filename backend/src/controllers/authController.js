@@ -1,16 +1,16 @@
-const bcrypt = require('bcryptjs');
+﻿const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { validationResult } = require('express-validator');
 const User = require('../models/User');
 
-// ── Helper: sign a JWT ───────────────────────────────────────────────────────
+// Helper: sign a JWT
 const signToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
   });
 };
 
-// ── Helper: send token response ──────────────────────────────────────────────
+// Helper: send token response
 const sendTokenResponse = (user, statusCode, res) => {
   const token = signToken(user.id, user.role);
   res.status(statusCode).json({
@@ -31,9 +31,9 @@ const sendTokenResponse = (user, statusCode, res) => {
   });
 };
 
-// ── @desc    Register a new user
-// ── @route   POST /api/auth/register
-// ── @access  Public
+// @desc    Register a new user
+// @route   POST /api/auth/register
+// @access  Public
 const register = async (req, res) => {
   // Validate request body
   const errors = validationResult(req);
@@ -91,9 +91,9 @@ const register = async (req, res) => {
   }
 };
 
-// ── @desc    Login user
-// ── @route   POST /api/auth/login
-// ── @access  Public
+// @desc    Login user
+// @route   POST /api/auth/login
+// @access  Public
 const login = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -136,9 +136,9 @@ const login = async (req, res) => {
   }
 };
 
-// ── @desc    Get currently logged-in user
-// ── @route   GET /api/auth/me
-// ── @access  Private (requires JWT)
+// @desc    Get currently logged-in user
+// @route   GET /api/auth/me
+// @access  Private (requires JWT)
 const getMe = async (req, res) => {
   try {
     res.status(200).json({

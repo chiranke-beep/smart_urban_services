@@ -1,9 +1,9 @@
-const { validationResult } = require('express-validator');
+﻿const { validationResult } = require('express-validator');
 const Incident = require('../models/Incident');
 
-// ── @desc    Create a new incident report
-// ── @route   POST /api/incidents
-// ── @access  Private — citizen, service_provider, admin
+// @desc    Create a new incident report
+// @route   POST /api/incidents
+// @access  Private — citizen, service_provider, admin
 const createIncident = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -44,9 +44,9 @@ const createIncident = async (req, res) => {
   }
 };
 
-// ── @desc    Get all incidents (filterable)
-// ── @route   GET /api/incidents
-// ── @access  Private — all roles (filtered by role)
+// @desc    Get all incidents (filterable)
+// @route   GET /api/incidents
+// @access  Private — all roles (filtered by role)
 const getAllIncidents = async (req, res) => {
   try {
     const { status, category, priority, page = 1, limit = 50 } = req.query;
@@ -83,9 +83,9 @@ const getAllIncidents = async (req, res) => {
   }
 };
 
-// ── @desc    Get single incident
-// ── @route   GET /api/incidents/:id
-// ── @access  Private — all roles
+// @desc    Get single incident
+// @route   GET /api/incidents/:id
+// @access  Private — all roles
 const getIncidentById = async (req, res) => {
   try {
     const incident = await Incident.findById(req.params.id);
@@ -105,9 +105,9 @@ const getIncidentById = async (req, res) => {
   }
 };
 
-// ── @desc    Update incident details (reporter can edit before assigned)
-// ── @route   PUT /api/incidents/:id
-// ── @access  Private — reporter (if pending) or admin
+// @desc    Update incident details (reporter can edit before assigned)
+// @route   PUT /api/incidents/:id
+// @access  Private — reporter (if pending) or admin
 const updateIncident = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -147,9 +147,9 @@ const updateIncident = async (req, res) => {
   }
 };
 
-// ── @desc    Update incident status (admin/service_provider)
-// ── @route   PATCH /api/incidents/:id/status
-// ── @access  Private — admin, service_provider
+// @desc    Update incident status (admin/service_provider)
+// @route   PATCH /api/incidents/:id/status
+// @access  Private — admin, service_provider
 const updateIncidentStatus = async (req, res) => {
   try {
     const { status, assigned_to, cost_lkr, stage, quotation_notes } = req.body;
@@ -228,9 +228,9 @@ const updateIncidentStatus = async (req, res) => {
   }
 };
 
-// ── @desc    Delete an incident
-// ── @route   DELETE /api/incidents/:id
-// ── @access  Private — reporter (if pending) or admin
+// @desc    Delete an incident
+// @route   DELETE /api/incidents/:id
+// @access  Private — reporter (if pending) or admin
 const deleteIncident = async (req, res) => {
   try {
     const incident = await Incident.findById(req.params.id);
@@ -260,9 +260,9 @@ const deleteIncident = async (req, res) => {
   }
 };
 
-// ── @desc    Get incident statistics
-// ── @route   GET /api/incidents/stats
-// ── @access  Private — admin
+// @desc    Get incident statistics
+// @route   GET /api/incidents/stats
+// @access  Private — admin
 const getStats = async (req, res) => {
   try {
     const stats = await Incident.getStats();

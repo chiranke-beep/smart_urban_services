@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { body } = require('express-validator');
 const {
   getAllUsers,
@@ -14,8 +14,7 @@ const router = express.Router();
 // All routes require authentication
 router.use(protect);
 
-// ── Validation ────────────────────────────────────────────────────────────────
-
+// Validation
 const updateProfileValidation = [
   body('name')
     .optional()
@@ -41,8 +40,7 @@ const statusValidation = [
     .isBoolean().withMessage('is_active must be true or false.'),
 ];
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-
+// Routes
 // GET    /api/users              → list all users (admin only)
 router.get('/', authorize('admin'), getAllUsers);
 

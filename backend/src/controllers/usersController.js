@@ -1,9 +1,9 @@
-const { validationResult } = require('express-validator');
+﻿const { validationResult } = require('express-validator');
 const UserProfile = require('../models/UserProfile');
 
-// ── @desc    Get all users (with optional filters)
-// ── @route   GET /api/users
-// ── @access  Private — admin only
+// @desc    Get all users (with optional filters)
+// @route   GET /api/users
+// @access  Private — admin only
 const getAllUsers = async (req, res) => {
   try {
     const { role, is_active, limit = 20, page = 1 } = req.query;
@@ -29,9 +29,9 @@ const getAllUsers = async (req, res) => {
   }
 };
 
-// ── @desc    Get single user by ID
-// ── @route   GET /api/users/:id
-// ── @access  Private — own profile or admin
+// @desc    Get single user by ID
+// @route   GET /api/users/:id
+// @access  Private — own profile or admin
 const getUserById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -56,9 +56,9 @@ const getUserById = async (req, res) => {
   }
 };
 
-// ── @desc    Update own profile (name, phone)
-// ── @route   PUT /api/users/:id
-// ── @access  Private — own profile or admin
+// @desc    Update own profile (name, phone)
+// @route   PUT /api/users/:id
+// @access  Private — own profile or admin
 const updateUser = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -91,9 +91,9 @@ const updateUser = async (req, res) => {
   }
 };
 
-// ── @desc    Change a user's role
-// ── @route   PUT /api/users/:id/role
-// ── @access  Private — admin only
+// @desc    Change a user's role
+// @route   PUT /api/users/:id/role
+// @access  Private — admin only
 const updateUserRole = async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -125,10 +125,10 @@ const updateUserRole = async (req, res) => {
   }
 };
 
-// ── @desc    Deactivate or reactivate a user account
-// ── @route   DELETE /api/users/:id   (deactivate)
-// ── @route   PUT /api/users/:id/status
-// ── @access  Private — admin only
+// @desc    Deactivate or reactivate a user account
+// @route   DELETE /api/users/:id   (deactivate)
+// @route   PUT /api/users/:id/status
+// @access  Private — admin only
 const setUserStatus = async (req, res) => {
   try {
     const { id } = req.params;

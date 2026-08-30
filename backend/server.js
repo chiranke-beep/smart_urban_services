@@ -236,7 +236,7 @@ app.patch('/api/users/profile/:id', async (req, res) => {
   }
 });
 
-// ─── ADMIN LIVE WORKER VERIFICATION, HAZARDS & ANALYTICS APIs ────────────
+// Admin: Live Worker Verification, Hazards & Analytics APIs
 app.get('/api/admin/workers', async (req, res) => {
   try {
     const { rows } = await pool.query(`
@@ -428,7 +428,7 @@ app.get('/api/analytics/platform-stats', async (req, res) => {
   }
 });
 
-// ─── AI GEO-DISPATCH SPATIAL PROXIMITY & COMPOSITE RANKING API ────────────
+// AI Geo-Dispatch: Spatial Proximity & Composite Ranking
 app.post('/api/ai/geo-dispatch', async (req, res) => {
   try {
     const { incident_lat = 7.2906, incident_lng = 80.6337, required_category = 'tree-cutting', max_radius_km = 35.0 } = req.body;
@@ -591,7 +591,7 @@ app.post('/api/ai/geo-dispatch', async (req, res) => {
   }
 });
 
-// ─── ADMIN DETAILED ANALYTICS (REAL DB CATEGORIES, DISPATCHES & ACTIVITIES) ───
+// Admin: Detailed Analytics (categories, dispatches & activities)
 app.get('/api/admin/detailed-analytics', async (req, res) => {
   try {
     // 1. Incidents breakdown by category
@@ -1061,7 +1061,7 @@ app.post('/api/reviews/:id/like', async (req, res) => {
 });
 
 
-// ── Server-Side NIC OCR ────────────────────────────────────────────────────
+// Server-Side NIC OCR
 // Runs Tesseract on the EC2 server so mobile/slow devices get results in 1-3s
 // instead of waiting for the browser to download the 10MB model.
 

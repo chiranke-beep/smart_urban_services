@@ -1,12 +1,11 @@
-const express = require('express');
+﻿const express = require('express');
 const { body } = require('express-validator');
 const { register, login, getMe } = require('../controllers/authController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
 
-// ── Validation rules ─────────────────────────────────────────────────────────
-
+// Validation rules
 const registerValidation = [
   body('name')
     .trim()
@@ -42,8 +41,7 @@ const loginValidation = [
     .notEmpty().withMessage('Password is required.'),
 ];
 
-// ── Routes ───────────────────────────────────────────────────────────────────
-
+// Routes
 // POST /api/auth/register
 router.post('/register', registerValidation, register);
 

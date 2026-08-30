@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const { body } = require('express-validator');
 const {
   createIncident,
@@ -17,8 +17,7 @@ const router = express.Router();
 // Allow optional auth for incident viewing and creation
 router.use(optionalAuth);
 
-// ── Validation ────────────────────────────────────────────────────────────────
-
+// Validation
 const createValidation = [
   body('title')
     .trim().notEmpty().withMessage('Title is required.')
@@ -55,8 +54,7 @@ const updateValidation = [
   body('longitude').optional().isFloat({ min: -180, max: 180 }),
 ];
 
-// ── Routes ────────────────────────────────────────────────────────────────────
-
+// Routes
 // GET  /api/incidents/stats    → summary stats (admin only) — must be before /:id
 router.get('/stats', authorize('admin'), getStats);
 
