@@ -107,6 +107,9 @@ export default function ProviderRegisterPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Clear previous scan result immediately so old NIC doesn't linger
+    setNicNumber("");
+    setIsNicAutofilled(false);
     setIsOcrScanning(true);
 
     // 1. Check filename for direct NIC format (excluding timestamps)
