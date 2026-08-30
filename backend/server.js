@@ -1060,10 +1060,90 @@ app.post('/api/reviews/:id/like', async (req, res) => {
   }
 });
 
+
+// ── Server-Side NIC OCR ────────────────────────────────────────────────────
+// Runs Tesseract on the EC2 server so mobile/slow devices get results in 1-3s
+// instead of waiting for the browser to download the 10MB model.
+
+let _tesseractWorker = null;
+
+async function getTesseractWorker() {
+  if (_tesseractWorker) return _tesseractWorker;
+  const { createWorker } = require('tesseract.js');
+  _tesseractWorker = await createWorker('eng', 1, {
+    logger: () => {}, // silence progress logs
+  });
+  console.log('✅ Tesseract OCR worker ready (server-side)');
+  return _tesseractWorker;
+}
+
+function isValidSriLankanNic(nic) {
+  if (!nic) return false;
+  const clean = nic.trim().toUpperCase();
+  if (/^\d{9}[VX]$/.test(clean)) {
+    const day = parseInt(clean.slice(2, 5), 10);
+    const dayVal = day > 500 ? day - 500 : day;
+    return dayVal >= 1 && dayVal <= 366;
+  }
+  if (/^\d{12}$/.test(clean)) {
+    const year = parseInt(clean.slice(0, 4), 10);
+    const day = parseInt(clean.slice(4, 7), 10);
+    const dayVal = day > 500 ? day - 500 : day;
+    const currentYear = new Date().getFullYear();
+    return year >= 1930 && year <= currentYear - 14 && dayVal >= 1 && dayVal <= 366;
+  }
+  return false;
+}
+
+function extractNicFromText(text) {
+  const matches12 = text.match(/\b(19\d{10}|20\d{10})\b/g);
+  if (matches12) {
+    for (const m of matches12) {
+      if (isValidSriLankanNic(m)) return m;
+    }
+  }
+  const matches9 = text.match(/\b(\d{9}[vVxX])\b/g);
+  if (matches9) {
+    for (const m of matches9) {
+      if (isValidSriLankanNic(m.toUpperCase())) return m.toUpperCase();
+    }
+  }
+  const labelMatch = text.match(/(?:No|NIC|Identity|Card|Number)[\s.:/]*([0-9]{9,12}[vVxX]?)/i);
+  if (labelMatch && isValidSriLankanNic(labelMatch[1].toUpperCase())) {
+    return labelMatch[1].toUpperCase();
+  }
+  const digitSeqs = text.replace(/[^0-9vVxX]/g, ' ').split(/\s+/)
+    .filter(s => s.length === 12 || (s.length === 10 && /[vVxX]$/i.test(s)));
+  for (const seq of digitSeqs) {
+    if (isValidSriLankanNic(seq)) return seq.toUpperCase();
+  }
+  return null;
+}
+
+// POST /api/ocr/nic  — accepts { imageBase64: "data:image/...;base64,..." }
+app.post('/api/ocr/nic', async (req, res) => {
+  try {
+    const { imageBase64 } = req.body;
+    if (!imageBase64 || typeof imageBase64 !== 'string') {
+      return res.status(400).json({ success: false, message: 'imageBase64 is required' });
+    }
+
+    const worker = await getTesseractWorker();
+    const { data: { text, confidence } } = await worker.recognize(imageBase64);
+
+    const nicNumber = extractNicFromText(text);
+    return res.json({ success: true, nicNumber, confidence, rawText: text });
+  } catch (err) {
+    console.error('[OCR] Error:', err.message);
+    return res.status(500).json({ success: false, message: 'OCR failed', nicNumber: null });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Smart Urban Services API is running', env: process.env.NODE_ENV });
 });
+
 
 // 404 handler
 app.use((req, res) => {

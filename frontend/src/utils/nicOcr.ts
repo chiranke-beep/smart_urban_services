@@ -177,11 +177,39 @@ function buildCanvasDataUrl(
   return canvas.toDataURL("image/jpeg", 0.92);
 }
 
+/** Call the backend OCR endpoint — runs Tesseract on EC2, fast on any device. */
+async function scanNicServerSide(imageSrc: string): Promise<NicScanResult | null> {
+  try {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL ||
+      (typeof window !== "undefined" && window.location.origin) ||
+      "";
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15_000); // 15 s max
+
+    const resp = await fetch(`${apiBase}/api/ocr/nic`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ imageBase64: imageSrc }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!resp.ok) return null;
+    const json = await resp.json();
+    if (json?.nicNumber) {
+      return { nicNumber: json.nicNumber, rawText: json.rawText || "", confidence: json.confidence || 0 };
+    }
+    return null;
+  } catch {
+    return null; // server unreachable → fall back to browser OCR
+  }
+}
+
 export async function scanNicFromImage(imageSource: string | File): Promise<NicScanResult> {
   try {
-    const Tesseract = await import("tesseract.js");
-
-    // Convert source to data URL
+    // Convert source to data URL first (needed for both paths)
     let imageSrc = "";
     if (typeof imageSource === "string") {
       imageSrc = imageSource;
@@ -193,6 +221,15 @@ export async function scanNicFromImage(imageSource: string | File): Promise<NicS
       });
     }
 
+    // ── Step 1: Try server-side OCR (fast: 1-3s on EC2, works on any device) ──
+    const serverResult = await scanNicServerSide(imageSrc);
+    if (serverResult) return serverResult;
+
+    // ── Step 2: Browser fallback (if server is unreachable / offline) ──────────
+    console.warn("[NIC OCR] Server OCR unavailable, falling back to browser OCR");
+
+    const Tesseract = await import("tesseract.js");
+
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
       const el = new Image();
       el.crossOrigin = "anonymous";
@@ -201,19 +238,12 @@ export async function scanNicFromImage(imageSource: string | File): Promise<NicS
       el.src = imageSrc;
     });
 
-    /**
-     * Attempt order — stops as soon as a valid NIC is found:
-     *   Priority 1: raw (no pixel destruction) at all 4 orientations
-     *   Priority 2: sharp_thin (binarise) at 270° & 0°
-     *   Priority 3: contrast stretch at 270° & 0°
-     * Each attempt has a 20 s hard timeout.
-     */
     const attempts: Array<[number, "sharp_thin" | "contrast" | "raw"]> = [
-      [0,   "raw"],        // already correctly oriented — try raw first
-      [270, "raw"],        // phone portrait of landscape card — raw
-      [90,  "raw"],        // rotated the other way — raw
-      [180, "raw"],        // upside down — raw
-      [0,   "sharp_thin"], // binarise fallbacks
+      [0,   "raw"],
+      [270, "raw"],
+      [90,  "raw"],
+      [180, "raw"],
+      [0,   "sharp_thin"],
       [270, "sharp_thin"],
       [0,   "contrast"],
       [270, "contrast"],
@@ -222,7 +252,7 @@ export async function scanNicFromImage(imageSource: string | File): Promise<NicS
     for (const [deg, mode] of attempts) {
       const dataUrl = buildCanvasDataUrl(img, deg, mode);
       const result = await recogniseWithTimeout(Tesseract, dataUrl, 20_000);
-      if (!result) continue; // timed out or errored
+      if (!result) continue;
 
       const found = extractNicFromText(result.text, result.confidence);
       if (found) return found;
