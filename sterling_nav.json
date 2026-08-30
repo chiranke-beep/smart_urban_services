@@ -1,0 +1,11 @@
+{
+  "error": "Authentication required",
+  "reason": "authentication_required",
+  "component": {
+    "name": "sterling-gate-kinetic-navigation",
+    "title": "Sterling Gate: Kinetic Navigation",
+    "description": "An authoritative full-screen navigation component designed for high-end digital experiences. This menu utilizes a \"Reveal\" logic—where the interface transitions from a focused view to an immersive, typography-heavy navigation layer. Inspired by the \"Silver\" Paya and \"Jalchar\" (Water) elements, the transitions are fluid and heavy-weighted, providing a tactile sense of depth. It features interactive hover states that \"ripple\" across the menu items, perfect for agencies and luxury brands that prioritize a \"Quiet Luxury\" aesthetic.",
+    "author": "hardikkashiyani123456788",
+    "url": "/@hardikkashiyani123456788/components/sterling-gate-kinetic-navigation"
+  }
+}

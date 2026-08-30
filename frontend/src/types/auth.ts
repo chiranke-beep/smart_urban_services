@@ -1,0 +1,83 @@
+export type UserRole = "HOMEOWNER" | "PROVIDER" | "ADMIN";
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  email?: string;
+  phone: string;
+  role: UserRole;
+  locality: string;
+  district: string;
+  avatarUrl?: string;
+  profilePicture?: string;
+  homeAddress?: string;
+  savedLat?: number;
+  savedLng?: number;
+  birthday?: string;
+  gender?: string;
+  language?: string;
+  createdAt: string;
+
+  // Specific to SERVICE PROVIDER
+  trade?: string;
+  tradeType?: "painting" | "plumbing" | "trees" | "cleaning" | "tech" | "odd_jobs";
+  nicNumber?: string;
+  experienceYears?: number;
+  dailyRate?: number;
+  hourlyRate?: number;
+  verifiedBadge?: boolean;
+  verificationStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  rejectionReason?: string;
+  status?: "AVAILABLE" | "BUSY" | "OFFLINE";
+
+  // Specific to ADMIN
+  staffId?: string;
+  department?: string;
+  accessLevel?: "SUPER_ADMIN" | "DISTRICT_MANAGER" | "SUPPORT_STAFF";
+}
+
+export interface LoginCredentials {
+  identifier: string; // phone or email or staff ID
+  password?: string;
+  otp?: string;
+  role: UserRole;
+}
+
+export interface HomeownerRegistrationData {
+  fullName: string;
+  phone: string;
+  email?: string;
+  locality: string;
+  district: string;
+  password?: string;
+}
+
+export interface ProviderRegistrationData {
+  fullName: string;
+  phone: string;
+  hasWhatsApp: boolean;
+  email?: string;
+  password?: string;
+  locality: string;
+  district: string;
+  trade: string;
+  tradeType?: "painting" | "plumbing" | "trees" | "cleaning" | "tech" | "odd_jobs" | string;
+  skills?: string[];
+  experienceYears: number;
+  nicNumber: string;
+  nicFrontUrl?: string;
+  nicDocumentUrl?: string;
+  skillCertUrl?: string;
+  nvqCertificateName?: string;
+  dailyRate: number;
+  hourlyRate: number;
+  payoutMethod: "CASH_ON_HAND" | "BANK_TRANSFER";
+  bankName?: string;
+  accountNumber?: string;
+}
+
+export interface AuthSession {
+  token: string;
+  user: UserProfile;
+  expiresAt: string;
+}

@@ -1,0 +1,16 @@
+__pycache__
+.venv
+*.pyc
+*.pyo
+.env
+.git
+.gitignore
+eda/
+data/
+data/**
+raw/
+processed/
+*.ipynb
+*.csv
+*.zip
+*.tar.gz

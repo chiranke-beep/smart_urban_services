@@ -1,22 +1,22 @@
-# ── Node.js ──────────────────────────────
+#  Node.js 
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# ── Environment variables ─────────────────
+#  Environment variables 
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
 
-# ── Next.js ──────────────────────────────
+# Next.js 
 frontend/.next/
 frontend/out/
 frontend/build/
 
-# ── Python ───────────────────────────────
+# Python 
 __pycache__/
 *.py[cod]
 *.pyo
@@ -26,26 +26,48 @@ ai/venv/
 ai/.venv/
 ai/env/
 *.egg-info/
-dist/
 *.pkl
 *.joblib
+!ai/models/
+!ai/models/*.pkl
 
-# ── Uploads ──────────────────────────────
-backend/uploads/
 
-# ── Logs ─────────────────────────────────
+# Datasets & ML Training Data
+ai/data/
+ai/data/**
+data/
+datasets/
+dataset/
+**/raw/
+**/processed/
+raw/
+processed/
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.tar.gz
+*.zip
+*.traineddata
+
+# Logs
 *.log
 logs/
 
-# ── OS files ─────────────────────────────
+# OS files 
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ── IDE ──────────────────────────────────
+# IDE & Tooling
 .vscode/settings.json
 .idea/
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
+.impeccable/

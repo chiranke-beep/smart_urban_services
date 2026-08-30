@@ -1,0 +1,111 @@
+import {
+  Paintbrush,
+  Trees,
+  Wrench,
+  Home,
+  Laptop,
+  Hammer,
+} from "lucide-react";
+
+export const CATEGORY_DEFINITIONS = [
+  {
+    id: "painting",
+    name: "Painting & Decor",
+    fullName: "Home Painting & Wall Finishing",
+    color: "#f97316",
+    accentGlow: "rgba(249, 115, 22, 0.2)",
+    icon: Paintbrush,
+    avgRate: "Rs. 2,800 - 4,500 / day",
+  },
+  {
+    id: "tree-cutting",
+    name: "Tree & Yard Care",
+    fullName: "Tree Cutting & Yard Clearing",
+    color: "#10b981",
+    accentGlow: "rgba(16, 185, 129, 0.2)",
+    icon: Trees,
+    avgRate: "Rs. 2,500 - 5,000 / job",
+  },
+  {
+    id: "plumbing",
+    name: "Plumbing & Pipes",
+    fullName: "Plumbing & Bathroom Repair",
+    color: "#06b6d4",
+    accentGlow: "rgba(6, 182, 212, 0.2)",
+    icon: Wrench,
+    avgRate: "Rs. 1,500 - 3,500 / visit",
+  },
+  {
+    id: "cleaning",
+    name: "Cleaning & Yard",
+    fullName: "House & Deep Compound Cleaning",
+    color: "#3b82f6",
+    accentGlow: "rgba(59, 130, 246, 0.2)",
+    icon: Home,
+    avgRate: "Rs. 3,000 - 6,000 / day",
+  },
+  {
+    id: "pc-repair",
+    name: "PC & Tech Repair",
+    fullName: "PC Tech & Hardware Repair",
+    color: "#a855f7",
+    accentGlow: "rgba(168, 85, 247, 0.2)",
+    icon: Laptop,
+    avgRate: "Rs. 1,800 - 4,000 / fix",
+  },
+  {
+    id: "odd-jobs",
+    name: "Odd & Custom Jobs",
+    fullName: "Electrical, Masonry & Custom Work",
+    color: "#eab308",
+    accentGlow: "rgba(234, 179, 8, 0.2)",
+    icon: Hammer,
+    avgRate: "Rs. 2,000 - 4,500 / day",
+  },
+] as const;
+
+export const SRI_LANKA_DISTRICTS = [
+  "Colombo",
+  "Gampaha",
+  "Kalutara",
+  "Kandy",
+  "Matale",
+  "Nuwara Eliya",
+  "Galle",
+  "Matara",
+  "Hambantota",
+  "Jaffna",
+  "Kurunegala",
+  "Puttalam",
+  "Anuradhapura",
+  "Polonnaruwa",
+  "Badulla",
+  "Ratnapura",
+  "Kegalle",
+];
+
+export const POPULAR_LOCALITIES: Record<string, string[]> = {
+  Colombo: [
+    "Maharagama",
+    "Dehiwala",
+    "Moratuwa",
+    "Nugegoda",
+    "Kottawa",
+    "Homagama",
+    "Battaramulla",
+    "Piliyandala",
+    "Colombo 03 (Kollupitiya)",
+    "Colombo 07 (Cinnamon Gardens)",
+  ],
+  Gampaha: ["Negombo", "Kelaniya", "Kiribathgoda", "Kadawatha", "Ja-Ela", "Gampaha Town"],
+  Kandy: ["Heerassagala", "Kandy Town", "Peradeniya", "Katugastota", "Gampola", "Kundasale"],
+};
+
+export const DISPATCH_STAGES_FLOW = [
+  { key: "REQUESTED", label: "Requested", description: "Waiting for local workers" },
+  { key: "MATCHED", label: "Matched", description: "Worker accepted request" },
+  { key: "QUOTED", label: "Quoted", description: "Price sent for approval" },
+  { key: "EN_ROUTE", label: "On the way", description: "Worker is travelling to your location" },
+  { key: "IN_PROGRESS", label: "Working", description: "Work is underway" },
+  { key: "COMPLETED", label: "Finished", description: "Job finished & settled" },
+] as const;
