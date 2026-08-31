@@ -190,18 +190,41 @@ export function LiveGpsRouteMap({
 
     const handleErr = (err: any) => {
       console.log("[Geolocation fallback notice]:", err.message);
-      navigator.geolocation.getCurrentPosition(
-        handlePos,
-        () => {
+      
+      // Automatic IP-based geolocation fallback when browser blocks GPS on HTTP origins
+      fetch("https://ipapi.co/json/")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.latitude && data?.longitude) {
+            handlePos({
+              coords: {
+                latitude: Number(data.latitude),
+                longitude: Number(data.longitude),
+                accuracy: 50,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: 30,
+              },
+              timestamp: Date.now(),
+            } as GeolocationPosition);
+          } else {
+            if (!resolved) {
+              resolved = true;
+              clearTimeout(safetyTimer);
+              setIsRequestingLocation(false);
+              setIsLocationPermissionGranted(true);
+            }
+          }
+        })
+        .catch(() => {
           if (!resolved) {
             resolved = true;
             clearTimeout(safetyTimer);
             setIsRequestingLocation(false);
             setIsLocationPermissionGranted(true);
           }
-        },
-        { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
-      );
+        });
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -213,10 +236,10 @@ export function LiveGpsRouteMap({
 
   // AUTO-GET and CONTINUOUSLY WATCH device GPS
   useEffect(() => {
-    if (typeof window === "undefined" || !("geolocation" in navigator)) return;
+    if (typeof window === "undefined") return;
 
     // Check permission state for auto-unblur
-    if ("permissions" in navigator) {
+    if ("geolocation" in navigator && "permissions" in navigator) {
       navigator.permissions.query({ name: "geolocation" as PermissionName }).then((result) => {
         if (result.state === "granted") {
           setIsLocationPermissionGranted(true);
@@ -253,29 +276,50 @@ export function LiveGpsRouteMap({
       });
     };
 
-    // 1. Get initial fix immediately
-    navigator.geolocation.getCurrentPosition(
-      handleProviderPos,
-      () => {
-        navigator.geolocation.getCurrentPosition(
-          handleProviderPos,
-          () => {},
-          { enableHighAccuracy: false, timeout: 3000, maximumAge: 60000 }
-        );
-      },
-      { enableHighAccuracy: true, timeout: 3000, maximumAge: 10000 }
-    );
-
-    // 2. Continuous real-time GPS watch
-    const watchId = navigator.geolocation.watchPosition(
-      handleProviderPos,
-      (err) => console.log("[Live GPS watch notice]:", err.message),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
-    );
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
+    const handleProviderErr = () => {
+      // Fallback for HTTP environments (e.g. AWS EC2 without HTTPS)
+      fetch("https://ipapi.co/json/")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data?.latitude && data?.longitude) {
+            handleProviderPos({
+              coords: {
+                latitude: Number(data.latitude),
+                longitude: Number(data.longitude),
+                accuracy: 50,
+                altitude: null,
+                altitudeAccuracy: null,
+                heading: null,
+                speed: 30,
+              },
+              timestamp: Date.now(),
+            } as GeolocationPosition);
+          }
+        })
+        .catch(() => {});
     };
+
+    if ("geolocation" in navigator) {
+      // 1. Get initial fix immediately
+      navigator.geolocation.getCurrentPosition(
+        handleProviderPos,
+        handleProviderErr,
+        { enableHighAccuracy: true, timeout: 3000, maximumAge: 10000 }
+      );
+
+      // 2. Continuous real-time GPS watch
+      const watchId = navigator.geolocation.watchPosition(
+        handleProviderPos,
+        handleProviderErr,
+        { enableHighAccuracy: true, maximumAge: 2000, timeout: 8000 }
+      );
+
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
+    } else {
+      handleProviderErr();
+    }
   }, [isProviderView, updateRoadRoute]);
 
   // Initialize Map ONCE
