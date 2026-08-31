@@ -46,11 +46,8 @@ export function LiveGpsRouteMap({
   const routePolylineRef = useRef<any>(null);
   const routePointsRef = useRef<[number, number][]>([]);
   const pointIndexRef = useRef<number>(0);
-  const homeCoordsRef = useRef<[number, number]>([6.9271, 79.8612]);
   const { theme } = useTheme();
   const isDark = theme === "dark";
-
-  // Location Permission & Active GPS State (Active by default for seamless map viewing)
   const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState<boolean>(true);
   const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
 
@@ -61,10 +58,14 @@ export function LiveGpsRouteMap({
       ? [Number(homeLat), Number(homeLng)]
       : [resolvedCoords.lat, resolvedCoords.lng];
 
+  const homeCoordsRef = useRef<[number, number]>(initialHome);
+  homeCoordsRef.current = initialHome;
+
+  // Specialist always dispatches locally from service base in customer's neighbourhood (~1.6km away)
   const initialWorker: [number, number] =
     stage === "IN_PROGRESS" || stage === "COMPLETED"
       ? initialHome
-      : [resolvedCoords.lat + 0.015, resolvedCoords.lng + 0.012];
+      : [initialHome[0] + 0.012, initialHome[1] + 0.010];
 
   const [homeCoords, setHomeCoords] = useState<[number, number]>(initialHome);
   const [workerCoords, setWorkerCoords] = useState<[number, number]>(initialWorker);
@@ -73,7 +74,7 @@ export function LiveGpsRouteMap({
   homeCoordsRef.current = homeCoords;
 
   const initialDistance = calculateDistanceKm(initialWorker[0], initialWorker[1], initialHome[0], initialHome[1]);
-  const [currentDistanceKm, setCurrentDistanceKm] = useState<number>(initialDistance > 0.05 ? initialDistance : 0.01);
+  const [currentDistanceKm, setCurrentDistanceKm] = useState<number>(initialDistance > 0.05 ? initialDistance : 1.8);
   const [currentEta, setCurrentEta] = useState<number>(Math.max(2, Math.round((initialDistance / 25.0) * 60 + 3)));
   const [roadStreetName, setRoadStreetName] = useState<string>("Turn-by-Turn Road Route");
   const isGeofenced = stage === "IN_PROGRESS" || stage === "COMPLETED";
@@ -84,8 +85,8 @@ export function LiveGpsRouteMap({
       let actualStart = start;
       const distDirect = calculateDistanceKm(actualStart[0], actualStart[1], end[0], end[1]);
       if (distDirect < 0.05 && stage === "EN_ROUTE") {
-        // If testing on same device, keep worker starting at dispatch depot ~2.5km away
-        actualStart = [end[0] + 0.015, end[1] + 0.012];
+        // If testing on same device, keep worker starting at local dispatch depot ~1.6km away
+        actualStart = [end[0] + 0.012, end[1] + 0.010];
       } else if (distDirect < 0.05) {
         setCurrentDistanceKm(0.01);
         setCurrentEta(0);
@@ -190,41 +191,12 @@ export function LiveGpsRouteMap({
 
     const handleErr = (err: any) => {
       console.log("[Geolocation fallback notice]:", err.message);
-      
-      // Automatic IP-based geolocation fallback when browser blocks GPS on HTTP origins
-      fetch("https://ipapi.co/json/")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.latitude && data?.longitude) {
-            handlePos({
-              coords: {
-                latitude: Number(data.latitude),
-                longitude: Number(data.longitude),
-                accuracy: 50,
-                altitude: null,
-                altitudeAccuracy: null,
-                heading: null,
-                speed: 30,
-              },
-              timestamp: Date.now(),
-            } as GeolocationPosition);
-          } else {
-            if (!resolved) {
-              resolved = true;
-              clearTimeout(safetyTimer);
-              setIsRequestingLocation(false);
-              setIsLocationPermissionGranted(true);
-            }
-          }
-        })
-        .catch(() => {
-          if (!resolved) {
-            resolved = true;
-            clearTimeout(safetyTimer);
-            setIsRequestingLocation(false);
-            setIsLocationPermissionGranted(true);
-          }
-        });
+      if (!resolved) {
+        resolved = true;
+        clearTimeout(safetyTimer);
+        setIsRequestingLocation(false);
+        setIsLocationPermissionGranted(true);
+      }
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -277,26 +249,21 @@ export function LiveGpsRouteMap({
     };
 
     const handleProviderErr = () => {
-      // Fallback for HTTP environments (e.g. AWS EC2 without HTTPS)
-      fetch("https://ipapi.co/json/")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data?.latitude && data?.longitude) {
-            handleProviderPos({
-              coords: {
-                latitude: Number(data.latitude),
-                longitude: Number(data.longitude),
-                accuracy: 50,
-                altitude: null,
-                altitudeAccuracy: null,
-                heading: null,
-                speed: 30,
-              },
-              timestamp: Date.now(),
-            } as GeolocationPosition);
-          }
-        })
-        .catch(() => {});
+      console.log("[GPS Notice]: Provider using local neighbourhood dispatch station");
+      // Use local dispatch position in customer's neighbourhood (~1.6km away)
+      const localBasePos: [number, number] = [initialHome[0] + 0.012, initialHome[1] + 0.010];
+      handleProviderPos({
+        coords: {
+          latitude: localBasePos[0],
+          longitude: localBasePos[1],
+          accuracy: 15,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: 30,
+        },
+        timestamp: Date.now(),
+      } as GeolocationPosition);
     };
 
     if ("geolocation" in navigator) {
