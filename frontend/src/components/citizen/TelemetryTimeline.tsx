@@ -92,21 +92,23 @@ export function TelemetryTimeline({ currentStage, etaMinutes }: TelemetryTimelin
                 <div>
                   <div
                     style={{
-                      fontSize: "clamp(9.5px, 2.2vw, 11.5px)",
+                      fontSize: "clamp(9px, 2vw, 11px)",
                       fontWeight: isCurrent ? 800 : 600,
                       color: isCurrent
                         ? "var(--accent)"
                         : isDone
                         ? "var(--text-primary)"
                         : "var(--text-secondary)",
-                      lineHeight: 1.2,
+                      lineHeight: 1.15,
+                      wordBreak: "break-word",
+                      hyphens: "auto",
                     }}
                   >
                     {stageInfo?.label || key}
                   </div>
                   {isCurrent && key === "EN_ROUTE" && (
-                    <div style={{ fontSize: "10px", color: "#10b981", fontWeight: 800, marginTop: "2px" }}>
-                      ETA ~{etaMinutes}m
+                    <div style={{ fontSize: "9.5px", color: "#10b981", fontWeight: 800, marginTop: "2px" }}>
+                      ~{etaMinutes}m
                     </div>
                   )}
                 </div>

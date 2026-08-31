@@ -295,14 +295,14 @@ export default function ProviderDashboardPage() {
       />
 
       {/* ── Main Content Area ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, width: "100%", overflowX: "hidden" }}>
         <ProviderHeader
           selectedLocality={selectedLocality}
           isOnline={isOnline}
           onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
-        <main style={{ padding: "clamp(16px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+        <main style={{ padding: "clamp(12px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           {/* ═══════════════════════════════════════════════════════════════
               TAB 1: ACTIVE JOB & GPS NAVIGATION (PRIMARY VIEW)
              ═══════════════════════════════════════════════════════════════ */}
@@ -310,9 +310,11 @@ export default function ProviderDashboardPage() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 420px), 1fr))" : "1fr",
+                gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" : "1fr",
                 gap: "24px",
                 alignItems: "start",
+                width: "100%",
+                minWidth: 0,
               }}
             >
               {/* Left: Active Work Order Details */}

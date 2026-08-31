@@ -72,7 +72,7 @@ export function DashboardHeader({
       }}
     >
       {/* Left: Mobile Hamburger & Citizen Portal Badge */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, flexShrink: 0 }}>
         {onToggleMobileMenu && (
           <button
             onClick={onToggleMobileMenu}
@@ -83,7 +83,7 @@ export function DashboardHeader({
               border: "1px solid var(--border)",
               color: "var(--text-primary)",
               cursor: "pointer",
-              padding: "7px",
+              padding: "6px",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -94,18 +94,18 @@ export function DashboardHeader({
           </button>
         )}
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <span style={{ fontSize: "15px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <span style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
             Citizen Portal
           </span>
-          <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 8px", backgroundColor: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "2px" }}>
+          <span className="desktop-only" style={{ fontSize: "10.5px", fontWeight: 700, padding: "2px 6px", backgroundColor: "rgba(16,185,129,0.12)", color: "#10b981", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "2px", whiteSpace: "nowrap" }}>
             Live Dispatch
           </span>
         </div>
       </div>
 
       {/* Right Controls */}
-      <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
@@ -115,16 +115,17 @@ export function DashboardHeader({
             border: "none",
             color: "var(--text-primary)",
             cursor: "pointer",
-            padding: "8px",
+            padding: "6px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             transition: "transform 0.2s ease",
+            flexShrink: 0,
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.15) rotate(15deg)")}
           onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1) rotate(0deg)")}
         >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          {isDark ? <Sun size={17} /> : <Moon size={17} />}
         </button>
 
         {/* User profile avatar (Clickable to open profile) */}
@@ -132,9 +133,10 @@ export function DashboardHeader({
           style={{
             display: "flex",
             alignItems: "center",
-            gap: "10px",
-            paddingLeft: "8px",
+            gap: "8px",
+            paddingLeft: "6px",
             borderLeft: "1px solid var(--border)",
+            flexShrink: 0,
           }}
         >
           <div
@@ -178,42 +180,47 @@ export function DashboardHeader({
                 initials
               )}
             </div>
-            <div>
-              <div className="truncate-mobile" style={{ fontSize: "13px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>
+            <div className="desktop-only" style={{ minWidth: 0, maxWidth: "clamp(90px, 24vw, 220px)", overflow: "hidden" }}>
+              <div style={{ fontSize: "13.5px", fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user?.fullName || "Citizen"}
               </div>
-              <div className="desktop-only" style={{ fontSize: "11px", color: "var(--text-secondary)" }}>
+              <div style={{ fontSize: "11px", color: "var(--text-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {user?.homeAddress ? user.homeAddress.split(",")[0] : (user?.locality ? `${user.locality}, ${user.district || ""}` : selectedLocality || "Colombo")}
               </div>
             </div>
           </div>
 
-          {/* Quick Sign Out Action */}
+          {/* Prominent Sign Out Action */}
           <button
             onClick={logout}
             title="Sign Out"
             aria-label="Sign Out"
             style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-secondary)",
+              backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              color: "#ef4444",
               cursor: "pointer",
-              padding: "6px",
+              padding: "6px 10px",
+              borderRadius: "0px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              transition: "color 0.2s ease, transform 0.2s ease",
+              gap: "5px",
+              fontSize: "12px",
+              fontWeight: 800,
+              flexShrink: 0,
+              transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#ef4444";
-              e.currentTarget.style.transform = "scale(1.1)";
+              e.currentTarget.style.backgroundColor = "#ef4444";
+              e.currentTarget.style.color = "#ffffff";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--text-secondary)";
-              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.backgroundColor = isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2";
+              e.currentTarget.style.color = "#ef4444";
             }}
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>

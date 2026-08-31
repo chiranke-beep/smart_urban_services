@@ -194,16 +194,16 @@ export function ProviderHeader({
               )}
             </div>
 
-            <div>
+            <div style={{ minWidth: 0, maxWidth: "clamp(90px, 24vw, 220px)", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <span className="truncate-mobile" style={{ fontSize: "14px", fontWeight: 800, color: "var(--text-primary)" }}>
+                <span className="truncate-mobile" style={{ fontSize: "13.5px", fontWeight: 800, color: "var(--text-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {displayName}
                 </span>
                 <span title="National ID & Trade Verified" style={{ flexShrink: 0 }}>
-                  <ShieldCheck size={15} color="#10b981" />
+                  <ShieldCheck size={14} color="#10b981" />
                 </span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11.5px", color: "var(--text-secondary)", marginTop: "1px" }}>
+              <div className="desktop-only" style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", color: "var(--text-secondary)", marginTop: "1px", whiteSpace: "nowrap" }}>
                 <span style={{ color: "#eab308", fontWeight: 700, display: "flex", alignItems: "center", gap: "2px", flexShrink: 0 }}>
                   <Star size={11} fill="#eab308" />
                   {liveRating.toFixed(1)}
@@ -213,51 +213,41 @@ export function ProviderHeader({
                   <MapPin size={11} color="#10b981" />
                   <span>{user?.locality || selectedLocality || "Kandy"}</span>
                 </span>
-                <span className="hide-on-mobile">·</span>
-                <span
-                  title={displayTrade}
-                  className="hide-on-mobile"
-                  style={{
-                    maxWidth: "180px",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                  }}
-                >
-                  {displayTrade.includes(",")
-                    ? `${displayTrade.split(",")[0].trim()} (+${displayTrade.split(",").length - 1} trades)`
-                    : displayTrade}
-                </span>
               </div>
             </div>
           </div>
 
-          {/* Quick Sign Out Action */}
+          {/* Prominent Sign Out Action */}
           <button
             onClick={logout}
             title="Sign Out"
             aria-label="Sign Out"
             style={{
-              background: "none",
-              border: "none",
-              color: "var(--text-secondary)",
+              backgroundColor: isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2",
+              border: "1px solid rgba(239, 68, 68, 0.4)",
+              color: "#ef4444",
               cursor: "pointer",
-              padding: "6px",
+              padding: "6px 10px",
+              borderRadius: "0px",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              transition: "color 0.2s ease, transform 0.2s ease",
+              gap: "5px",
+              fontSize: "12px",
+              fontWeight: 800,
+              flexShrink: 0,
+              transition: "all 0.2s ease",
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.color = "#ef4444";
-              e.currentTarget.style.transform = "scale(1.1)";
+              e.currentTarget.style.backgroundColor = "#ef4444";
+              e.currentTarget.style.color = "#ffffff";
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.color = "var(--text-secondary)";
-              e.currentTarget.style.transform = "scale(1)";
+              e.currentTarget.style.backgroundColor = isDark ? "rgba(239, 68, 68, 0.15)" : "#fee2e2";
+              e.currentTarget.style.color = "#ef4444";
             }}
           >
-            <LogOut size={16} />
+            <LogOut size={14} />
+            <span>Sign Out</span>
           </button>
         </div>
       </div>
