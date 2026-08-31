@@ -36,6 +36,8 @@ async function runMigrations() {
       );
       ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS nic_number VARCHAR(30);
       ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS nic_document_url TEXT;
+      ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS verification_status VARCHAR(30) DEFAULT 'PENDING';
+      ALTER TABLE provider_profiles ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
     `);
 
     // 3. Ensure admin user exists with proper password

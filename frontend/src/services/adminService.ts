@@ -11,8 +11,12 @@ export const adminService = {
     try {
       const res = await apiClient<{ success: boolean; data?: any[] }>("/admin/workers");
       if (res?.data && Array.isArray(res.data)) {
-        if (typeof window !== "undefined") {
-          localStorage.setItem(STORAGE_ADMIN_APP_KEY, JSON.stringify(res.data));
+        try {
+          if (typeof window !== "undefined") {
+            localStorage.setItem(STORAGE_ADMIN_APP_KEY, JSON.stringify(res.data));
+          }
+        } catch {
+          // Ignore localStorage quota exceeded errors on large NIC image documents
         }
         return res.data;
       }
@@ -54,8 +58,12 @@ export const adminService = {
     if (target) {
       target.status = status;
       if (rejectionReason) target.rejectionReason = rejectionReason;
-      if (typeof window !== "undefined") {
-        localStorage.setItem(STORAGE_ADMIN_APP_KEY, JSON.stringify(apps));
+      try {
+        if (typeof window !== "undefined") {
+          localStorage.setItem(STORAGE_ADMIN_APP_KEY, JSON.stringify(apps));
+        }
+      } catch {
+        // Ignore quota error
       }
     }
     return target || null;

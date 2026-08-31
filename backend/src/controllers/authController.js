@@ -71,6 +71,19 @@ const register = async (req, res) => {
       district: district || 'Colombo',
     });
 
+    if (assignedRole === 'service_provider') {
+      try {
+        const pool = require('../config/database');
+        await pool.query(`
+          INSERT INTO provider_profiles (user_id, trade, daily_rate, hourly_rate, experience_years, verified, verification_status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7)
+          ON CONFLICT (user_id) DO NOTHING
+        `, [user.id, req.body.trade || 'Technician & Craftsman', 3500, 600, 5, false, 'PENDING']);
+      } catch (e) {
+        console.warn('Initial provider profile creation notice:', e.message);
+      }
+    }
+
     sendTokenResponse(user, 201, res);
   } catch (err) {
     console.error('Register error:', err.message);
