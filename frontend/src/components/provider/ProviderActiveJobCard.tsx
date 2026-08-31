@@ -295,19 +295,6 @@ export function ProviderActiveJobCard({
         </div>
       </div>
 
-      {/* Live GPS Navigation & Citizen Destination Map (shown when En Route or In Progress) */}
-      {(job.stage === "EN_ROUTE" || job.stage === "IN_PROGRESS") && (
-        <LiveGpsRouteMap
-          workerName="You (Specialist)"
-          locality={job.locality}
-          homeLat={job.latitude}
-          homeLng={job.longitude}
-          etaMinutes={job.etaMinutes || 15}
-          stage={job.stage}
-          isProviderView={true}
-        />
-      )}
-
       {/* Technician Stage Advance Actions */}
       <div
         style={{
