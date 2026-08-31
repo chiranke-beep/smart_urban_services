@@ -37,7 +37,7 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-chiran123}
       JWT_SECRET: ${JWT_SECRET:-smart_urban_services_jwt_super_secret_key_2026}
       JWT_EXPIRES_IN: 7d
-      CLIENT_URL: ${CLIENT_URL:-https://smarturban.duckdns.org}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:3000}
     ports:
       - "5000:5000"
 
@@ -62,13 +62,13 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://smarturban.duckdns.org/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
     container_name: sus_frontend
     restart: unless-stopped
     depends_on:
       - backend
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://smarturban.duckdns.org/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5000/api}
     ports:
       - "3000:3000"
 

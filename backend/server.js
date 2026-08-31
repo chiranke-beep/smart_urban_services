@@ -27,7 +27,7 @@ const httpServer = createServer(app);
 // Socket.io
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: '*',
     methods: ['GET', 'POST'],
   },
 });
@@ -121,7 +121,7 @@ const upload = multer({
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
-app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:3000' }));
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 if (process.env.NODE_ENV !== 'test') {
