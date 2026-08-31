@@ -48,7 +48,8 @@ export function LiveGpsRouteMap({
   const pointIndexRef = useRef<number>(0);
   const { theme } = useTheme();
   const isDark = theme === "dark";
-  const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState<boolean>(true);
+  // Start as false so the "Grant Location" button is shown — set true once browser grants or fallback kicks in
+  const [isLocationPermissionGranted, setIsLocationPermissionGranted] = useState<boolean>(false);
   const [isRequestingLocation, setIsRequestingLocation] = useState<boolean>(false);
 
   // Dynamic coordinate resolution for any Sri Lankan locality
@@ -210,13 +211,32 @@ export function LiveGpsRouteMap({
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check permission state for auto-unblur
-    if ("geolocation" in navigator && "permissions" in navigator) {
+    // On HTTP (no geolocation available), silently grant and use locality fallback
+    if (!("geolocation" in navigator)) {
+      setIsLocationPermissionGranted(true);
+      return;
+    }
+
+    // Check existing permission state — if already granted, auto-request silently
+    if ("permissions" in navigator) {
       navigator.permissions.query({ name: "geolocation" as PermissionName }).then((result) => {
         if (result.state === "granted") {
           setIsLocationPermissionGranted(true);
+          requestUserLocation();
+        } else if (result.state === "prompt") {
+          // Permission not yet asked — auto-trigger the browser popup
+          requestUserLocation();
+        } else {
+          // Permission denied — use locality fallback silently
+          setIsLocationPermissionGranted(true);
         }
-      }).catch(() => {});
+      }).catch(() => {
+        // Permissions API not available — trigger directly
+        requestUserLocation();
+      });
+    } else {
+      // Permissions API not supported — trigger directly
+      requestUserLocation();
     }
 
     // Only provider view should continuously broadcast worker movement
