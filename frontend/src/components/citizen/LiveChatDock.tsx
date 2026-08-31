@@ -31,11 +31,21 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
   const [input, setInput] = useState("");
   const [currentQuotePrice, setCurrentQuotePrice] = useState<number>(job.quotation?.amountLKR || job.costLKR || 3500);
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState<string | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevMessagesCountRef = useRef<number>(0);
   const { theme } = useTheme();
   const { user } = useAuth();
   const isDark = theme === "dark";
   const worker = job.assignedWorker;
+
+  const scrollToBottom = (smooth = false) => {
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTo({
+        top: messagesContainerRef.current.scrollHeight,
+        behavior: smooth ? "smooth" : "auto",
+      });
+    }
+  };
 
   useEffect(() => {
     setCurrentQuotePrice(job.quotation?.amountLKR || job.costLKR || 3500);
@@ -70,7 +80,16 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
     // Poll DB every 5s as a reliable fallback to catch any missed socket messages
     const pollInterval = setInterval(() => {
       chatService.fetchMessages(job.id).then((msgs) => {
-        setMessages(msgs);
+        setMessages((prev) => {
+          // Avoid triggering state update and re-render if messages have not changed
+          if (
+            msgs.length === prev.length &&
+            msgs.every((m, idx) => m.id === prev[idx]?.id)
+          ) {
+            return prev;
+          }
+          return msgs;
+        });
       });
     }, 5000);
 
@@ -82,7 +101,11 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
   }, [job.id]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Only scroll the internal chat container when new messages arrive or on first load
+    if (messages.length > prevMessagesCountRef.current) {
+      scrollToBottom(prevMessagesCountRef.current > 0);
+    }
+    prevMessagesCountRef.current = messages.length;
   }, [messages]);
 
   const handleSend = (e: React.FormEvent) => {
@@ -143,6 +166,8 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
         height: "640px",
         maxHeight: "85vh",
         width: "100%",
+        maxWidth: "100%",
+        boxSizing: "border-box",
         borderRadius: "0px",
         backgroundColor: "var(--card-bg)",
         border: "1.5px solid var(--accent)",
@@ -154,79 +179,90 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
       }}
     >
       {/* Chat Header */}
-      <div
-        style={{
-          padding: "14px 16px",
-          backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "var(--accent)",
-          color: isDark ? "#ffffff" : "var(--accent-text)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderBottom: "1px solid var(--border)",
-          gap: "8px",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+      {(() => {
+        const isProvider = user?.role === "PROVIDER";
+        const partnerName = isProvider ? (job.citizenName || "Homeowner") : (worker?.name || "Service Provider Dispatch");
+        const partnerPhone = isProvider ? job.citizenPhone : worker?.phone;
+        const partnerAvatarBg = isProvider ? "#0284c7" : (worker?.avatarBg || "var(--accent)");
+        const partnerInitials = partnerName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() || (isProvider ? "HO" : "SP");
+        const partnerSubtext = isProvider
+          ? `Citizen Request #${job.id} · ${job.locality}`
+          : (worker ? `Active on Job #${job.id} · ${job.locality}` : `Awaiting Dispatch Acceptance · ${job.locality}`);
+
+        return (
           <div
             style={{
-              width: "36px",
-              height: "36px",
-              backgroundColor: worker?.avatarBg || "var(--accent)",
-              color: "#ffffff",
+              padding: "14px 16px",
+              backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "var(--accent)",
+              color: isDark ? "#ffffff" : "var(--accent-text)",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              fontWeight: 900,
-              fontSize: "14px",
-              flexShrink: 0,
+              justifyContent: "space-between",
+              borderBottom: "1px solid var(--border)",
+              gap: "8px",
             }}
           >
-            {worker?.name ? worker.name.split(" ").map((n) => n[0]).join("").slice(0, 2) : "SP"}
-          </div>
-          <div style={{ minWidth: 0, overflow: "hidden" }}>
-            <div style={{ fontSize: "14px", fontWeight: 800, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-              {worker?.name || "Service Provider Dispatch"}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+              <div
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  backgroundColor: partnerAvatarBg,
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: "14px",
+                  flexShrink: 0,
+                }}
+              >
+                {partnerInitials}
+              </div>
+              <div style={{ minWidth: 0, overflow: "hidden" }}>
+                <div style={{ fontSize: "14px", fontWeight: 800, whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  {partnerName}
+                </div>
+                <div style={{ fontSize: "11px", opacity: 0.85, display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                  <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%", flexShrink: 0 }} />
+                  <span style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
+                    {partnerSubtext}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div style={{ fontSize: "11px", opacity: 0.85, display: "flex", alignItems: "center", gap: "4px", whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-              <span style={{ width: "6px", height: "6px", backgroundColor: "#10b981", borderRadius: "50%", flexShrink: 0 }} />
-              <span style={{ whiteSpace: "nowrap", textOverflow: "ellipsis", overflow: "hidden" }}>
-                {worker
-                  ? `Active on Job #${job.id} · ${job.locality}`
-                  : `Awaiting Dispatch Acceptance · ${job.locality}`}
-              </span>
-            </div>
-          </div>
-        </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
-          {worker?.phone && (
-            <a
-              href={`tel:${worker.phone}`}
-              style={{
-                color: "inherit",
-                padding: "6px",
-                display: "flex",
-                alignItems: "center",
-              }}
-              title="Call Worker"
-            >
-              <PhoneCall size={16} />
-            </a>
-          )}
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              color: "inherit",
-              cursor: "pointer",
-              padding: "4px",
-            }}
-          >
-            <X size={18} />
-          </button>
-        </div>
-      </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "6px", flexShrink: 0 }}>
+              {partnerPhone && (
+                <a
+                  href={`tel:${partnerPhone}`}
+                  style={{
+                    color: "inherit",
+                    padding: "6px",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                  title={isProvider ? "Call Homeowner" : "Call Worker"}
+                >
+                  <PhoneCall size={16} />
+                </a>
+              )}
+              <button
+                onClick={onClose}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: "inherit",
+                  cursor: "pointer",
+                  padding: "4px",
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Interactive Quotation & Acceptance Banner */}
       <div
@@ -255,6 +291,7 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
 
       {/* Chat Messages Scroll Feed */}
       <div
+        ref={messagesContainerRef}
         style={{
           flex: 1,
           padding: "20px",
@@ -362,7 +399,6 @@ export function LiveChatDock({ job, onClose }: LiveChatDockProps) {
             </div>
           );
         })}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input Bar */}

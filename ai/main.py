@@ -10,7 +10,7 @@ import os
 import io
 import base64
 from typing import List, Optional, Dict, Any
-from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, Request, UploadFile, File, Form, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
@@ -193,38 +193,43 @@ def health_check():
 
 
 @app.post("/api/ai/vision-scan")
-async def vision_scan(request: Request):
+async def vision_scan(
+    file: Optional[UploadFile] = File(None, description="Direct image file upload (PNG/JPG)"),
+    imageBase64: Optional[str] = Form(None, description="Optional Base64 encoded image string"),
+    description: Optional[str] = Form("", description="Optional incident description text"),
+    user_selected_category: Optional[str] = Form("plumbing", description="Citizen selected service trade category"),
+    request: Request = None,
+):
     """
-    Universal Computer Vision model inference on uploaded image (JSON Base64 or Multipart).
+    Universal Computer Vision model inference on uploaded image file or base64.
     Uses trained Random Forest Classifier (hazard_classifier.pkl).
     """
     image_bytes = None
-    description = ""
-    content_type = request.headers.get("content-type", "")
 
-    if "application/json" in content_type:
-        body = await request.json()
-        raw_b64 = body.get("imageBase64") or body.get("image") or ""
-        description = body.get("description") or ""
-        if raw_b64:
-            clean_b64 = raw_b64.split(",")[-1] if "," in raw_b64 else raw_b64
+    if file and hasattr(file, "read"):
+        image_bytes = await file.read()
+    
+    if not image_bytes and imageBase64:
+        clean_b64 = imageBase64.split(",")[-1] if "," in imageBase64 else imageBase64
+        try:
+            image_bytes = base64.b64decode(clean_b64)
+        except Exception as e:
+            print(f"Base64 decode error: {e}")
+
+    # Fallback to JSON body if requested programmatically via application/json
+    if not image_bytes and request:
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
             try:
-                image_bytes = base64.b64decode(clean_b64)
-            except Exception as e:
-                print(f"Base64 decode error: {e}")
-    else:
-        form = await request.form()
-        file = form.get("file")
-        if file and hasattr(file, "read"):
-            image_bytes = await file.read()
-        raw_b64 = form.get("imageBase64")
-        if raw_b64 and not image_bytes:
-            clean_b64 = raw_b64.split(",")[-1] if "," in raw_b64 else raw_b64
-            try:
-                image_bytes = base64.b64decode(clean_b64)
+                body = await request.json()
+                raw_b64 = body.get("imageBase64") or body.get("image") or ""
+                if not description:
+                    description = body.get("description") or ""
+                if raw_b64:
+                    clean_b64 = raw_b64.split(",")[-1] if "," in raw_b64 else raw_b64
+                    image_bytes = base64.b64decode(clean_b64)
             except Exception:
                 pass
-        description = form.get("description") or ""
 
     if image_bytes:
         try:

@@ -114,7 +114,6 @@ function DashboardContent() {
     const newJob = await jobService.createJob(data);
     const updated = await jobService.fetchRemoteJobs();
     setJobs(updated);
-    setActiveChatJobId(newJob.id);
   };
 
   const handleCancelJob = async (jobId: string) => {
@@ -182,14 +181,14 @@ function DashboardContent() {
       />
 
       {/* ── Main Content Area ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, width: "100%", overflowX: "hidden" }}>
         <DashboardHeader
           selectedLocality={selectedLocality}
           onChangeLocality={setSelectedLocality}
           onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
 
-        <main style={{ padding: "clamp(16px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px" }}>
+        <main style={{ padding: "clamp(12px, 3vw, 32px)", flex: 1, display: "flex", flexDirection: "column", gap: "24px", minWidth: 0, width: "100%", boxSizing: "border-box" }}>
           {/* ═══════════════════════════════════════════════════════════════
               TAB 1: ACTIVE ORDERS & LIVE GPS (PRIMARY VIEW)
              ═══════════════════════════════════════════════════════════════ */}
@@ -199,8 +198,9 @@ function DashboardContent() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))",
-                  gap: "14px",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 140px), 1fr))",
+                  gap: "12px",
+                  width: "100%",
                 }}
               >
                 {CATEGORY_DEFINITIONS.map((cat) => {
@@ -262,20 +262,22 @@ function DashboardContent() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 420px), 1fr))" : "1fr",
+                  gridTemplateColumns: activeChatJob ? "repeat(auto-fit, minmax(min(100%, 340px), 1fr))" : "1fr",
                   gap: "24px",
                   alignItems: "start",
+                  width: "100%",
+                  minWidth: 0,
                 }}
               >
                 {/* Left Column: Active Orders */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
-                    <div>
-                      <h2 style={{ fontSize: "20px", fontWeight: 800, margin: 0, color: "var(--text-primary)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", width: "100%" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <h2 style={{ fontSize: "clamp(18px, 4vw, 22px)", fontWeight: 800, margin: 0, color: "var(--text-primary)", letterSpacing: "-0.01em" }}>
                         Active Jobs ({activeJobs.length})
                       </h2>
-                      <p style={{ fontSize: "13px", color: "var(--text-secondary)", margin: 0 }}>
-                        Live map tracking and arrival updates
+                      <p style={{ fontSize: "12px", color: "var(--text-secondary)", margin: 0 }}>
+                        Live map tracking & arrival updates
                       </p>
                     </div>
 
@@ -295,6 +297,7 @@ function DashboardContent() {
                         gap: "6px",
                         flexShrink: 0,
                         whiteSpace: "nowrap",
+                        boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
                       }}
                     >
                       <Plus size={15} />

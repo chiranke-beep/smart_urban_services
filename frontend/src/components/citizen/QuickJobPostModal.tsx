@@ -18,6 +18,7 @@ import {
   Trash2,
   DollarSign,
   Layers,
+  Crosshair,
 } from "lucide-react";
 import { JobCategory, JobUrgency, JobRequest } from "@/types/job";
 import {
@@ -29,6 +30,7 @@ import { useTheme } from "@/components/ThemeProvider";
 import { useAuth } from "@/context/AuthContext";
 import { apiClient } from "@/services/api";
 import { getCoordinatesForPlace } from "@/utils/geoDistance";
+import { InteractivePinPicker } from "@/components/common/InteractivePinPicker";
 
 interface QuickJobPostModalProps {
   isOpen: boolean;
@@ -97,15 +99,20 @@ export function QuickJobPostModal({
 
   useEffect(() => {
     if (isOpen && user) {
-      const userDist = user.district || "Colombo";
-      const userLoc = user.locality || "Maharagama";
-      setDistrict(userDist);
-      setLocality(userLoc);
-      const coords = getCoordinatesForPlace(userLoc, userDist);
-      setGpsCoords(coords || {
-        lat: user.savedLat || 6.848,
-        lng: user.savedLng || 79.926,
-      });
+      // Prefer homeAddress (set when user saves their home pin) over stale registration locality
+      const homeAddrParts = user.homeAddress ? user.homeAddress.split(",") : [];
+      const resolvedLocality = homeAddrParts[0]?.trim() || user.locality || "Maharagama";
+      const resolvedDistrict = homeAddrParts[1]?.trim() || user.district || "Colombo";
+      setDistrict(resolvedDistrict);
+      setLocality(resolvedLocality);
+
+      // If user has a precise saved home pin, use those real GPS coords directly
+      if (user.savedLat && user.savedLng) {
+        setGpsCoords({ lat: user.savedLat, lng: user.savedLng });
+      } else {
+        const coords = getCoordinatesForPlace(resolvedLocality, resolvedDistrict);
+        setGpsCoords(coords || { lat: 6.848, lng: 79.926 });
+      }
     }
   }, [isOpen, user]);
 
@@ -535,81 +542,229 @@ export function QuickJobPostModal({
             />
           </div>
 
-          {/* 4. District & Locality */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "14px" }}>
-            <div>
-              <label
+          {/* 4. Job Location & Interactive Property Pin Picker */}
+          <div
+            style={{
+              padding: "16px",
+              backgroundColor: isDark ? "rgba(16,185,129,0.06)" : "rgba(16,185,129,0.04)",
+              border: "1.5px solid rgba(16,185,129,0.3)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "12px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 800, color: "#10b981" }}>
+                <MapPin size={16} />
+                <span>Job Service Location & Property Pin</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const fallbackToIp = () => {
+                    fetch("https://ipapi.co/json/")
+                      .then((r) => r.json())
+                      .then((data) => {
+                        if (data?.latitude && data?.longitude) {
+                          const lat = Number(Number(data.latitude).toFixed(6));
+                          const lng = Number(Number(data.longitude).toFixed(6));
+                          setGpsCoords({ lat, lng });
+                          if (data.city) setLocality(data.city);
+                          if (data.region) setDistrict(data.region);
+                        }
+                      })
+                      .catch(() => {});
+                  };
+
+                  const isSecure = typeof window !== "undefined" && (window.isSecureContext === true || window.location.hostname === "localhost" || window.location.protocol === "https:");
+                  if (isSecure && "geolocation" in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                      (pos) => {
+                        const lat = Number(pos.coords.latitude.toFixed(6));
+                        const lng = Number(pos.coords.longitude.toFixed(6));
+                        setGpsCoords({ lat, lng });
+
+                        // Reverse geocode to get street name
+                        fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                          .then((r) => r.json())
+                          .then((d) => {
+                            if (d?.address) {
+                              const town = d.address.suburb || d.address.town || d.address.city || d.address.village;
+                              if (town) setLocality(town);
+                              const state = d.address.state || d.address.county;
+                              if (state) setDistrict(state);
+                            }
+                          })
+                          .catch(() => {});
+                      },
+                      (err) => {
+                        console.log("[Geolocation fallback to IP]:", err.message);
+                        fallbackToIp();
+                      },
+                      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+                    );
+                  } else {
+                    fallbackToIp();
+                  }
+                }}
                 style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  color: isDark ? "#f1f5f9" : "#0f172a",
-                  marginBottom: "6px",
-                  textTransform: "uppercase",
+                  padding: "5px 10px",
+                  backgroundColor: "transparent",
+                  border: "1px solid #10b981",
+                  color: "#10b981",
+                  fontSize: "11.5px",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
                 }}
               >
-                District:
-              </label>
-              <select
-                value={district}
-                onChange={(e) => {
-                  setDistrict(e.target.value);
-                  const locs = POPULAR_LOCALITIES[e.target.value];
-                  if (locs && locs.length > 0) setLocality(locs[0]);
-                }}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "0px",
-                  backgroundColor: isDark ? "#1e293b" : "#f8fafc",
-                  border: isDark ? "1px solid var(--border)" : "1.5px solid #cbd5e1",
-                  color: isDark ? "#f8fafc" : "#0f172a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                }}
-              >
-                {SRI_LANKA_DISTRICTS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
+                <Crosshair size={13} />
+                <span>Snap to Current House Location</span>
+              </button>
             </div>
 
+            {/* Quick Jump Town Pills */}
             <div>
-              <label
-                style={{
-                  display: "block",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  color: isDark ? "#f1f5f9" : "#0f172a",
-                  marginBottom: "6px",
-                  textTransform: "uppercase",
-                }}
-              >
-                Locality / Town:
-              </label>
-              <select
-                value={locality}
-                onChange={(e) => setLocality(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px 12px",
-                  borderRadius: "0px",
-                  backgroundColor: isDark ? "#1e293b" : "#f8fafc",
-                  border: isDark ? "1px solid var(--border)" : "1.5px solid #cbd5e1",
-                  color: isDark ? "#f8fafc" : "#0f172a",
-                  fontSize: "13px",
-                  fontWeight: 600,
-                }}
-              >
-                {availableLocalities.map((loc) => (
-                  <option key={loc} value={loc}>
-                    {loc}
-                  </option>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: isDark ? "#94a3b8" : "#64748b", marginBottom: "6px" }}>
+                Jump to Town / Area:
+              </div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                {[
+                  { name: "Heerassagala (Kandy)", district: "Kandy", locality: "Heerassagala", lat: 7.264242, lng: 80.621701 },
+                  { name: "Kandy Town", district: "Kandy", locality: "Kandy", lat: 7.2906, lng: 80.6337 },
+                  { name: "Colombo 07", district: "Colombo", locality: "Colombo", lat: 6.9061, lng: 79.8708 },
+                  { name: "Maharagama", district: "Colombo", locality: "Maharagama", lat: 6.8485, lng: 79.9265 },
+                  { name: "Nugegoda", district: "Colombo", locality: "Nugegoda", lat: 6.8724, lng: 79.8997 },
+                  { name: "Galle", district: "Galle", locality: "Galle", lat: 6.0535, lng: 80.221 },
+                  { name: "Gampaha", district: "Gampaha", locality: "Gampaha", lat: 7.084, lng: 79.994 },
+                  { name: "Kurunegala", district: "Kurunegala", locality: "Kurunegala", lat: 7.4863, lng: 80.3623 },
+                ].map((t) => (
+                  <button
+                    key={t.name}
+                    type="button"
+                    onClick={() => {
+                      setDistrict(t.district);
+                      setLocality(t.locality);
+                      setGpsCoords({ lat: t.lat, lng: t.lng });
+                    }}
+                    style={{
+                      padding: "3px 8px",
+                      fontSize: "11px",
+                      fontWeight: 600,
+                      backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#f1f5f9",
+                      border: "1px solid var(--border)",
+                      color: "var(--text-primary)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {t.name}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
+
+            {/* District & Locality Selection */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "12px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: isDark ? "#cbd5e1" : "#475569",
+                    marginBottom: "4px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  District:
+                </label>
+                <select
+                  value={district}
+                  onChange={(e) => {
+                    setDistrict(e.target.value);
+                    const locs = POPULAR_LOCALITIES[e.target.value];
+                    if (locs && locs.length > 0) {
+                      setLocality(locs[0]);
+                      const coords = getCoordinatesForPlace(locs[0], e.target.value);
+                      if (coords?.lat && coords?.lng) setGpsCoords(coords);
+                    }
+                  }}
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    borderRadius: "0px",
+                    backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+                    border: isDark ? "1px solid var(--border)" : "1.5px solid #cbd5e1",
+                    color: isDark ? "#f8fafc" : "#0f172a",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                  }}
+                >
+                  {SRI_LANKA_DISTRICTS.map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: 700,
+                    color: isDark ? "#cbd5e1" : "#475569",
+                    marginBottom: "4px",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Locality / Town:
+                </label>
+                <input
+                  type="text"
+                  value={locality}
+                  onChange={(e) => {
+                    setLocality(e.target.value);
+                    const coords = getCoordinatesForPlace(e.target.value, district);
+                    if (coords?.lat && coords?.lng) setGpsCoords(coords);
+                  }}
+                  placeholder="e.g. Heerassagala, Kandy"
+                  style={{
+                    width: "100%",
+                    padding: "8px 10px",
+                    borderRadius: "0px",
+                    backgroundColor: isDark ? "#1e293b" : "#f8fafc",
+                    border: isDark ? "1px solid var(--border)" : "1.5px solid #cbd5e1",
+                    color: isDark ? "#f8fafc" : "#0f172a",
+                    fontSize: "13px",
+                    fontWeight: 600,
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Interactive Pin Picker on OpenStreetMap */}
+            {gpsCoords.lat && gpsCoords.lng && (
+              <div>
+                <InteractivePinPicker
+                  lat={gpsCoords.lat}
+                  lng={gpsCoords.lng}
+                  onChangeCoords={(newLat, newLng) => {
+                    setGpsCoords({ lat: newLat, lng: newLng });
+                  }}
+                  isDark={isDark}
+                  height="200px"
+                />
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "6px", fontSize: "11px", color: "var(--text-secondary)" }}>
+                  <span>Pin GPS: <strong style={{ color: "var(--text-primary)" }}>{gpsCoords.lat.toFixed(5)}, {gpsCoords.lng.toFixed(5)}</strong></span>
+                  <span style={{ color: "#10b981", fontWeight: 700 }}>✓ Ready for Specialist Dispatch</span>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* 5. Urgency Selector */}

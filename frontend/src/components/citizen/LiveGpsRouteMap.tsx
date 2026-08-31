@@ -159,12 +159,8 @@ export function LiveGpsRouteMap({
       setIsRequestingLocation(false);
       setIsLocationPermissionGranted(true);
 
-      let userLat = pos.coords.latitude;
-      let userLng = pos.coords.longitude;
-      if (userLat > 7.28 && userLat < 7.32 && userLng > 80.625 && userLng < 80.645) {
-        userLat = 7.264242;
-        userLng = 80.621701;
-      }
+      const userLat = pos.coords.latitude;
+      const userLng = pos.coords.longitude;
       const newPos: [number, number] = [userLat, userLng];
 
       const L = (await import("leaflet")).default || (await import("leaflet"));
@@ -234,15 +230,9 @@ export function LiveGpsRouteMap({
     }
 
     const handleProviderPos = async (pos: GeolocationPosition) => {
-      let lat = pos.coords.latitude;
-      let lng = pos.coords.longitude;
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
       setIsLocationPermissionGranted(true);
-
-      // If PC browser returns approximate Kandy Town IP/WiFi center (7.29...), snap to exact Heerassagala
-      if (lat > 7.28 && lat < 7.32 && lng > 80.625 && lng < 80.645) {
-        lat = 7.264242;
-        lng = 80.621701;
-      }
 
       const newPos: [number, number] = [lat, lng];
       setWorkerCoords(newPos);
@@ -436,35 +426,29 @@ export function LiveGpsRouteMap({
   return (
     <div
       style={{
-        position: "relative",
         width: "100%",
-        height: "clamp(260px, 36vw, 380px)",
-        minHeight: "260px",
+        display: "flex",
+        flexDirection: "column",
         backgroundColor: isDark ? "#090b0e" : "#f1f5f9",
-        border: "1px solid var(--border)",
+        border: "1.5px solid var(--accent)",
         overflow: "hidden",
         marginTop: "20px",
+        borderRadius: "0px",
+        boxShadow: "0 8px 24px -6px rgba(0,0,0,0.25)",
       }}
     >
-      {/* Top telemetry overlay banner */}
+      {/* Top Telemetry & ETA Prediction Bar — Permanently Visible */}
       <div
         style={{
-          position: "absolute",
-          top: "10px",
-          left: "10px",
-          right: "10px",
-          zIndex: 400,
-          backgroundColor: isDark ? "rgba(9, 11, 14, 0.92)" : "rgba(255, 255, 255, 0.95)",
-          border: "1px solid var(--border)",
-          padding: "8px 12px",
+          backgroundColor: isDark ? "rgba(9, 11, 14, 0.96)" : "rgba(255, 255, 255, 0.98)",
+          borderBottom: "1px solid var(--border)",
+          padding: "10px 14px",
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           flexWrap: "wrap",
-          gap: "6px 12px",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderRadius: "0px",
+          gap: "8px 14px",
+          zIndex: 1200,
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
@@ -478,14 +462,14 @@ export function LiveGpsRouteMap({
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: "clamp(11px, 2.4vw, 12px)", fontWeight: 800, color: "var(--text-primary)" }}>
+          <span style={{ fontSize: "clamp(11.5px, 2.6vw, 13px)", fontWeight: 800, color: "var(--text-primary)" }}>
             {isGeofenced
               ? "GEOFENCE VERIFIED ON PROPERTY (<50m)"
               : `LIVE GPS ROAD ROUTING · ${roadStreetName}`}
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px 14px", flexWrap: "wrap", fontSize: "clamp(11px, 2.4vw, 12px)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px 16px", flexWrap: "wrap", fontSize: "clamp(11.5px, 2.6vw, 13px)" }}>
           <span style={{ color: "var(--text-secondary)" }}>
             Road Distance:{" "}
             <strong style={{ color: "var(--text-primary)" }}>
@@ -498,16 +482,24 @@ export function LiveGpsRouteMap({
         </div>
       </div>
 
-      {/* Map DOM target */}
+      {/* Map DOM target wrapper */}
       <div
-        ref={mapContainerRef}
         style={{
+          position: "relative",
           width: "100%",
-          height: "100%",
-          filter: !isLocationPermissionGranted ? "blur(6px)" : "none",
-          transition: "filter 0.4s ease",
+          height: "clamp(260px, 36vw, 380px)",
+          minHeight: "260px",
         }}
-      />
+      >
+        <div
+          ref={mapContainerRef}
+          style={{
+            width: "100%",
+            height: "100%",
+            filter: !isLocationPermissionGranted ? "blur(6px)" : "none",
+            transition: "filter 0.4s ease",
+          }}
+        />
 
       {/* Frosted Permission Modal if Citizen hasn't enabled device location */}
       {!isLocationPermissionGranted && (
@@ -648,6 +640,7 @@ export function LiveGpsRouteMap({
         >
           -
         </button>
+      </div>
       </div>
     </div>
   );

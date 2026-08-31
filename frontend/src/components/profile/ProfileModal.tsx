@@ -25,154 +25,12 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/components/ThemeProvider";
 import { decodeNicToBirthdayAndGender } from "@/utils/nicDecoder";
 import { apiClient } from "@/services/api";
+import { InteractivePinPicker } from "@/components/common/InteractivePinPicker";
 
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   onProfileUpdated?: () => void;
-}
-
-
-
-// Interactive Leaflet Pin Map Picker for Citizens
-function InteractivePinPicker({
-  lat,
-  lng,
-  onChangeCoords,
-  isDark,
-}: {
-  lat: number;
-  lng: number;
-  onChangeCoords: (newLat: number, newLng: number) => void;
-  isDark: boolean;
-}) {
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<any>(null);
-  const markerRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || !mapContainerRef.current) return;
-
-    let isSubscribed = true;
-
-    import("leaflet").then((L) => {
-      if (!isSubscribed || !mapContainerRef.current) return;
-
-      // Clean up previous instance
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-
-      const map = L.map(mapContainerRef.current, {
-        center: [lat, lng],
-        zoom: 15,
-        zoomControl: true,
-      });
-      mapInstanceRef.current = map;
-
-      // Free OpenStreetMap tile server (No API key required)
-      const tileUrl = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
-
-      L.tileLayer(tileUrl, {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Sleek, small 20px vector SVG location pin (zero area obstruction)
-      const smallPinIcon = L.divIcon({
-        className: "custom-small-pin",
-        html: `
-          <div style="
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 22px;
-            height: 30px;
-            cursor: grab;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.35));
-          ">
-            <svg width="22" height="30" viewBox="0 0 24 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 0C5.37258 0 0 5.37258 0 12C0 21 12 32 12 32C12 32 24 21 24 12C24 5.37258 18.6274 0 12 0Z" fill="#10b981"/>
-              <circle cx="12" cy="12" r="4.5" fill="#ffffff"/>
-            </svg>
-          </div>
-        `,
-        iconSize: [22, 30],
-        iconAnchor: [11, 30],
-      });
-
-      const marker = L.marker([lat, lng], {
-        icon: smallPinIcon,
-        draggable: true,
-      }).addTo(map);
-      markerRef.current = marker;
-
-      // Drag event
-      marker.on("dragend", (e: any) => {
-        const position = e.target.getLatLng();
-        onChangeCoords(Number(position.lat.toFixed(6)), Number(position.lng.toFixed(6)));
-      });
-
-      // Click to place pin anywhere on map
-      map.on("click", (e: any) => {
-        const clickedLat = Number(e.latlng.lat.toFixed(6));
-        const clickedLng = Number(e.latlng.lng.toFixed(6));
-        marker.setLatLng([clickedLat, clickedLng]);
-        map.panTo([clickedLat, clickedLng]);
-        onChangeCoords(clickedLat, clickedLng);
-      });
-
-      setTimeout(() => {
-        if (mapInstanceRef.current) {
-          mapInstanceRef.current.invalidateSize();
-        }
-      }, 250);
-    });
-
-    return () => {
-      isSubscribed = false;
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, []);
-
-  // Update marker position when props change
-  useEffect(() => {
-    if (markerRef.current && mapInstanceRef.current) {
-      markerRef.current.setLatLng([lat, lng]);
-      mapInstanceRef.current.panTo([lat, lng]);
-    }
-  }, [lat, lng]);
-
-  return (
-    <div style={{ position: "relative", width: "100%", height: "200px", borderRadius: "0px", overflow: "hidden", border: "1.5px solid var(--border)" }}>
-      <div ref={mapContainerRef} style={{ width: "100%", height: "100%" }} />
-      <div
-        style={{
-          position: "absolute",
-          bottom: "8px",
-          left: "8px",
-          backgroundColor: isDark ? "rgba(15,23,42,0.9)" : "rgba(255,255,255,0.95)",
-          padding: "4px 8px",
-          fontSize: "11px",
-          fontWeight: 700,
-          color: "var(--text-primary)",
-          border: "1px solid var(--border)",
-          pointerEvents: "none",
-          zIndex: 1000,
-          display: "flex",
-          alignItems: "center",
-          gap: "4px",
-        }}
-      >
-        <MapPin size={12} color="#10b981" />
-        <span>Click or drag pin to set exact house location</span>
-      </div>
-    </div>
-  );
 }
 
 export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModalProps) {
@@ -319,6 +177,11 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
     setSaveSuccess(false);
 
     try {
+      // Derive locality and district from the homeAddress string for the job modal to use
+      const homeParts = homeAddress.split(",");
+      const derivedLocality = homeParts[0]?.trim() || homeAddress;
+      const derivedDistrict = homeParts[1]?.trim() || homeParts[0]?.trim() || "Colombo";
+
       const patchRes = await apiClient<{ success: boolean; profilePicture?: string }>(`/users/profile/${numericId}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -328,6 +191,8 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
           homeAddress: isCitizen ? homeAddress : undefined,
           savedLat: isCitizen ? savedLat : undefined,
           savedLng: isCitizen ? savedLng : undefined,
+          locality: isCitizen ? derivedLocality : undefined,
+          district: isCitizen ? derivedDistrict : undefined,
           birthday,
           gender,
           language,
@@ -339,7 +204,7 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
       const savedPic = patchRes?.profilePicture !== undefined ? (patchRes.profilePicture || "") : (profilePicture || "");
       setProfilePicture(savedPic);
 
-      // Update session localStorage cache
+      // Update session localStorage cache — including locality so job modal uses correct town
       const stored = localStorage.getItem("smart_urban_auth_session");
       if (stored) {
         const session = JSON.parse(stored);
@@ -351,6 +216,8 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
             session.user.homeAddress = homeAddress;
             session.user.savedLat = savedLat;
             session.user.savedLng = savedLng;
+            session.user.locality = derivedLocality;
+            session.user.district = derivedDistrict;
           }
           session.user.birthday = birthday;
           session.user.gender = gender;
@@ -370,6 +237,8 @@ export function ProfileModal({ isOpen, onClose, onProfileUpdated }: ProfileModal
         homeAddress: isCitizen ? homeAddress : undefined,
         savedLat: isCitizen ? savedLat : undefined,
         savedLng: isCitizen ? savedLng : undefined,
+        locality: isCitizen ? derivedLocality : undefined,
+        district: isCitizen ? derivedDistrict : undefined,
         birthday,
         gender,
         language,

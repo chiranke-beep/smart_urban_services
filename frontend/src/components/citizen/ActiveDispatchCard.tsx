@@ -99,16 +99,18 @@ export function ActiveDispatchCard({
       <div style={{ marginBottom: "20px" }}>
         <h3
           style={{
-            fontSize: "22px",
+            fontSize: "clamp(18px, 4.5vw, 22px)",
             fontWeight: 800,
             color: "var(--text-primary)",
             letterSpacing: "-0.02em",
             marginBottom: "8px",
+            wordBreak: "break-word",
+            lineHeight: 1.25,
           }}
         >
           {job.title}
         </h3>
-        <p style={{ fontSize: "14.5px", color: "var(--text-secondary)", lineHeight: 1.6 }}>
+        <p style={{ fontSize: "clamp(13px, 2.8vw, 14.5px)", color: "var(--text-secondary)", lineHeight: 1.55, wordBreak: "break-word" }}>
           {job.description}
         </p>
       </div>
@@ -121,34 +123,44 @@ export function ActiveDispatchCard({
         <div
           style={{
             marginTop: "20px",
-            padding: "18px 22px",
+            padding: "clamp(12px, 3vw, 18px)",
             backgroundColor: "rgba(16,185,129,0.1)",
-            border: "2px solid #10b981",
+            border: "1.5px solid #10b981",
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "16px",
+            flexDirection: "column",
+            gap: "14px",
+            boxSizing: "border-box",
+            width: "100%",
+            maxWidth: "100%",
           }}
         >
           <div>
             <div style={{ fontSize: "11px", color: "var(--text-secondary)", textTransform: "uppercase", fontWeight: 800 }}>
               Worker Sent Price Quote
             </div>
-            <div style={{ fontSize: "24px", fontWeight: 900, color: "#10b981", marginTop: "2px" }}>
+            <div style={{ fontSize: "clamp(20px, 5vw, 26px)", fontWeight: 900, color: "#10b981", marginTop: "2px" }}>
               {formatCurrency(job.quotation?.amountLKR || job.costLKR || 3500)}
             </div>
-            <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px" }}>
+            <div style={{ fontSize: "12px", color: "var(--text-secondary)", marginTop: "2px", lineHeight: 1.4 }}>
               Review the price. You can accept to start, chat to negotiate, or decline.
             </div>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "stretch",
+              flexWrap: "wrap",
+              gap: "8px",
+              width: "100%",
+            }}
+          >
             {onAcceptQuote && (
               <button
                 onClick={() => onAcceptQuote(job.id)}
                 style={{
-                  padding: "10px 18px",
+                  flex: "1 1 100%",
+                  padding: "10px 14px",
                   backgroundColor: "#10b981",
                   color: "#ffffff",
                   border: "none",
@@ -157,8 +169,10 @@ export function ActiveDispatchCard({
                   cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
+                  justifyContent: "center",
                   gap: "6px",
                   boxShadow: "0 4px 14px rgba(16,185,129,0.3)",
+                  boxSizing: "border-box",
                 }}
               >
                 <CheckCircle size={16} />
@@ -169,19 +183,23 @@ export function ActiveDispatchCard({
             <button
               onClick={() => onOpenChat(job.id)}
               style={{
-                padding: "10px 16px",
+                flex: "1 1 min(100%, 140px)",
+                padding: "9px 12px",
                 backgroundColor: "var(--accent)",
                 color: "var(--accent-text)",
                 border: "none",
                 fontWeight: 800,
-                fontSize: "13px",
+                fontSize: "12.5px",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "6px",
+                boxSizing: "border-box",
+                whiteSpace: "nowrap",
               }}
             >
-              <MessageSquare size={15} />
+              <MessageSquare size={14} />
               <span>Chat to Negotiate</span>
             </button>
 
@@ -189,13 +207,17 @@ export function ActiveDispatchCard({
               <button
                 onClick={() => onCancelJob(job.id)}
                 style={{
-                  padding: "10px 14px",
+                  flex: "1 1 min(100%, 120px)",
+                  padding: "9px 12px",
                   backgroundColor: "transparent",
                   color: "#ef4444",
                   border: "1.5px solid #ef4444",
                   fontWeight: 800,
                   fontSize: "12.5px",
                   cursor: "pointer",
+                  boxSizing: "border-box",
+                  whiteSpace: "nowrap",
+                  textAlign: "center",
                 }}
               >
                 Decline & Cancel
