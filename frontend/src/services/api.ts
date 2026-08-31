@@ -5,6 +5,10 @@ export function getApiBaseUrl(): string {
     }
     const proto = window.location.protocol;
     const host = window.location.hostname;
+    // On HTTPS (production via Nginx), route /api through same origin — no port needed
+    if (proto === "https:") {
+      return `https://${host}/api`;
+    }
     return `${proto}//${host}:5000/api`;
   }
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";

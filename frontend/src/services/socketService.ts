@@ -5,6 +5,10 @@ const getSocketUrl = () => {
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
+    // On HTTPS (production via Nginx), use same origin — Nginx proxies /socket.io/
+    if (protocol === "https:") {
+      return `https://${hostname}`;
+    }
     return `${protocol}//${hostname}:5000`;
   }
   return "http://localhost:5000";
