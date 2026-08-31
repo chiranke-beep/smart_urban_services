@@ -1,7 +1,6 @@
 import { io, Socket } from "socket.io-client";
 
 const getSocketUrl = () => {
-  if (process.env.NEXT_PUBLIC_SOCKET_URL) return process.env.NEXT_PUBLIC_SOCKET_URL;
   if (typeof window !== "undefined") {
     const hostname = window.location.hostname;
     const protocol = window.location.protocol;
@@ -9,9 +8,10 @@ const getSocketUrl = () => {
     if (protocol === "https:") {
       return `https://${hostname}`;
     }
+    if (process.env.NEXT_PUBLIC_SOCKET_URL) return process.env.NEXT_PUBLIC_SOCKET_URL;
     return `${protocol}//${hostname}:5000`;
   }
-  return "http://localhost:5000";
+  return process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:5000";
 };
 
 class SocketService {

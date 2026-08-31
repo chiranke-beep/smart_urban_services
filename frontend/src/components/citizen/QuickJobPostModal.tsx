@@ -136,7 +136,9 @@ export function QuickJobPostModal({
           flexible: "MEDIUM",
         };
 
-        const aiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000";
+        const aiBase = typeof window !== "undefined"
+          ? (window.location.protocol === "https:" ? `https://${window.location.hostname}` : `http://${window.location.hostname}:8000`)
+          : "http://localhost:8000";
         const res = await fetch(`${aiBase}/api/ai/predict-cost`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -205,7 +207,9 @@ export function QuickJobPostModal({
       setAiResult(null);
 
       try {
-        const aiBase = typeof window !== "undefined" ? `http://${window.location.hostname}:8000` : "http://localhost:8000";
+        const aiBase = typeof window !== "undefined"
+          ? (window.location.protocol === "https:" ? `https://${window.location.hostname}` : `http://${window.location.hostname}:8000`)
+          : "http://localhost:8000";
         const res = await fetch(`${aiBase}/api/ai/vision-scan`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

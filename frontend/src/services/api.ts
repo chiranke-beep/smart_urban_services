@@ -1,13 +1,15 @@
 export function getApiBaseUrl(): string {
   if (typeof window !== "undefined" && window.location?.hostname) {
-    if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
-      return process.env.NEXT_PUBLIC_API_URL;
-    }
     const proto = window.location.protocol;
     const host = window.location.hostname;
-    // On HTTPS (production via Nginx), route /api through same origin — no port needed
+    
+    // On HTTPS (production via Nginx), always route /api through same origin to prevent Mixed Content
     if (proto === "https:") {
       return `https://${host}/api`;
+    }
+
+    if (process.env.NEXT_PUBLIC_API_URL && !process.env.NEXT_PUBLIC_API_URL.includes("localhost")) {
+      return process.env.NEXT_PUBLIC_API_URL;
     }
     return `${proto}//${host}:5000/api`;
   }
